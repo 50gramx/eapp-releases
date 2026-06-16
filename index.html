@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Eutopia Releases</title>
+    <meta
+      name="description"
+      content="Explore Eutopia products and download the latest EVO and branded app releases."
+    >
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Eutopia releases home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>
+          <strong>Eutopia Releases</strong>
+          <small>public builds from 50GRAMx</small>
+        </span>
+      </a>
+      <nav aria-label="Release catalog">
+        <a href="#products">Products</a>
+        <a href="#channels">Channels</a>
+        <a href="#about">About</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="intro-title">
+        <div class="intro-copy">
+          <p class="eyebrow">The open release shelf</p>
+          <h1 id="intro-title">Software for local-first apps, branded from contracts.</h1>
+          <p>
+            EVO Browser and every branded product listed here are assembled from
+            the same source of truth: interaction contracts, release metadata,
+            and signed build artifacts.
+          </p>
+          <div class="quick-links" aria-label="Quick filters">
+            <a href="#latest">Latest</a>
+            <a href="#stable-history">Last stable builds</a>
+            <a href="https://github.com/50gramx/eapp-releases/releases">GitHub releases</a>
+          </div>
+        </div>
+        <div class="release-visual" aria-hidden="true">
+          <div class="orbit orbit-a"></div>
+          <div class="orbit orbit-b"></div>
+          <div class="build-node node-a">EVO</div>
+          <div class="build-node node-b">EP&amp;N</div>
+          <div class="build-node node-c">CI</div>
+          <div class="build-line line-a"></div>
+          <div class="build-line line-b"></div>
+        </div>
+      </section>
+
+      <section class="toolbar" aria-label="Catalog filters">
+        <label>
+          <span>Product</span>
+          <select id="brandFilter">
+            <option value="all">All products</option>
+          </select>
+        </label>
+        <label>
+          <span>Platform</span>
+          <select id="platformFilter">
+            <option value="all">All platforms</option>
+          </select>
+        </label>
+        <label>
+          <span>Channel</span>
+          <select id="channelFilter">
+            <option value="all">All channels</option>
+          </select>
+        </label>
+      </section>
+
+      <section id="products" class="products" aria-live="polite">
+        <div class="section-heading">
+          <p class="eyebrow">Products</p>
+          <h2>Downloads</h2>
+        </div>
+        <div id="productGrid" class="product-grid"></div>
+      </section>
+
+      <section id="channels" class="channels">
+        <div>
+          <p class="eyebrow">Channels</p>
+          <h2>How releases move</h2>
+        </div>
+        <div class="channel-strip">
+          <article>
+            <strong>Nightly</strong>
+            <span>freshest builds for fast feedback</span>
+          </article>
+          <article>
+            <strong>Weekly</strong>
+            <span>regular integration checkpoints</span>
+          </article>
+          <article>
+            <strong>Bi-weekly</strong>
+            <span>slower review rhythm</span>
+          </article>
+          <article>
+            <strong>Stable</strong>
+            <span>release-grade builds shown with history</span>
+          </article>
+        </div>
+      </section>
+
+      <section id="about" class="about">
+        <p>
+          This page is generated from contracts and release metadata. If a product
+          is missing, add its brand metadata to interaction contracts and publish
+          a build with release metadata.
+        </p>
+      </section>
+    </main>
+
+    <template id="productTemplate">
+      <article class="product-card">
+        <div class="product-head">
+          <div class="product-icon" aria-hidden="true"></div>
+          <div>
+            <h3></h3>
+            <p class="product-meta"></p>
+          </div>
+        </div>
+        <p class="product-summary"></p>
+        <div class="release-list"></div>
+      </article>
+    </template>
+
+    <template id="releaseTemplate">
+      <div class="release-row">
+        <div>
+          <strong></strong>
+          <span></span>
+        </div>
+        <a class="download-link" href="#">Download</a>
+      </div>
+    </template>
+
+    <script src="site.js" type="module"></script>
+  </body>
+</html>
