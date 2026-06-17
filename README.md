@@ -17,6 +17,7 @@ From this repo:
 node tools/generate-catalog.mjs `
   --contracts-root ..\eapp-interaction-contracts `
   --metadata-root data\releases `
+  --github-releases-repo 50gramx/eapp-releases `
   --output data\catalog.json
 ```
 
