@@ -1,0 +1,82 @@
+name: Cadence release dispatcher
+
+# Drives nightly/weekly/bi-weekly/stable rebuilds for every brand that has
+# already shipped at least one release (per data/catalog.json), across every
+# platform that brand has previously released on. Manual trigger stays
+# exactly as today in build-eapp-{linux,windows,macos}.yml — this only
+# *invokes* them, on a schedule, per already-known brand+platform.
+on:
+  schedule:
+    - cron: '0 2 * * *'        # nightly  — every day 02:00 UTC
+    - cron: '0 2 * * 1'        # weekly   — every Monday 02:00 UTC
+    - cron: '0 2 1,15 * *'     # bi-weekly — 1st and 15th of the month 02:00 UTC
+    - cron: '0 3 1 * *'        # stable   — 1st of the month 03:00 UTC
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: Force a specific channel run (otherwise inferred from cron schedule)
+        required: false
+        type: choice
+        options: [nightly, weekly, bi-weekly, stable]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Determine channel for this run
+        id: channel
+        run: |
+          if [ -n "${{ inputs.channel }}" ]; then
+            echo "channel=${{ inputs.channel }}" >> "$GITHUB_OUTPUT"
+          else
+            case "${{ github.event.schedule }}" in
+              "0 2 * * *")    echo "channel=nightly" >> "$GITHUB_OUTPUT" ;;
+              "0 2 * * 1")    echo "channel=weekly" >> "$GITHUB_OUTPUT" ;;
+              "0 2 1,15 * *") echo "channel=bi-weekly" >> "$GITHUB_OUTPUT" ;;
+              "0 3 1 * *")    echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
+              *) echo "::error::Unrecognized schedule trigger"; exit 1 ;;
+            esac
+          fi
+
+      - name: Rebuild every already-released brand on every platform it's used
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CHANNEL: ${{ steps.channel.outputs.channel }}
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const catalog = JSON.parse(fs.readFileSync("data/catalog.json", "utf8"));
+            const pairs = [];
+            for (const product of catalog.products || []) {
+              if (!product.releases || product.releases.length === 0) continue;
+              const platforms = [...new Set(product.releases.map(r => r.platform))];
+              for (const platform of platforms) pairs.push({ brandId: product.brandId, platform });
+            }
+            fs.writeFileSync("/tmp/pairs.json", JSON.stringify(pairs));
+          '
+          PAIRS=$(cat /tmp/pairs.json)
+          echo "Brand/platform pairs to rebuild on channel=$CHANNEL:"
+          echo "$PAIRS" | node -e 'console.log(JSON.parse(require("fs").readFileSync(0)).map(p=>`  ${p.brandId} / ${p.platform}`).join("\n"))'
+
+          echo "$PAIRS" | node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync(0)).map(p=>`${p.brandId} ${p.platform}`).join("\n"))' > /tmp/pairs.txt
+
+          while read -r brand platform; do
+            [ -z "$brand" ] && continue
+            case "$platform" in
+              linux)   workflow="build-eapp-linux.yml" ;;
+              windows) workflow="build-eapp-windows.yml" ;;
+              macos)   workflow="build-eapp-macos.yml" ;;
+              *) echo "skip unknown platform: $platform"; continue ;;
+            esac
+            echo "→ $workflow brand_id=$brand channel=$CHANNEL"
+            gh workflow run "$workflow" \
+              -f brand_id="$brand" \
+              -f release_channel="$CHANNEL"
+          done < /tmp/pairs.txt

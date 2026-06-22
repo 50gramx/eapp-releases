@@ -1,0 +1,124 @@
+name: Build epnd (free public CI)
+
+# Mirrors private epn-daemon/.github/workflows/release.yml exactly, but runs
+# here so it's free. Private repo is untouched — we just poll its latest
+# `main` SHA (via CI_READ_TOKEN, read-only) and only rebuild when it moves.
+# A marker commit SHA is kept in `epnd-last-built.txt` on this repo's main.
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.latest.outputs.sha }}
+      should_build: ${{ steps.compare.outputs.should_build }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest epn-daemon main SHA
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          sha=$(gh api repos/50gramx/epn-daemon/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Compare against last built marker
+        id: compare
+        run: |
+          last=$(cat epnd-last-built.txt 2>/dev/null || echo "")
+          if [ "$last" = "${{ steps.latest.outputs.sha }}" ]; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout epn-daemon source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: epn-daemon
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: '1.22.x'
+          cache: true
+
+      - name: Configure git for private Go deps
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Gate — vet must pass before we publish a public binary
+        env:
+          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+        working-directory: epn-daemon
+        run: go vet ./...
+
+      - name: Build matrix (pure Go, cross-compiled)
+        env:
+          CGO_ENABLED: '0'
+          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+        working-directory: epn-daemon
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          build() {
+            local goos="$1" goarch="$2" out="$3"
+            GOOS="$goos" GOARCH="$goarch" go build -trimpath \
+              -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=${{ needs.check.outputs.sha }}" \
+              -o "dist/$out" ./cmd/epnd
+          }
+          build windows amd64 epnd-windows-amd64.exe
+          build linux   amd64 epnd-linux-amd64
+          build linux   arm64 epnd-linux-arm64
+          build darwin  amd64 epnd-darwin-amd64
+          build darwin  arm64 epnd-darwin-arm64
+
+      - name: Stage installer + checksums
+        run: |
+          set -euo pipefail
+          cp epn-daemon/scripts/install.sh epn-daemon/dist/install.sh
+          cd epn-daemon/dist
+          sha256sum epnd-* > checksums.txt
+
+      - name: Publish (rolling epnd-latest)
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: epnd-latest
+          name: epnd — Latest Build (Rolling)
+          body_path: epn-daemon/scripts/release-notes.md
+          files: |
+            epn-daemon/dist/epnd-windows-amd64.exe
+            epn-daemon/dist/epnd-linux-amd64
+            epn-daemon/dist/epnd-linux-arm64
+            epn-daemon/dist/epnd-darwin-amd64
+            epn-daemon/dist/epnd-darwin-arm64
+            epn-daemon/dist/install.sh
+            epn-daemon/dist/checksums.txt
+
+      - name: Update built-marker
+        run: echo "${{ needs.check.outputs.sha }}" > epnd-last-built.txt
+
+      - name: Commit marker
+        run: |
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add epnd-last-built.txt
+          git commit -m "ci: built epnd @ ${{ needs.check.outputs.sha }}" || exit 0
+          git push

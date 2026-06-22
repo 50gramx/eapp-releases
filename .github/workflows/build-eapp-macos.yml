@@ -1,0 +1,204 @@
+name: Build and Release macOS App (free public CI)
+
+# Mirror of private eapp-live/.github/workflows/macos_build_release.yml.
+# Runs here so macOS is free (no per-minute billing on public-repo runners,
+# so the old 10x-cost guard no longer applies — manual trigger stays exactly
+# as it is in the private repo: brand_id + release_channel, no confirm gate).
+# Cadence automation (nightly/weekly/bi-weekly/stable across already-released
+# brands) is handled centrally by build-cadence.yml, which calls this
+# workflow via workflow_dispatch for each brand/platform pair.
+on:
+  workflow_dispatch:
+    inputs:
+      brand_id:
+        description: Brand id to build
+        required: true
+        type: string
+      release_channel:
+        description: Release channel
+        required: true
+        default: stable
+        type: choice
+        options: [nightly, weekly, bi-weekly, stable]
+
+jobs:
+  build_and_release:
+    runs-on: macos-latest
+    env:
+      RELEASE_REPO: 50gramx/eapp-releases
+      PLATFORM_ID: macos
+      BRAND_ID: ${{ inputs.brand_id }}
+      RELEASE_CHANNEL: ${{ inputs.release_channel }}
+
+    steps:
+      - name: Checkout eapp-live source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+
+      - name: Checkout Interaction Contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .ci/eapp-interaction-contracts
+
+      - name: Resolve Contracts Commit
+        id: contracts
+        run: echo "sha=$(git -C .ci/eapp-interaction-contracts rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Contract Delivery
+        id: brand
+        run: |
+          node tool/ci/resolve_contract_delivery.mjs \
+            --contracts-root ".ci/eapp-interaction-contracts" \
+            --brand-id "$BRAND_ID" \
+            --platform "$PLATFORM_ID" \
+            --channel "$RELEASE_CHANNEL" \
+            --github-env "$GITHUB_ENV" \
+            --github-output "$GITHUB_OUTPUT" \
+            --output "brand-delivery.json"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: stable
+          cache: true
+
+      - name: Enable macOS Desktop
+        run: flutter config --enable-macos-desktop
+
+      - name: Configure git for private dependencies
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Cache CocoaPods Pods
+        uses: actions/cache@v4
+        with:
+          path: macos/Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('pubspec.lock', 'macos/Podfile') }}
+          restore-keys: ${{ runner.os }}-pods-
+
+      - name: Clean CocoaPods Specs
+        run: rm -rf ~/.cocoapods/repos
+
+      - name: Update CocoaPods Specs and Install Pods
+        run: |
+          pod repo update
+          cd macos
+          pod install --repo-update
+
+      - name: Build macOS App
+        run: |
+          flutter build macos --release \
+            --dart-define=BUILD_ID=${{ github.run_number }} \
+            --dart-define=BRAND_ID=${{ steps.brand.outputs.brand_id }} \
+            --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}" \
+            --dart-define=BRAND_DISPLAY_NAME="${{ steps.brand.outputs.brand_display_name }}" \
+            --dart-define=BRAND_PRODUCT_NAME="${{ steps.brand.outputs.brand_product_name }}" \
+            --dart-define=BRAND_WINDOW_TITLE="${{ steps.brand.outputs.brand_window_title }}" \
+            --dart-define=BRAND_LOGO="${{ steps.brand.outputs.brand_logo }}" \
+            --dart-define=BRAND_SESSION_FILE="${{ steps.brand.outputs.brand_session_file }}" \
+            --dart-define=BRAND_SINGLETON_NAME="${{ steps.brand.outputs.brand_singleton_name }}" \
+            --dart-define=BRAND_ORGANISATION="${{ steps.brand.outputs.brand_organisation }}" \
+            --dart-define=BRAND_COMMUNITY_CODE=${{ steps.brand.outputs.brand_community_code }} \
+            --dart-define=BRAND_SHOW_APP_LIBRARY=${{ steps.brand.outputs.brand_show_app_library }} \
+            --dart-define=BRAND_SHOW_PRIVATE_SPACE_TILE=${{ steps.brand.outputs.brand_show_private_space_tile }} \
+            --dart-define=BRAND_SHOW_HISTORY=${{ steps.brand.outputs.brand_show_history }} \
+            --dart-define=BRAND_SHOW_PANE_SWITCHER=${{ steps.brand.outputs.brand_show_pane_switcher }} \
+            --dart-define=BRAND_SHOW_SPOTLIGHT=${{ steps.brand.outputs.brand_show_spotlight }} \
+            --dart-define=BRAND_SHOW_OPEN_TABS_SUMMARY=${{ steps.brand.outputs.brand_show_open_tabs_summary }} \
+            --dart-define=BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY=${{ steps.brand.outputs.brand_show_open_communities_summary }} \
+            --dart-define=BRAND_SHOW_USER_DETAILS=${{ steps.brand.outputs.brand_show_user_details }} \
+            --dart-define=BRAND_SHOW_OPEN_PAGES_TABS=${{ steps.brand.outputs.brand_show_open_pages_tabs }} \
+            --dart-define=BRAND_CLEAR_SESSION_ON_START=${{ steps.brand.outputs.brand_clear_session_on_start }} \
+            --dart-define=BRAND_UNBOUNDED_SOLUTION_NAV=${{ steps.brand.outputs.brand_unbounded_solution_nav }} \
+            --dart-define=BRAND_SHOW_WALLPAPER_CREDIT=${{ steps.brand.outputs.brand_show_wallpaper_credit }} \
+            --dart-define=BRAND_SHOW_AUTO_APP_SELECTOR=${{ steps.brand.outputs.brand_show_auto_app_selector }} \
+            --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}" \
+            --dart-define=BRAND_NAVIGATION_JSON_B64=${{ steps.brand.outputs.brand_navigation_json_b64 }}
+
+      - name: Bundle epnd daemon
+        id: epnd
+        if: env.SIDECAR_EPND == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          if [ -z "$APP" ]; then echo "No .app found"; exit 1; fi
+          BASE="https://github.com/$RELEASE_REPO/releases/download/epnd-latest"
+          curl -fsSL "$BASE/checksums.txt" -o /tmp/epnd-checksums.txt
+          for ASSET in epnd-darwin-amd64 epnd-darwin-arm64; do
+            curl -fsSL "$BASE/$ASSET" -o "$APP/Contents/MacOS/$ASSET"
+            chmod +x "$APP/Contents/MacOS/$ASSET"
+            WANT=$(grep "$ASSET" /tmp/epnd-checksums.txt | awk '{print $1}')
+            GOT=$(shasum -a 256 "$APP/Contents/MacOS/$ASSET" | awk '{print $1}')
+            if [ -n "$WANT" ] && [ "$WANT" != "$GOT" ]; then
+              echo "epnd checksum mismatch for $ASSET: want $WANT got $GOT"
+              exit 1
+            fi
+            if [ "$ASSET" = "epnd-darwin-arm64" ]; then
+              VERSION=$("$APP/Contents/MacOS/$ASSET" version 2>/dev/null | awk '{print $2}')
+              echo "version=${VERSION:-unknown}" >> "$GITHUB_OUTPUT"
+              echo "asset=$ASSET" >> "$GITHUB_OUTPUT"
+              echo "sha256=$GOT" >> "$GITHUB_OUTPUT"
+            fi
+          done
+
+      - name: Resolve App Version
+        id: version
+        run: |
+          VERSION=$(sed -nE 's/^version: ([^+]+)\+.*/\1/p' pubspec.yaml)
+          echo "version=${VERSION:-1.0.0}" >> "$GITHUB_OUTPUT"
+
+      - name: Package zip
+        run: |
+          set -euo pipefail
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          ditto -c -k --keepParent "$APP" "$GITHUB_WORKSPACE/${{ steps.brand.outputs.artifact_name }}"
+
+      - name: Write Release Metadata
+        env:
+          EPND_VERSION: ${{ steps.epnd.outputs.version }}
+          EPND_ASSET: ${{ steps.epnd.outputs.asset }}
+          EPND_SHA256: ${{ steps.epnd.outputs.sha256 }}
+        run: |
+          node tool/ci/write_release_metadata.mjs \
+            --product "${{ steps.brand.outputs.product_id }}" \
+            --brand-id "${{ steps.brand.outputs.brand_id }}" \
+            --platform "$PLATFORM_ID" \
+            --channel "$RELEASE_CHANNEL" \
+            --version "${{ steps.version.outputs.version }}" \
+            --build-id "${{ github.run_number }}" \
+            --source-commit "${{ github.sha }}" \
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" \
+            --release-repo "$RELEASE_REPO" \
+            --release-tag "${{ steps.brand.outputs.release_tag }}" \
+            --asset "${{ steps.brand.outputs.artifact_name }}" \
+            --output "release-metadata.json"
+          node tool/ci/write_dependency_manifest.mjs \
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" \
+            --output "dependency-manifest.json"
+
+      - name: Publish release (self-repo, default token)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.brand.outputs.artifact_name }}
+            release-metadata.json
+            dependency-manifest.json
+            brand-delivery.json
+          tag_name: ${{ steps.brand.outputs.release_tag }}
+          name: ${{ steps.brand.outputs.display_name }} macOS ${{ env.RELEASE_CHANNEL }}
+          body: |
+            ## ${{ steps.brand.outputs.display_name }} macOS ${{ env.RELEASE_CHANNEL }}
+
+            **Contracts:** ${{ steps.contracts.outputs.sha }}
+            **Build ID:** ${{ github.run_number }}
+            **Channel:** ${{ env.RELEASE_CHANNEL }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

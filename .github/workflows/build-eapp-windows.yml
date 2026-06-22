@@ -1,0 +1,240 @@
+name: Build and Release Windows App (free public CI)
+
+# Mirror of private eapp-live/.github/workflows/windows_build_release.yml.
+# Same manual trigger/inputs as today — runs here so it's free, pulling
+# eapp-live source via a read-only token instead of the private runner.
+on:
+  workflow_dispatch:
+    inputs:
+      brand_id:
+        description: Brand id to build
+        required: true
+        type: string
+      release_channel:
+        description: Release channel
+        required: true
+        default: stable
+        type: choice
+        options: [nightly, weekly, bi-weekly, stable]
+
+jobs:
+  build_and_release:
+    runs-on: windows-latest
+    env:
+      RELEASE_REPO: 50gramx/eapp-releases
+      PLATFORM_ID: windows
+
+    steps:
+      - name: Checkout eapp-live source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+
+      - name: Checkout Interaction Contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .ci/eapp-interaction-contracts
+
+      - name: Resolve Contracts Commit
+        id: contracts
+        shell: pwsh
+        run: |
+          $sha = git -C .ci/eapp-interaction-contracts rev-parse HEAD
+          "sha=$sha" >> $env:GITHUB_OUTPUT
+
+      - name: Resolve Contract Delivery
+        id: brand
+        shell: pwsh
+        run: |
+          node tool/ci/resolve_contract_delivery.mjs `
+            --contracts-root ".ci/eapp-interaction-contracts" `
+            --brand-id "${{ inputs.brand_id }}" `
+            --platform "$env:PLATFORM_ID" `
+            --channel "${{ inputs.release_channel }}" `
+            --github-env "$env:GITHUB_ENV" `
+            --github-output "$env:GITHUB_OUTPUT" `
+            --output "brand-delivery.json"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: stable
+          cache: true
+
+      - name: Enable Windows Desktop
+        run: flutter config --enable-windows-desktop
+
+      - name: Configure git for private dependencies
+        shell: bash
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Verify Windows Brand Metadata Generation
+        shell: pwsh
+        run: |
+          cmake `
+            "-DOUTPUT_PATH=$env:RUNNER_TEMP/generated_brand_config.test.h" `
+            -P tool/ci/verify_windows_brand_metadata.cmake
+
+      - name: Write Flutter Brand Defines
+        shell: pwsh
+        env:
+          BUILD_ID: ${{ github.run_number }}
+          BRAND_ID_VALUE: ${{ steps.brand.outputs.brand_id }}
+          BRAND_ENVIRONMENT_VALUE: ${{ steps.brand.outputs.brand_environment }}
+          BRAND_DISPLAY_NAME_VALUE: ${{ steps.brand.outputs.brand_display_name }}
+          BRAND_PRODUCT_NAME_VALUE: ${{ steps.brand.outputs.brand_product_name }}
+          BRAND_WINDOW_TITLE_VALUE: ${{ steps.brand.outputs.brand_window_title }}
+          BRAND_LOGO_VALUE: ${{ steps.brand.outputs.brand_logo }}
+          BRAND_SESSION_FILE_VALUE: ${{ steps.brand.outputs.brand_session_file }}
+          BRAND_SINGLETON_NAME_VALUE: ${{ steps.brand.outputs.brand_singleton_name }}
+          BRAND_ORGANISATION_VALUE: ${{ steps.brand.outputs.brand_organisation }}
+          BRAND_COMMUNITY_CODE_VALUE: ${{ steps.brand.outputs.brand_community_code }}
+          BRAND_SHOW_APP_LIBRARY_VALUE: ${{ steps.brand.outputs.brand_show_app_library }}
+          BRAND_SHOW_PRIVATE_SPACE_TILE_VALUE: ${{ steps.brand.outputs.brand_show_private_space_tile }}
+          BRAND_SHOW_HISTORY_VALUE: ${{ steps.brand.outputs.brand_show_history }}
+          BRAND_SHOW_PANE_SWITCHER_VALUE: ${{ steps.brand.outputs.brand_show_pane_switcher }}
+          BRAND_SHOW_SPOTLIGHT_VALUE: ${{ steps.brand.outputs.brand_show_spotlight }}
+          BRAND_SHOW_OPEN_TABS_SUMMARY_VALUE: ${{ steps.brand.outputs.brand_show_open_tabs_summary }}
+          BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY_VALUE: ${{ steps.brand.outputs.brand_show_open_communities_summary }}
+          BRAND_SHOW_USER_DETAILS_VALUE: ${{ steps.brand.outputs.brand_show_user_details }}
+          BRAND_SHOW_OPEN_PAGES_TABS_VALUE: ${{ steps.brand.outputs.brand_show_open_pages_tabs }}
+          BRAND_CLEAR_SESSION_ON_START_VALUE: ${{ steps.brand.outputs.brand_clear_session_on_start }}
+          BRAND_UNBOUNDED_SOLUTION_NAV_VALUE: ${{ steps.brand.outputs.brand_unbounded_solution_nav }}
+          BRAND_SHOW_WALLPAPER_CREDIT_VALUE: ${{ steps.brand.outputs.brand_show_wallpaper_credit }}
+          BRAND_SHOW_AUTO_APP_SELECTOR_VALUE: ${{ steps.brand.outputs.brand_show_auto_app_selector }}
+          BRAND_PREFERRED_WALLPAPER_VALUE: ${{ steps.brand.outputs.brand_preferred_wallpaper }}
+          BRAND_NAVIGATION_JSON_B64_VALUE: ${{ steps.brand.outputs.brand_navigation_json_b64 }}
+        run: |
+          $defines = [ordered]@{
+            BUILD_ID = $env:BUILD_ID
+            BRAND_ID = $env:BRAND_ID_VALUE
+            ENVIRONMENT = $env:BRAND_ENVIRONMENT_VALUE
+            BRAND_DISPLAY_NAME = $env:BRAND_DISPLAY_NAME_VALUE
+            BRAND_PRODUCT_NAME = $env:BRAND_PRODUCT_NAME_VALUE
+            BRAND_WINDOW_TITLE = $env:BRAND_WINDOW_TITLE_VALUE
+            BRAND_LOGO = $env:BRAND_LOGO_VALUE
+            BRAND_SESSION_FILE = $env:BRAND_SESSION_FILE_VALUE
+            BRAND_SINGLETON_NAME = $env:BRAND_SINGLETON_NAME_VALUE
+            BRAND_ORGANISATION = $env:BRAND_ORGANISATION_VALUE
+            BRAND_COMMUNITY_CODE = $env:BRAND_COMMUNITY_CODE_VALUE
+            BRAND_SHOW_APP_LIBRARY = $env:BRAND_SHOW_APP_LIBRARY_VALUE
+            BRAND_SHOW_PRIVATE_SPACE_TILE = $env:BRAND_SHOW_PRIVATE_SPACE_TILE_VALUE
+            BRAND_SHOW_HISTORY = $env:BRAND_SHOW_HISTORY_VALUE
+            BRAND_SHOW_PANE_SWITCHER = $env:BRAND_SHOW_PANE_SWITCHER_VALUE
+            BRAND_SHOW_SPOTLIGHT = $env:BRAND_SHOW_SPOTLIGHT_VALUE
+            BRAND_SHOW_OPEN_TABS_SUMMARY = $env:BRAND_SHOW_OPEN_TABS_SUMMARY_VALUE
+            BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY = $env:BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY_VALUE
+            BRAND_SHOW_USER_DETAILS = $env:BRAND_SHOW_USER_DETAILS_VALUE
+            BRAND_SHOW_OPEN_PAGES_TABS = $env:BRAND_SHOW_OPEN_PAGES_TABS_VALUE
+            BRAND_CLEAR_SESSION_ON_START = $env:BRAND_CLEAR_SESSION_ON_START_VALUE
+            BRAND_UNBOUNDED_SOLUTION_NAV = $env:BRAND_UNBOUNDED_SOLUTION_NAV_VALUE
+            BRAND_SHOW_WALLPAPER_CREDIT = $env:BRAND_SHOW_WALLPAPER_CREDIT_VALUE
+            BRAND_SHOW_AUTO_APP_SELECTOR = $env:BRAND_SHOW_AUTO_APP_SELECTOR_VALUE
+            BRAND_PREFERRED_WALLPAPER = $env:BRAND_PREFERRED_WALLPAPER_VALUE
+            BRAND_NAVIGATION_JSON_B64 = $env:BRAND_NAVIGATION_JSON_B64_VALUE
+          }
+          $definesPath = Join-Path $env:RUNNER_TEMP 'brand-dart-defines.json'
+          $defines | ConvertTo-Json -Compress | Set-Content -Path $definesPath -Encoding utf8
+          "BRAND_DART_DEFINES_FILE=$definesPath" >> $env:GITHUB_ENV
+
+      - name: Build Windows App
+        shell: pwsh
+        run: |
+          flutter build windows `
+            --release `
+            "--dart-define-from-file=$env:BRAND_DART_DEFINES_FILE"
+
+      - name: Bundle epnd daemon
+        id: epnd
+        if: env.SIDECAR_EPND == 'true'
+        continue-on-error: true
+        shell: pwsh
+        run: |
+          $rel = "build/windows/x64/runner/Release"
+          $base = "https://github.com/$env:RELEASE_REPO/releases/download/epnd-latest"
+          Invoke-WebRequest -Uri "$base/epnd-windows-amd64.exe" -OutFile "$rel/epnd.exe"
+          Invoke-WebRequest -Uri "$base/checksums.txt" -OutFile "$env:RUNNER_TEMP/epnd-checksums.txt"
+          $want = (Select-String -Path "$env:RUNNER_TEMP/epnd-checksums.txt" -Pattern "epnd-windows-amd64.exe").Line.Trim().Split(" ")[0]
+          $got = (Get-FileHash "$rel/epnd.exe" -Algorithm SHA256).Hash.ToLower()
+          if ($want -and ($got -ne $want.ToLower())) { Write-Error "epnd checksum mismatch"; exit 1 }
+          $version = (& "$rel/epnd.exe" version) -replace '^epnd\s+', ''
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "asset=epnd-windows-amd64.exe" >> $env:GITHUB_OUTPUT
+          "sha256=$got" >> $env:GITHUB_OUTPUT
+
+      - name: Resolve App Version
+        id: version
+        shell: pwsh
+        run: |
+          $version = Select-String -Path pubspec.yaml -Pattern "^version: (.+)\+" | ForEach-Object { $_.Matches.Value.Split(":")[1].Trim().Split("+")[0] }
+          if (-not $version) { $version = "1.0.0" }
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - name: Create Installer
+        shell: pwsh
+        env:
+          APP_VERSION: ${{ steps.version.outputs.version }}
+          INSTALLER_APP_NAME_VALUE: ${{ steps.brand.outputs.installer_app_name }}
+          INSTALLER_OUTPUT_NAME_VALUE: ${{ steps.brand.outputs.installer_output_name }}
+          INSTALLER_DEFAULT_DIR_VALUE: ${{ steps.brand.outputs.installer_default_dir }}
+        run: |
+          choco install -y innosetup
+          $isccArgs = @(
+            '/DMyAppExeName=eapp_live.exe',
+            "/DMyAppVersion=$env:APP_VERSION",
+            "/DMyAppName=$env:INSTALLER_APP_NAME_VALUE",
+            "/DMyOutputBaseFilename=$env:INSTALLER_OUTPUT_NAME_VALUE",
+            "/DMyDefaultDirName=$env:INSTALLER_DEFAULT_DIR_VALUE",
+            'installer.iss'
+          )
+          iscc @isccArgs
+
+      - name: Write Release Metadata
+        shell: pwsh
+        env:
+          EPND_VERSION: ${{ steps.epnd.outputs.version }}
+          EPND_ASSET: ${{ steps.epnd.outputs.asset }}
+          EPND_SHA256: ${{ steps.epnd.outputs.sha256 }}
+        run: |
+          node tool/ci/write_release_metadata.mjs `
+            --product "${{ steps.brand.outputs.product_id }}" `
+            --brand-id "${{ steps.brand.outputs.brand_id }}" `
+            --platform "$env:PLATFORM_ID" `
+            --channel "${{ inputs.release_channel }}" `
+            --version "${{ steps.version.outputs.version }}" `
+            --build-id "${{ github.run_number }}" `
+            --source-commit "${{ github.sha }}" `
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" `
+            --release-repo "$env:RELEASE_REPO" `
+            --release-tag "${{ steps.brand.outputs.release_tag }}" `
+            --asset "${{ steps.brand.outputs.artifact_name }}" `
+            --output "release-metadata.json"
+          node tool/ci/write_dependency_manifest.mjs `
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" `
+            --output "dependency-manifest.json"
+
+      - name: Publish release (self-repo, default token)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.brand.outputs.artifact_name }}
+            release-metadata.json
+            dependency-manifest.json
+            brand-delivery.json
+          tag_name: ${{ steps.brand.outputs.release_tag }}
+          name: ${{ steps.brand.outputs.installer_app_name }} Windows ${{ inputs.release_channel }}
+          body: |
+            ## ${{ steps.brand.outputs.installer_app_name }} Windows ${{ inputs.release_channel }}
+
+            **Contracts:** ${{ steps.contracts.outputs.sha }}
+            **Build ID:** ${{ github.run_number }}
+            **Channel:** ${{ inputs.release_channel }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

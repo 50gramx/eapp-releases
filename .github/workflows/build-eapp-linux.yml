@@ -1,0 +1,184 @@
+name: Build and Release Linux App (free public CI)
+
+# Mirror of private eapp-live/.github/workflows/linux_build_release.yml.
+# Same manual trigger/inputs as today ("brands as it is running") — just
+# runs here so it's free, and pulls eapp-live source via a read-only token
+# instead of checking it out in the private repo's own runner.
+on:
+  workflow_dispatch:
+    inputs:
+      brand_id:
+        description: Brand id to build
+        required: true
+        type: string
+      release_channel:
+        description: Release channel
+        required: true
+        default: stable
+        type: choice
+        options: [nightly, weekly, bi-weekly, stable]
+
+jobs:
+  build_and_release:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_REPO: 50gramx/eapp-releases
+      PLATFORM_ID: linux
+
+    steps:
+      - name: Checkout eapp-live source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+
+      - name: Checkout Interaction Contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .ci/eapp-interaction-contracts
+
+      - name: Resolve Contracts Commit
+        id: contracts
+        run: echo "sha=$(git -C .ci/eapp-interaction-contracts rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Contract Delivery
+        id: brand
+        run: |
+          node tool/ci/resolve_contract_delivery.mjs \
+            --contracts-root ".ci/eapp-interaction-contracts" \
+            --brand-id "${{ inputs.brand_id }}" \
+            --platform "$PLATFORM_ID" \
+            --channel "${{ inputs.release_channel }}" \
+            --github-env "$GITHUB_ENV" \
+            --github-output "$GITHUB_OUTPUT" \
+            --output "brand-delivery.json"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: stable
+          cache: true
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang cmake ninja-build pkg-config libgtk-3-dev liblzma-dev
+
+      - name: Enable Linux Desktop
+        run: flutter config --enable-linux-desktop
+
+      - name: Configure git for private dependencies
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build Linux App
+        run: |
+          flutter build linux --release \
+            --dart-define=BUILD_ID=${{ github.run_number }} \
+            --dart-define=BRAND_ID=${{ steps.brand.outputs.brand_id }} \
+            --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}" \
+            --dart-define=BRAND_DISPLAY_NAME="${{ steps.brand.outputs.brand_display_name }}" \
+            --dart-define=BRAND_PRODUCT_NAME="${{ steps.brand.outputs.brand_product_name }}" \
+            --dart-define=BRAND_WINDOW_TITLE="${{ steps.brand.outputs.brand_window_title }}" \
+            --dart-define=BRAND_LOGO="${{ steps.brand.outputs.brand_logo }}" \
+            --dart-define=BRAND_SESSION_FILE="${{ steps.brand.outputs.brand_session_file }}" \
+            --dart-define=BRAND_SINGLETON_NAME="${{ steps.brand.outputs.brand_singleton_name }}" \
+            --dart-define=BRAND_ORGANISATION="${{ steps.brand.outputs.brand_organisation }}" \
+            --dart-define=BRAND_COMMUNITY_CODE=${{ steps.brand.outputs.brand_community_code }} \
+            --dart-define=BRAND_SHOW_APP_LIBRARY=${{ steps.brand.outputs.brand_show_app_library }} \
+            --dart-define=BRAND_SHOW_PRIVATE_SPACE_TILE=${{ steps.brand.outputs.brand_show_private_space_tile }} \
+            --dart-define=BRAND_SHOW_HISTORY=${{ steps.brand.outputs.brand_show_history }} \
+            --dart-define=BRAND_SHOW_PANE_SWITCHER=${{ steps.brand.outputs.brand_show_pane_switcher }} \
+            --dart-define=BRAND_SHOW_SPOTLIGHT=${{ steps.brand.outputs.brand_show_spotlight }} \
+            --dart-define=BRAND_SHOW_OPEN_TABS_SUMMARY=${{ steps.brand.outputs.brand_show_open_tabs_summary }} \
+            --dart-define=BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY=${{ steps.brand.outputs.brand_show_open_communities_summary }} \
+            --dart-define=BRAND_SHOW_USER_DETAILS=${{ steps.brand.outputs.brand_show_user_details }} \
+            --dart-define=BRAND_SHOW_OPEN_PAGES_TABS=${{ steps.brand.outputs.brand_show_open_pages_tabs }} \
+            --dart-define=BRAND_CLEAR_SESSION_ON_START=${{ steps.brand.outputs.brand_clear_session_on_start }} \
+            --dart-define=BRAND_UNBOUNDED_SOLUTION_NAV=${{ steps.brand.outputs.brand_unbounded_solution_nav }} \
+            --dart-define=BRAND_SHOW_WALLPAPER_CREDIT=${{ steps.brand.outputs.brand_show_wallpaper_credit }} \
+            --dart-define=BRAND_SHOW_AUTO_APP_SELECTOR=${{ steps.brand.outputs.brand_show_auto_app_selector }} \
+            --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}" \
+            --dart-define=BRAND_NAVIGATION_JSON_B64=${{ steps.brand.outputs.brand_navigation_json_b64 }}
+
+      - name: Bundle epnd daemon
+        id: epnd
+        if: env.SIDECAR_EPND == 'true'
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          BUNDLE="build/linux/x64/release/bundle"
+          BASE="https://github.com/$RELEASE_REPO/releases/download/epnd-latest"
+          curl -fsSL "$BASE/epnd-linux-amd64" -o "$BUNDLE/epnd"
+          chmod +x "$BUNDLE/epnd"
+          curl -fsSL "$BASE/checksums.txt" -o /tmp/epnd-checksums.txt
+          WANT=$(grep "epnd-linux-amd64" /tmp/epnd-checksums.txt | awk '{print $1}')
+          GOT=$(sha256sum "$BUNDLE/epnd" | awk '{print $1}')
+          if [ -n "$WANT" ] && [ "$WANT" != "$GOT" ]; then
+            echo "epnd checksum mismatch: want $WANT got $GOT"
+            exit 1
+          fi
+          VERSION=$("$BUNDLE/epnd" version 2>/dev/null | awk '{print $2}')
+          echo "version=${VERSION:-unknown}" >> "$GITHUB_OUTPUT"
+          echo "asset=epnd-linux-amd64" >> "$GITHUB_OUTPUT"
+          echo "sha256=$GOT" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve App Version
+        id: version
+        run: |
+          VERSION=$(sed -nE 's/^version: ([^+]+)\+.*/\1/p' pubspec.yaml)
+          echo "version=${VERSION:-1.0.0}" >> "$GITHUB_OUTPUT"
+
+      - name: Package tarball
+        run: |
+          set -euo pipefail
+          cd build/linux/x64/release/bundle
+          tar -czf "$GITHUB_WORKSPACE/${{ steps.brand.outputs.artifact_name }}" .
+
+      - name: Write Release Metadata
+        env:
+          EPND_VERSION: ${{ steps.epnd.outputs.version }}
+          EPND_ASSET: ${{ steps.epnd.outputs.asset }}
+          EPND_SHA256: ${{ steps.epnd.outputs.sha256 }}
+        run: |
+          node tool/ci/write_release_metadata.mjs \
+            --product "${{ steps.brand.outputs.product_id }}" \
+            --brand-id "${{ steps.brand.outputs.brand_id }}" \
+            --platform "$PLATFORM_ID" \
+            --channel "${{ inputs.release_channel }}" \
+            --version "${{ steps.version.outputs.version }}" \
+            --build-id "${{ github.run_number }}" \
+            --source-commit "${{ github.sha }}" \
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" \
+            --release-repo "$RELEASE_REPO" \
+            --release-tag "${{ steps.brand.outputs.release_tag }}" \
+            --asset "${{ steps.brand.outputs.artifact_name }}" \
+            --output "release-metadata.json"
+          node tool/ci/write_dependency_manifest.mjs \
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" \
+            --output "dependency-manifest.json"
+
+      - name: Publish release (self-repo, default token)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.brand.outputs.artifact_name }}
+            release-metadata.json
+            dependency-manifest.json
+            brand-delivery.json
+          tag_name: ${{ steps.brand.outputs.release_tag }}
+          name: ${{ steps.brand.outputs.display_name }} Linux ${{ inputs.release_channel }}
+          body: |
+            ## ${{ steps.brand.outputs.display_name }} Linux ${{ inputs.release_channel }}
+
+            **Source commit:** ${{ steps.brand.outputs.brand_id }}@eapp-live
+            **Contracts:** ${{ steps.contracts.outputs.sha }}
+            **Build ID:** ${{ github.run_number }}
+            **Channel:** ${{ inputs.release_channel }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
