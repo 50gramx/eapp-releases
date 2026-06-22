@@ -6,11 +6,17 @@ name: Build epnd (free public CI)
 # A marker commit SHA is kept in `epnd-last-built.txt` on this repo's main.
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    # Offset off the :00/:15/:30/:45 marks — those are the most congested
+    # minutes across all of GitHub's scheduled-workflow queue (shared by
+    # every repo on the platform) and schedules there are frequently delayed
+    # or dropped entirely (documented GitHub Actions behavior). 7/22/37/52
+    # still gives a ~15-min cadence without competing for that exact slot.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
 permissions:
   contents: write
+  actions: write   # to dispatch app rebuilds after a successful epnd publish
 
 jobs:
   check:
@@ -122,3 +128,39 @@ jobs:
           git add epnd-last-built.txt
           git commit -m "ci: built epnd @ ${{ needs.check.outputs.sha }}" || exit 0
           git push
+
+      - name: Refresh bundled-epnd app builds for every already-released brand
+        # epnd just changed — rebuild every brand/platform/channel combo that
+        # has shipped before (per data/catalog.json), so the *initial* epnd
+        # bundled into each app installer stays current too. (Already-installed
+        # apps don't need this — they self-update epnd at runtime via
+        # DaemonUpdater — this is purely about new installs getting the latest
+        # daemon out of the box.) Runs only after the publish step above
+        # succeeds, so there's no race against an incomplete epnd-latest.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          node -e '
+            const fs = require("fs");
+            const catalog = JSON.parse(fs.readFileSync("data/catalog.json", "utf8"));
+            const combos = [];
+            for (const product of catalog.products || []) {
+              for (const r of product.releases || []) {
+                combos.push({ brandId: product.brandId, platform: r.platform, channel: r.channel });
+              }
+            }
+            fs.writeFileSync("/tmp/combos.json", JSON.stringify(combos));
+          '
+          node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync("/tmp/combos.json")).map(c=>`${c.brandId} ${c.platform} ${c.channel}`).join("\n"))' > /tmp/combos.txt
+          while read -r brand platform channel; do
+            [ -z "$brand" ] && continue
+            case "$platform" in
+              linux)   wf="build-eapp-linux.yml" ;;
+              windows) wf="build-eapp-windows.yml" ;;
+              macos)   wf="build-eapp-macos.yml" ;;
+              *) echo "skip unknown platform: $platform"; continue ;;
+            esac
+            echo "→ $wf brand_id=$brand channel=$channel (refreshing bundled epnd)"
+            gh workflow run "$wf" -f brand_id="$brand" -f release_channel="$channel"
+          done < /tmp/combos.txt
