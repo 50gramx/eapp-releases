@@ -1,0 +1,79 @@
+name: Update bootstrap status
+
+# Refreshes data/bootstrap-status.json (rendered by status.html, SA-MESH-2)
+# with live health from the bootstrap fleet. The node's REST API is
+# deliberately 127.0.0.1-only (no auth) — never exposed directly. Instead
+# this uses a RESTRICTED ssh key whose authorized_keys entry on the node is
+# locked to `command="curl -s http://127.0.0.1:53581/v1/identity"` (see
+# README note below) — it can run nothing else, even if the secret leaked.
+#
+# One-time setup on the node, as the founder (not done by CI):
+#   ssh-keygen -t ed25519 -f status-readonly -N ""
+#   # on the node, append to ~/.ssh/authorized_keys:
+#   command="curl -s http://127.0.0.1:53581/v1/identity",no-port-forwarding,no-X11-forwarding,no-agent-forwarding,no-pty ssh-ed25519 AAAA...
+#   # add status-readonly (private half) as this repo's BOOTSTRAP_STATUS_SSH_KEY secret
+on:
+  schedule:
+    - cron: '13,28,43,58 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch live identity from bootstrap-01 (restricted key, forced command)
+        id: fetch
+        env:
+          SSH_KEY: ${{ secrets.BOOTSTRAP_STATUS_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SSH_KEY:-}" ]; then
+            echo "BOOTSTRAP_STATUS_SSH_KEY not set yet — skipping (status.html will show 'not available')"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          install -m 600 /dev/null /tmp/status_key
+          echo "$SSH_KEY" > /tmp/status_key
+          identity=$(ssh -i /tmp/status_key -o StrictHostKeyChecking=accept-new -o ConnectTimeout=8 \
+            ubuntu@bootstrap-01.epn.50gramx.com 2>/dev/null || echo '{}')
+          echo "identity<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$identity" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+      - name: Write data/bootstrap-status.json
+        if: steps.fetch.outputs.skip != 'true'
+        env:
+          IDENTITY: ${{ steps.fetch.outputs.identity }}
+        run: |
+          mkdir -p data
+          node -e '
+            const fs = require("fs");
+            let id = {};
+            try { id = JSON.parse(process.env.IDENTITY); } catch {}
+            const out = [{
+              name: "bootstrap-01",
+              peer_id: id.peer_id || null,
+              online: id.online === true,
+              peer_count: id.peer_count ?? null,
+              uptime_seconds: id.uptime_seconds ?? null,
+              epnd_version: id.epnd_version || null,
+              addrs: id.addrs || [],
+              checked_at: new Date().toISOString(),
+            }];
+            fs.writeFileSync("data/bootstrap-status.json", JSON.stringify(out, null, 2) + "\n");
+          '
+
+      - name: Commit + push if changed
+        if: steps.fetch.outputs.skip != 'true'
+        run: |
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add data/bootstrap-status.json
+          git commit -m "ci: refresh bootstrap status" || exit 0
+          git pull --rebase --autostash origin main
+          git push

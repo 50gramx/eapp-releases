@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>EP&amp;N Mesh Status — Eutopia Releases</title>
+    <meta
+      name="description"
+      content="Live health of the EP&N bootstrap fleet — peer counts, uptime, reachable addresses."
+    >
+    <link rel="stylesheet" href="styles.css">
+    <style>
+      .status-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .status-card {
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+      .status-card h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+      .status-card .value {
+        font-size: 28px;
+        font-weight: 600;
+      }
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .pill.online { background: rgba(31, 122, 84, 0.12); color: var(--green); }
+      .pill.offline { background: rgba(184, 50, 50, 0.12); color: #b83232; }
+      .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+      .addrs { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
+      .stale-warning { display: none; margin-top: 16px; padding: 12px 16px; border-radius: 10px; background: rgba(184, 111, 32, 0.12); color: var(--amber); font-size: 14px; }
+      .updated-at { margin-top: 28px; font-size: 13px; color: var(--muted); }
+    </style>
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Eutopia releases home">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>
+          <strong>Eutopia Releases</strong>
+          <small>public builds from 50GRAMx</small>
+        </span>
+      </a>
+      <nav aria-label="Release catalog">
+        <a href="./">Products</a>
+        <a href="status.html">Mesh Status</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="intro-title">
+        <div class="intro-copy">
+          <p class="eyebrow">EP&amp;N network</p>
+          <h1 id="intro-title">Bootstrap fleet status</h1>
+          <p>
+            Live health of the EP&amp;N bootstrap node(s) every new install
+            connects to first — the entry point into the mesh's DHT-based
+            peer discovery.
+          </p>
+        </div>
+      </section>
+
+      <section id="status-root" aria-labelledby="status-title">
+        <div id="status-cards" class="status-grid">
+          <p>Loading…</p>
+        </div>
+        <p id="stale-warning" class="stale-warning">
+          ⚠ This data hasn't refreshed recently — it may not reflect current mesh health.
+        </p>
+        <p id="updated-at" class="updated-at"></p>
+      </section>
+    </main>
+
+    <script>
+      async function loadStatus() {
+        const root = document.getElementById('status-cards');
+        const updatedAt = document.getElementById('updated-at');
+        const staleWarning = document.getElementById('stale-warning');
+        try {
+          const res = await fetch('data/bootstrap-status.json', { cache: 'no-store' });
+          if (!res.ok) throw new Error('status data unavailable');
+          const nodes = await res.json();
+          root.innerHTML = '';
+          for (const node of nodes) {
+            const card = document.createElement('div');
+            card.className = 'status-grid';
+            const online = node.online === true;
+            card.innerHTML = `
+              <div class="status-card">
+                <h3>${node.name || node.peer_id || 'node'}</h3>
+                <span class="pill ${online ? 'online' : 'offline'}">
+                  <span class="dot"></span>${online ? 'Online' : 'Offline'}
+                </span>
+              </div>
+              <div class="status-card">
+                <h3>Peer count</h3>
+                <div class="value">${node.peer_count ?? '—'}</div>
+              </div>
+              <div class="status-card">
+                <h3>Uptime</h3>
+                <div class="value">${node.uptime_seconds != null ? Math.floor(node.uptime_seconds / 3600) + 'h' : '—'}</div>
+              </div>
+              <div class="status-card">
+                <h3>epnd version</h3>
+                <div class="value" style="font-size:16px">${node.epnd_version || '—'}</div>
+              </div>
+              <div class="status-card" style="grid-column: 1 / -1">
+                <h3>Reachable addresses</h3>
+                <div class="addrs">${(node.addrs || []).join('<br>') || 'none reported'}</div>
+              </div>
+            `;
+            root.appendChild(card);
+          }
+          const checkedAt = new Date(nodes[0]?.checked_at || Date.now());
+          updatedAt.textContent = 'Last checked: ' + checkedAt.toLocaleString();
+          staleWarning.style.display = (Date.now() - checkedAt.getTime() > 30 * 60 * 1000) ? 'block' : 'none';
+        } catch (err) {
+          root.innerHTML = '<p>Status data not available yet.</p>';
+        }
+      }
+      loadStatus();
+    </script>
+  </body>
+</html>
