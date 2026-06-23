@@ -4,6 +4,13 @@ name: Build and Release Linux App (free public CI)
 # Same manual trigger/inputs as today ("brands as it is running") — just
 # runs here so it's free, and pulls eapp-live source via a read-only token
 # instead of checking it out in the private repo's own runner.
+#
+# Change-detection guard: the `check` job (cheap, ~10s) compares eapp-live's
+# current main SHA + epnd-latest's checksums against a marker file from the
+# last successful build of this exact brand/platform/channel combo. If
+# neither changed, the expensive `build_and_release` job is skipped entirely
+# — this is what stops cadence/epnd-publish triggers from re-running a full
+# Flutter build when nothing actually changed.
 on:
   workflow_dispatch:
     inputs:
@@ -18,8 +25,57 @@ on:
         type: choice
         options: [nightly, weekly, bi-weekly, stable]
 
+permissions:
+  contents: write
+
 jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      eapp_sha: ${{ steps.eapp.outputs.sha }}
+      epnd_state: ${{ steps.epnd.outputs.state }}
+      marker_path: ${{ steps.marker.outputs.path }}
+    steps:
+      - name: Resolve marker path
+        id: marker
+        run: echo "path=data/last-built/${{ inputs.brand_id }}-linux-${{ inputs.release_channel }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest eapp-live main SHA
+        id: eapp
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Get current epnd-latest state
+        id: epnd
+        run: |
+          state=$(curl -fsSL https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/checksums.txt | sha256sum | awk '{print $1}')
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+
+      - name: Compare against marker
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EAPP_SHA: ${{ steps.eapp.outputs.sha }}
+          EPND_STATE: ${{ steps.epnd.outputs.state }}
+          MARKER_PATH: ${{ steps.marker.outputs.path }}
+        run: |
+          gh api "repos/50gramx/eapp-releases/contents/$MARKER_PATH" --jq '.content' 2>/dev/null | base64 -d > /tmp/marker.json 2>/dev/null || echo '{}' > /tmp/marker.json
+          node -e '
+            const fs = require("fs");
+            let last = {};
+            try { last = JSON.parse(fs.readFileSync("/tmp/marker.json", "utf8")); } catch {}
+            const unchanged = last.eapp_sha === process.env.EAPP_SHA && last.epnd_state === process.env.EPND_STATE;
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `should_build=${unchanged ? "false" : "true"}\n`);
+            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA, epnd_state: process.env.EPND_STATE } });
+          '
+
   build_and_release:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
     env:
       RELEASE_REPO: 50gramx/eapp-releases
@@ -31,6 +87,7 @@ jobs:
         with:
           repository: 50gramx/eapp-live
           token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.eapp_sha }}
 
       - name: Checkout Interaction Contracts
         uses: actions/checkout@v4
@@ -153,7 +210,7 @@ jobs:
             --channel "${{ inputs.release_channel }}" \
             --version "${{ steps.version.outputs.version }}" \
             --build-id "${{ github.run_number }}" \
-            --source-commit "${{ github.sha }}" \
+            --source-commit "${{ needs.check.outputs.eapp_sha }}" \
             --contracts-commit "${{ steps.contracts.outputs.sha }}" \
             --release-repo "$RELEASE_REPO" \
             --release-tag "${{ steps.brand.outputs.release_tag }}" \
@@ -176,9 +233,38 @@ jobs:
           body: |
             ## ${{ steps.brand.outputs.display_name }} Linux ${{ inputs.release_channel }}
 
-            **Source commit:** ${{ steps.brand.outputs.brand_id }}@eapp-live
+            **Source commit:** ${{ needs.check.outputs.eapp_sha }}
             **Contracts:** ${{ steps.contracts.outputs.sha }}
             **Build ID:** ${{ github.run_number }}
             **Channel:** ${{ inputs.release_channel }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout eapp-releases (to write build marker)
+        uses: actions/checkout@v4
+        with:
+          path: .release-meta
+
+      - name: Write + commit build marker
+        env:
+          EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
+          EPND_STATE: ${{ needs.check.outputs.epnd_state }}
+          MARKER_PATH: ${{ needs.check.outputs.marker_path }}
+        run: |
+          set -euo pipefail
+          mkdir -p ".release-meta/$(dirname "$MARKER_PATH")"
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync(".release-meta/" + process.env.MARKER_PATH, JSON.stringify({
+              eapp_sha: process.env.EAPP_SHA,
+              epnd_state: process.env.EPND_STATE,
+              built_at: new Date().toISOString(),
+            }, null, 2) + "\n");
+          '
+          cd .release-meta
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add "$MARKER_PATH"
+          git commit -m "ci: mark ${{ inputs.brand_id }}/linux/${{ inputs.release_channel }} built" || exit 0
+          git pull --rebase --autostash origin main
+          git push
