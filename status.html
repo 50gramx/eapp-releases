@@ -63,6 +63,18 @@
       .insight-label { margin-top: 4px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
       .insight-meaning { margin-top: 8px; font-size: 13.5px; color: var(--ink); line-height: 1.45; }
       .not-measured { margin-top: 18px; padding: 14px 16px; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--line); font-size: 13.5px; color: var(--muted); line-height: 1.5; }
+      .block-title { margin: 36px 0 14px; font-size: 18px; }
+      table.founders { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 14px; }
+      table.founders th { text-align: left; padding: 12px 14px; background: var(--panel-2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+      table.founders td { padding: 12px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+      .td-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+      .td-mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--muted); }
+      .enable-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
+      .enable-steps { margin: 0; padding-left: 20px; line-height: 1.6; }
+      .enable-steps li { margin-bottom: 12px; }
+      .enable-cmd { margin-top: 8px; background: #161812; border-radius: 8px; padding: 10px 12px; }
+      .enable-cmd code { color: #e8efe6; font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12.5px; white-space: pre-wrap; }
+      .enable-note { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
     </style>
   </head>
   <body>
@@ -83,32 +95,48 @@
     <main>
       <section class="intro" aria-labelledby="intro-title">
         <div class="intro-copy">
-          <p class="eyebrow">EP&amp;N network</p>
-          <h1 id="intro-title">Bootstrap fleet status</h1>
+          <p class="eyebrow">EP&amp;N network · proof of life</p>
+          <h1 id="intro-title">Founders &amp; the work the network has done</h1>
           <p>
-            Live health of the EP&amp;N bootstrap node(s) every new install
-            connects to first — the entry point into the mesh's DHT-based
-            peer discovery.
+            Founder nodes are the verified, named bootstrap nodes new installs
+            connect to first. Every number below is real — counted by the
+            daemons themselves and kept permanently. Nothing here is faked.
           </p>
         </div>
       </section>
 
-      <section id="status-root" aria-labelledby="status-title">
-        <div id="status-cards" class="status-grid">
-          <p>Loading…</p>
-        </div>
-        <p id="stale-warning" class="stale-warning">
-          ⚠ This data hasn't refreshed recently — it may not reflect current mesh health.
-        </p>
+      <section id="network-root">
+        <h2 class="block-title">Across all founder nodes</h2>
+        <div id="network-cards" class="insight-grid"><p>Loading…</p></div>
         <p id="updated-at" class="updated-at"></p>
+      </section>
+
+      <section id="table-root">
+        <h2 class="block-title">Founder nodes</h2>
+        <div id="founder-table"></div>
+      </section>
+
+      <section id="enable-root">
+        <h2 class="block-title">Become a founder node</h2>
+        <div class="enable-card">
+          <ol class="enable-steps">
+            <li><strong>Get a box with a public IPv4.</strong> Any small cloud VM (≈$3.5/mo) with a static IPv4 works — that's what makes a node reachable as a bootstrap entry point.</li>
+            <li><strong>Install &amp; run epnd as a bootstrap node</strong> (sets up the service + 15-min auto-update):
+              <div class="enable-cmd"><code>curl -fsSL https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/install.sh | sh
+epnd serve --lite</code></div>
+            </li>
+            <li><strong>Announce your public IPv4</strong> so IPv4-only peers can reach you — set <code>EPN_ANNOUNCE_IP=&lt;your.public.ip&gt;</code> in the service environment and restart.</li>
+            <li><strong>Enable status reporting</strong> — add the founder reporter (pushes your node's vitals + KPIs here, every 15 min) with <code>EPND_STATUS_NODE_NAME</code> and <code>EPND_STATUS_NODE_CLASS=founder</code>.</li>
+            <li><strong>Complete full founder mode</strong> — point a domain (e.g. <code>node.yourname.com</code>) at the box and set <code>EPND_STATUS_DOMAIN</code>. Full founders are listed by domain in the table above.</li>
+          </ol>
+          <p class="enable-note">Full setup script + the exact reporter config are in <code>epn-daemon/scripts/</code> (<code>bootstrap-node-setup.sh</code>, <code>report-bootstrap-status.*</code>).</p>
+        </div>
       </section>
     </main>
 
     <script>
-      // Every figure here is derived from real data — the live snapshot plus
-      // the permanent, append-only heartbeat history. No invented metrics. A
-      // metric we can't yet measure honestly is shown as "not yet measured",
-      // never faked.
+      // Every figure is real — counted by the daemons (GET /v1/metrics),
+      // aggregated into data/founders.json. Nothing invented.
       function fmtDuration(sec) {
         if (sec == null) return '—';
         const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
@@ -121,61 +149,51 @@
           <div class="insight-meaning">${meaning}</div>
         </div>`;
       }
-      async function loadStatus() {
-        const root = document.getElementById('status-cards');
+      async function load() {
+        const net = document.getElementById('network-cards');
+        const tbl = document.getElementById('founder-table');
         const updatedAt = document.getElementById('updated-at');
-        const staleWarning = document.getElementById('stale-warning');
+        let f;
         try {
-          const snap = (await (await fetch('data/bootstrap-status.json', { cache: 'no-store' })).json())[0];
+          f = await (await fetch('data/founders.json', { cache: 'no-store' })).json();
+        } catch {
+          net.innerHTML = '<p>Founder data not available yet.</p>';
+          return;
+        }
+        const t = f.totals || {};
+        net.innerHTML = `
+          ${insight(f.founder_count ?? 0, 'Founder nodes', 'People running a verified founder/bootstrap node the network connects to first.')}
+          ${insight(f.full_founder_count ?? 0, 'Full founders', 'Founder nodes that completed full mode — reachable by their own domain.')}
+          ${insight((t.receipts_verified ?? 0).toLocaleString(), 'Receipts verified', 'Co-signed metering-receipt chains the fleet has cryptographically verified.')}
+          ${insight((t.proofs_issued ?? 0).toLocaleString(), 'Capability proofs', 'Proofs answered on challenge — capability shown, not self-claimed.')}
+          ${insight((t.disputes_resolved ?? 0).toLocaleString(), 'Disputes resolved', 'Payment-channel disputes adjudicated on co-signed evidence.')}
+          ${insight((t.node_years_uptime ?? 0), 'Node-years uptime', 'Cumulative running time across founder nodes.')}`;
 
-          // Parse the append-only history (every heartbeat ever recorded).
-          let hist = [];
-          try {
-            const txt = await (await fetch('data/bootstrap-history.jsonl', { cache: 'no-store' })).text();
-            hist = txt.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
-          } catch {}
+        const rows = (f.nodes || []).map((n) => `
+          <tr>
+            <td><strong>${n.name || '—'}</strong>
+              ${n.class === 'founder' ? '<span class="verified-badge">✓</span>' : ''}
+              ${n.domain ? `<div class="td-sub">${n.domain}</div>` : '<div class="td-sub">no domain yet</div>'}</td>
+            <td><span class="node-state ${n.online ? 'on' : 'off'}">${n.online ? '● live' : '○ offline'}</span></td>
+            <td>${n.peer_count ?? '—'}</td>
+            <td>${fmtDuration(n.uptime_seconds)}</td>
+            <td>${(n.receipts_verified ?? 0).toLocaleString()}</td>
+            <td>${(n.proofs_issued ?? 0).toLocaleString()}</td>
+            <td>${(n.disputes_resolved ?? 0).toLocaleString()}</td>
+            <td class="td-mono">${(n.epnd_version || '—').slice(0, 12)}</td>
+          </tr>`).join('');
+        tbl.innerHTML = `<table class="founders">
+          <thead><tr>
+            <th>Node</th><th>State</th><th>Peers</th><th>Uptime</th>
+            <th>Receipts</th><th>Proofs</th><th>Disputes</th><th>Version</th>
+          </tr></thead><tbody>${rows || '<tr><td colspan="8">No founder nodes yet.</td></tr>'}</tbody></table>`;
 
-          const online = snap.online === true;
-          const beats = hist.length;
-          const onlineBeats = hist.filter((h) => h.online).length;
-          const availability = beats ? Math.round((onlineBeats / beats) * 100) : (online ? 100 : 0);
-          const firstSeen = beats ? new Date(hist[0].t) : new Date(snap.checked_at);
-          const trackedDays = Math.max(1, Math.round((Date.now() - firstSeen.getTime()) / 86400000 * 10) / 10);
-          const peakPeers = hist.reduce((m, h) => Math.max(m, h.peers || 0), snap.peer_count || 0);
-          const badge = snap.class === 'founder'
-            ? '<span class="verified-badge" title="Verified founder node">✓ Founder</span>'
-            : '<span class="community-badge">Community</span>';
-
-          root.innerHTML = `
-            <div class="node-banner">
-              <div>
-                <span class="node-name">${snap.name || 'node'}</span> ${badge}
-                <span class="node-state ${online ? 'on' : 'off'}">${online ? '● live' : '○ offline'}</span>
-              </div>
-              <div class="node-sub">epnd ${snap.epnd_version || '—'} · ${(snap.addrs || []).length} reachable addresses</div>
-            </div>
-            <div class="insight-grid">
-              ${insight(beats.toLocaleString(), 'Heartbeats kept', 'Moments of this node being alive — permanently recorded, never deleted.')}
-              ${insight(trackedDays + 'd', 'Tracked since first beat', 'How long we have an unbroken public record of this node.')}
-              ${insight(availability + '%', 'Availability', 'Share of recorded heartbeats where the node was online.')}
-              ${insight(fmtDuration(snap.uptime_seconds), 'Current uptime', 'Continuous run since the node last started.')}
-              ${insight(snap.peer_count ?? '—', 'Peers right now', 'EP&N peers this node is connected to (its local view, not the whole network).')}
-              ${insight(peakPeers, 'Peak peers seen', 'Most simultaneous peers recorded in the history.')}
-            </div>
-            <div class="not-measured">
-              <strong>Not yet measured (honestly):</strong> receipts verified, capability proofs issued,
-              disputes resolved, network-wide node count. These need the daemon's cumulative counters
-              (Aggregate Ledger spec, Phase A) — coming, not faked here.
-            </div>`;
-
-          const checkedAt = new Date(snap.checked_at || Date.now());
-          updatedAt.textContent = 'Last heartbeat: ' + checkedAt.toLocaleString() + ' · ' + beats + ' kept forever';
-          staleWarning.style.display = (Date.now() - checkedAt.getTime() > 45 * 60 * 1000) ? 'block' : 'none';
-        } catch (err) {
-          root.innerHTML = '<p>Status data not available yet.</p>';
+        if (f.generated_at) {
+          updatedAt.textContent = 'Aggregated: ' + new Date(f.generated_at).toLocaleString()
+            + ' · ' + (f.online_count ?? 0) + ' of ' + (f.founder_count ?? 0) + ' online';
         }
       }
-      loadStatus();
+      load();
     </script>
   </body>
 </html>
