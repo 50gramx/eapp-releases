@@ -96,18 +96,24 @@
       <section class="intro" aria-labelledby="intro-title">
         <div class="intro-copy">
           <p class="eyebrow">EP&amp;N network · proof of life</p>
-          <h1 id="intro-title">Founders &amp; the work the network has done</h1>
+          <h1 id="intro-title">AI inference, served on your own mesh</h1>
           <p>
-            Founder nodes are the verified, named bootstrap nodes new installs
-            connect to first. Every number below is real — counted by the
-            daemons themselves and kept permanently. Nothing here is faked.
+            Enterprises pay thousands per employee for cloud AI inference. EP&amp;N
+            serves it on nodes you (and your trusted circle) already run — bytes
+            never leave, no per-seat bill. Every number below is real, counted by
+            the daemons themselves, kept permanently. Nothing here is faked.
           </p>
         </div>
       </section>
 
+      <section id="value-root">
+        <h2 class="block-title">The value: inference served on the mesh</h2>
+        <div id="value-cards" class="insight-grid"><p>Loading…</p></div>
+      </section>
+
       <section id="network-root">
-        <h2 class="block-title">Across all founder nodes</h2>
-        <div id="network-cards" class="insight-grid"><p>Loading…</p></div>
+        <h2 class="block-title">Verifiable work (settlement layer)</h2>
+        <div id="network-cards" class="insight-grid"></div>
         <p id="updated-at" class="updated-at"></p>
       </section>
 
@@ -149,7 +155,11 @@ epnd serve --lite</code></div>
           <div class="insight-meaning">${meaning}</div>
         </div>`;
       }
+      function money(n) {
+        return '$' + (n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+      }
       async function load() {
+        const val = document.getElementById('value-cards');
         const net = document.getElementById('network-cards');
         const tbl = document.getElementById('founder-table');
         const updatedAt = document.getElementById('updated-at');
@@ -157,10 +167,15 @@ epnd serve --lite</code></div>
         try {
           f = await (await fetch('data/founders.json', { cache: 'no-store' })).json();
         } catch {
-          net.innerHTML = '<p>Founder data not available yet.</p>';
+          val.innerHTML = '<p>Founder data not available yet.</p>';
           return;
         }
         const t = f.totals || {};
+        const rate = f.cloud_rate_usd_per_1m ?? 10;
+        val.innerHTML = `
+          ${insight((t.inferences_served ?? 0).toLocaleString(), 'Inferences served locally', 'AI inferences answered on mesh-owned compute — bytes never left the owner.')}
+          ${insight((t.tokens_served ?? 0).toLocaleString(), 'Tokens served', 'Output tokens produced on the mesh instead of a cloud vendor.')}
+          ${insight(money(t.displaced_cloud_usd), 'Cloud cost displaced', `What those tokens would have cost at ~$${rate}/1M on a cloud vendor — money that stayed with you.`)}`;
         net.innerHTML = `
           ${insight(f.founder_count ?? 0, 'Founder nodes', 'People running a verified founder/bootstrap node the network connects to first.')}
           ${insight(f.full_founder_count ?? 0, 'Full founders', 'Founder nodes that completed full mode — reachable by their own domain.')}
@@ -177,15 +192,15 @@ epnd serve --lite</code></div>
             <td><span class="node-state ${n.online ? 'on' : 'off'}">${n.online ? '● live' : '○ offline'}</span></td>
             <td>${n.peer_count ?? '—'}</td>
             <td>${fmtDuration(n.uptime_seconds)}</td>
+            <td>${(n.inferences_served ?? 0).toLocaleString()}</td>
+            <td>${(n.tokens_served ?? 0).toLocaleString()}</td>
             <td>${(n.receipts_verified ?? 0).toLocaleString()}</td>
-            <td>${(n.proofs_issued ?? 0).toLocaleString()}</td>
-            <td>${(n.disputes_resolved ?? 0).toLocaleString()}</td>
             <td class="td-mono">${(n.epnd_version || '—').slice(0, 12)}</td>
           </tr>`).join('');
         tbl.innerHTML = `<table class="founders">
           <thead><tr>
             <th>Node</th><th>State</th><th>Peers</th><th>Uptime</th>
-            <th>Receipts</th><th>Proofs</th><th>Disputes</th><th>Version</th>
+            <th>Inferences</th><th>Tokens</th><th>Receipts</th><th>Version</th>
           </tr></thead><tbody>${rows || '<tr><td colspan="8">No founder nodes yet.</td></tr>'}</tbody></table>`;
 
         if (f.generated_at) {

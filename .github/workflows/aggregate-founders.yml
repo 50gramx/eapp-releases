@@ -44,6 +44,8 @@ jobs:
                   peer_count: n.peer_count ?? null,
                   uptime_seconds: n.uptime_seconds ?? null,
                   epnd_version: n.epnd_version || null,
+                  inferences_served: n.inferences_served ?? 0,
+                  tokens_served: n.tokens_served ?? 0,
                   receipts_verified: n.receipts_verified ?? 0,
                   proofs_issued: n.proofs_issued ?? 0,
                   disputes_resolved: n.disputes_resolved ?? 0,
@@ -58,12 +60,22 @@ jobs:
               founder_count: founders.length,
               full_founder_count: founders.filter(n => n.domain).length,
               online_count: founders.filter(n => n.online).length,
-              totals: {
-                receipts_verified: sum("receipts_verified"),
-                proofs_issued: sum("proofs_issued"),
-                disputes_resolved: sum("disputes_resolved"),
-                node_years_uptime: +(founders.reduce((a, n) => a + (n.uptime_seconds || 0), 0) / 31557600).toFixed(3),
-              },
+              // Cloud-displacement estimate: output tokens served locally that
+              // did NOT go to a cloud vendor, valued at a transparent, stated
+              // cloud rate (USD per 1M output tokens). Adjust CLOUD_RATE to taste.
+              cloud_rate_usd_per_1m: 10,
+              totals: (() => {
+                const tokens = sum("tokens_served");
+                return {
+                  inferences_served: sum("inferences_served"),
+                  tokens_served: tokens,
+                  displaced_cloud_usd: +((tokens / 1e6) * 10).toFixed(2),
+                  receipts_verified: sum("receipts_verified"),
+                  proofs_issued: sum("proofs_issued"),
+                  disputes_resolved: sum("disputes_resolved"),
+                  node_years_uptime: +(founders.reduce((a, n) => a + (n.uptime_seconds || 0), 0) / 31557600).toFixed(3),
+                };
+              })(),
               nodes: founders.sort((a, b) => (b.domain ? 1 : 0) - (a.domain ? 1 : 0)),
             };
             fs.writeFileSync("data/founders.json", JSON.stringify(out, null, 2) + "\n");
