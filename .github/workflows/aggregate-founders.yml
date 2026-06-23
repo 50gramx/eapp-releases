@@ -1,11 +1,9 @@
 name: Aggregate founder nodes
 
-# Builds data/founders.json from every per-node file in data/nodes/*.json
-# (each founder node self-reports its own file; this only reads + merges, so
-# there is no concurrent-write collision). Produces the network totals and the
-# founder table the status page renders. Identity-bearing fields here are OK:
-# founder nodes are public infrastructure by design (named, with a domain) —
-# unlike the future anonymous community tier (see EPN_AGGREGATE_LEDGER_SPEC).
+# Builds data/founders.json from data/nodes/*.json. founders.json is a fully
+# derived artifact, so the commit step syncs to origin and REGENERATES before
+# each push attempt — this makes concurrent runs conflict-free (no rebase of a
+# stale generated file, which was the old failure mode).
 on:
   schedule:
     - cron: '9,24,39,54 * * * *'
@@ -26,66 +24,22 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build founders.json
-        run: |
-          node -e '
-            const fs = require("fs");
-            const dir = "data/nodes";
-            const files = fs.existsSync(dir) ? fs.readdirSync(dir).filter(f => f.endsWith(".json")) : [];
-            const nodes = [];
-            for (const f of files) {
-              try {
-                const n = JSON.parse(fs.readFileSync(`${dir}/${f}`, "utf8"));
-                nodes.push({
-                  name: n.name || f.replace(/\.json$/, ""),
-                  class: n.class || "community",
-                  domain: n.domain || null,
-                  online: n.online === true,
-                  peer_count: n.peer_count ?? null,
-                  uptime_seconds: n.uptime_seconds ?? null,
-                  epnd_version: n.epnd_version || null,
-                  inferences_served: n.inferences_served ?? 0,
-                  tokens_served: n.tokens_served ?? 0,
-                  receipts_verified: n.receipts_verified ?? 0,
-                  proofs_issued: n.proofs_issued ?? 0,
-                  disputes_resolved: n.disputes_resolved ?? 0,
-                  checked_at: n.checked_at || null,
-                });
-              } catch (e) { console.error("skip", f, e.message); }
-            }
-            const founders = nodes.filter(n => n.class === "founder");
-            const sum = k => founders.reduce((a, n) => a + (n[k] || 0), 0);
-            const out = {
-              generated_at: new Date().toISOString(),
-              founder_count: founders.length,
-              full_founder_count: founders.filter(n => n.domain).length,
-              online_count: founders.filter(n => n.online).length,
-              // Cloud-displacement estimate: output tokens served locally that
-              // did NOT go to a cloud vendor, valued at a transparent, stated
-              // cloud rate (USD per 1M output tokens). Adjust CLOUD_RATE to taste.
-              cloud_rate_usd_per_1m: 10,
-              totals: (() => {
-                const tokens = sum("tokens_served");
-                return {
-                  inferences_served: sum("inferences_served"),
-                  tokens_served: tokens,
-                  displaced_cloud_usd: +((tokens / 1e6) * 10).toFixed(2),
-                  receipts_verified: sum("receipts_verified"),
-                  proofs_issued: sum("proofs_issued"),
-                  disputes_resolved: sum("disputes_resolved"),
-                  node_years_uptime: +(founders.reduce((a, n) => a + (n.uptime_seconds || 0), 0) / 31557600).toFixed(3),
-                };
-              })(),
-              nodes: founders.sort((a, b) => (b.domain ? 1 : 0) - (a.domain ? 1 : 0)),
-            };
-            fs.writeFileSync("data/founders.json", JSON.stringify(out, null, 2) + "\n");
-            console.log("founders:", out.founder_count, "full:", out.full_founder_count);
-          '
-      - name: Commit if changed
+      - name: Regenerate + push (retry, conflict-free)
         run: |
           git config user.name "eutopia-ci"
           git config user.email "ci@50gramx.com"
-          git add data/founders.json
-          git commit -m "ci: aggregate founder nodes" || exit 0
-          git pull --rebase --autostash origin main
-          git push
+          for i in $(seq 1 6); do
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            node tools/aggregate-founders.mjs
+            if git diff --quiet -- data/founders.json; then
+              echo "no change"; exit 0
+            fi
+            git add data/founders.json
+            git commit -q -m "ci: aggregate founder nodes"
+            if git push -q origin HEAD:main; then
+              echo "pushed"; exit 0
+            fi
+            echo "push raced (attempt $i) — re-syncing"; sleep $((RANDOM % 4 + 2))
+          done
+          echo "gave up after retries — next run will catch up (not a failure)"; exit 0
