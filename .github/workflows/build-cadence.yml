@@ -1,10 +1,16 @@
 name: Cadence release dispatcher
 
-# Drives nightly/weekly/bi-weekly/stable rebuilds for every brand that has
-# already shipped at least one release (per data/catalog.json), across every
-# platform that brand has previously released on. Manual trigger stays
-# exactly as today in build-eapp-{linux,windows,macos}.yml — this only
-# *invokes* them, on a schedule, per already-known brand+platform.
+# Drives nightly/weekly/bi-weekly/stable rebuilds across the UNION of:
+#   1. data/brand-platform-matrix.json — the canonical declared set (every
+#      brand must stay in rotation on every desktop platform even with zero
+#      release history yet — fixes the chicken-and-egg gap where a brand
+#      that never shipped once, or a platform a brand hasn't shipped on yet,
+#      silently never entered rotation).
+#   2. data/catalog.json's release history — so any platform a brand ships
+#      on outside the declared matrix (e.g. ahead of a matrix update) still
+#      gets picked up automatically, same as before.
+# Manual trigger stays exactly as today in build-eapp-{linux,windows,macos}.yml
+# — this only *invokes* them, on a schedule.
 on:
   schedule:
     - cron: '0 2 * * *'        # nightly  — every day 02:00 UTC
@@ -44,7 +50,7 @@ jobs:
             esac
           fi
 
-      - name: Rebuild every already-released brand on every platform it's used
+      - name: Rebuild every declared and every already-released brand/platform pair
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
@@ -52,13 +58,30 @@ jobs:
           set -euo pipefail
           node -e '
             const fs = require("fs");
-            const catalog = JSON.parse(fs.readFileSync("data/catalog.json", "utf8"));
+            const seen = new Set();
             const pairs = [];
-            for (const product of catalog.products || []) {
-              if (!product.releases || product.releases.length === 0) continue;
-              const platforms = [...new Set(product.releases.map(r => r.platform))];
-              for (const platform of platforms) pairs.push({ brandId: product.brandId, platform });
+            const add = (brandId, platform) => {
+              const key = `${brandId}::${platform}`;
+              if (seen.has(key)) return;
+              seen.add(key);
+              pairs.push({ brandId, platform });
+            };
+
+            // 1. Canonical declared matrix — every brand x desktop platform,
+            // regardless of release history.
+            const matrix = JSON.parse(fs.readFileSync("data/brand-platform-matrix.json", "utf8"));
+            for (const brandId of matrix.brands || []) {
+              for (const platform of matrix.platforms || []) add(brandId, platform);
             }
+
+            // 2. Catalog release history — picks up anything outside the
+            // declared matrix too (e.g. a platform shipped ahead of a matrix
+            // update).
+            const catalog = JSON.parse(fs.readFileSync("data/catalog.json", "utf8"));
+            for (const product of catalog.products || []) {
+              for (const release of product.releases || []) add(product.brandId, release.platform);
+            }
+
             fs.writeFileSync("/tmp/pairs.json", JSON.stringify(pairs));
           '
           PAIRS=$(cat /tmp/pairs.json)
