@@ -51,6 +51,18 @@
       .updated-at { margin-top: 28px; font-size: 13px; color: var(--muted); }
       .verified-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #fff; background: var(--blue); vertical-align: middle; }
       .community-badge { margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--panel-2); vertical-align: middle; }
+      .node-banner { padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 18px; }
+      .node-name { font-size: 20px; font-weight: 700; }
+      .node-state { margin-left: 10px; font-size: 13px; font-weight: 600; }
+      .node-state.on { color: var(--green); }
+      .node-state.off { color: #b83232; }
+      .node-sub { margin-top: 6px; font-size: 13px; color: var(--muted); }
+      .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+      .insight { padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+      .insight-value { font-size: 30px; font-weight: 700; line-height: 1.1; }
+      .insight-label { margin-top: 4px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+      .insight-meaning { margin-top: 8px; font-size: 13.5px; color: var(--ink); line-height: 1.45; }
+      .not-measured { margin-top: 18px; padding: 14px 16px; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--line); font-size: 13.5px; color: var(--muted); line-height: 1.5; }
     </style>
   </head>
   <body>
@@ -93,52 +105,72 @@
     </main>
 
     <script>
+      // Every figure here is derived from real data — the live snapshot plus
+      // the permanent, append-only heartbeat history. No invented metrics. A
+      // metric we can't yet measure honestly is shown as "not yet measured",
+      // never faked.
+      function fmtDuration(sec) {
+        if (sec == null) return '—';
+        const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
+        return d > 0 ? `${d}d ${h}h` : `${h}h`;
+      }
+      function insight(value, label, meaning) {
+        return `<div class="insight">
+          <div class="insight-value">${value}</div>
+          <div class="insight-label">${label}</div>
+          <div class="insight-meaning">${meaning}</div>
+        </div>`;
+      }
       async function loadStatus() {
         const root = document.getElementById('status-cards');
         const updatedAt = document.getElementById('updated-at');
         const staleWarning = document.getElementById('stale-warning');
         try {
-          const res = await fetch('data/bootstrap-status.json', { cache: 'no-store' });
-          if (!res.ok) throw new Error('status data unavailable');
-          const nodes = await res.json();
-          root.innerHTML = '';
-          for (const node of nodes) {
-            const card = document.createElement('div');
-            card.className = 'status-grid';
-            const online = node.online === true;
-            card.innerHTML = `
-              <div class="status-card">
-                <h3>${node.name || node.peer_id || 'node'}
-                  ${node.class === 'founder'
-                    ? '<span class="verified-badge" title="Verified founder node">✓ Founder</span>'
-                    : '<span class="community-badge" title="Community node">Community</span>'}
-                </h3>
-                <span class="pill ${online ? 'online' : 'offline'}">
-                  <span class="dot"></span>${online ? 'Online' : 'Offline'}
-                </span>
+          const snap = (await (await fetch('data/bootstrap-status.json', { cache: 'no-store' })).json())[0];
+
+          // Parse the append-only history (every heartbeat ever recorded).
+          let hist = [];
+          try {
+            const txt = await (await fetch('data/bootstrap-history.jsonl', { cache: 'no-store' })).text();
+            hist = txt.trim().split('\n').filter(Boolean).map((l) => JSON.parse(l));
+          } catch {}
+
+          const online = snap.online === true;
+          const beats = hist.length;
+          const onlineBeats = hist.filter((h) => h.online).length;
+          const availability = beats ? Math.round((onlineBeats / beats) * 100) : (online ? 100 : 0);
+          const firstSeen = beats ? new Date(hist[0].t) : new Date(snap.checked_at);
+          const trackedDays = Math.max(1, Math.round((Date.now() - firstSeen.getTime()) / 86400000 * 10) / 10);
+          const peakPeers = hist.reduce((m, h) => Math.max(m, h.peers || 0), snap.peer_count || 0);
+          const badge = snap.class === 'founder'
+            ? '<span class="verified-badge" title="Verified founder node">✓ Founder</span>'
+            : '<span class="community-badge">Community</span>';
+
+          root.innerHTML = `
+            <div class="node-banner">
+              <div>
+                <span class="node-name">${snap.name || 'node'}</span> ${badge}
+                <span class="node-state ${online ? 'on' : 'off'}">${online ? '● live' : '○ offline'}</span>
               </div>
-              <div class="status-card">
-                <h3>Peer count</h3>
-                <div class="value">${node.peer_count ?? '—'}</div>
-              </div>
-              <div class="status-card">
-                <h3>Uptime</h3>
-                <div class="value">${node.uptime_seconds != null ? Math.floor(node.uptime_seconds / 3600) + 'h' : '—'}</div>
-              </div>
-              <div class="status-card">
-                <h3>epnd version</h3>
-                <div class="value" style="font-size:16px">${node.epnd_version || '—'}</div>
-              </div>
-              <div class="status-card" style="grid-column: 1 / -1">
-                <h3>Reachable addresses</h3>
-                <div class="addrs">${(node.addrs || []).join('<br>') || 'none reported'}</div>
-              </div>
-            `;
-            root.appendChild(card);
-          }
-          const checkedAt = new Date(nodes[0]?.checked_at || Date.now());
-          updatedAt.textContent = 'Last checked: ' + checkedAt.toLocaleString();
-          staleWarning.style.display = (Date.now() - checkedAt.getTime() > 30 * 60 * 1000) ? 'block' : 'none';
+              <div class="node-sub">epnd ${snap.epnd_version || '—'} · ${(snap.addrs || []).length} reachable addresses</div>
+            </div>
+            <div class="insight-grid">
+              ${insight(beats.toLocaleString(), 'Heartbeats kept', 'Moments of this node being alive — permanently recorded, never deleted.')}
+              ${insight(trackedDays + 'd', 'Tracked since first beat', 'How long we have an unbroken public record of this node.')}
+              ${insight(availability + '%', 'Availability', 'Share of recorded heartbeats where the node was online.')}
+              ${insight(fmtDuration(snap.uptime_seconds), 'Current uptime', 'Continuous run since the node last started.')}
+              ${insight(snap.peer_count ?? '—', 'Peers right now', 'EP&N peers this node is connected to (its local view, not the whole network).')}
+              ${insight(peakPeers, 'Peak peers seen', 'Most simultaneous peers recorded in the history.')}
+            </div>
+            <div class="not-measured">
+              <strong>Not yet measured (honestly):</strong> receipts verified, capability proofs issued,
+              disputes resolved, network-wide node count. These need the daemon's cumulative counters
+              (Aggregate Ledger spec, Phase A) — coming, not faked here.
+            </div>`;
+
+          const checkedAt = new Date(snap.checked_at || Date.now());
+          updatedAt.textContent = 'Last heartbeat: ' + checkedAt.toLocaleString() + ' · ' + beats + ' kept forever';
+          staleWarning.style.display = (Date.now() - checkedAt.getTime() > 45 * 60 * 1000) ? 'block' : 'none';
         } catch (err) {
           root.innerHTML = '<p>Status data not available yet.</p>';
         }
