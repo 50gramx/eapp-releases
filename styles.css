@@ -415,3 +415,201 @@ select {
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Enhanced delivery cards (per platform · channel, signed/unsigned) ── */
+.delivery {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--panel);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+}
+
+.delivery-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.delivery-id {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.delivery-glyph {
+  font-size: 22px;
+  line-height: 1.1;
+  width: 30px;
+  text-align: center;
+}
+
+.delivery-id strong {
+  display: block;
+  font-size: 15px;
+}
+
+.delivery-id span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.delivery-daemon {
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px !important;
+  color: var(--violet) !important;
+  margin-top: 2px;
+}
+
+.delivery-badge {
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+.delivery-badge.is-signed {
+  color: var(--green);
+  background: rgba(31, 122, 84, 0.12);
+}
+
+.delivery-badge.is-unsigned {
+  color: var(--amber);
+  background: rgba(184, 111, 32, 0.12);
+}
+
+.delivery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.download-link {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--green);
+  color: #fff;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.download-link.secondary {
+  background: transparent;
+  color: var(--green);
+  border: 1px solid var(--green);
+}
+
+.download-link[aria-disabled="true"] {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.install-toggle,
+.copy-cmd {
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--ink);
+  border-radius: 8px;
+  padding: 7px 12px;
+}
+
+.store-badge {
+  display: inline-flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: #fff;
+  background: #161812;
+  border-radius: 10px;
+  padding: 8px 18px;
+  line-height: 1.15;
+}
+
+.store-badge-eyebrow {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.8;
+}
+
+.store-badge-name {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* ── Unsigned install guide (expandable) ── */
+.install-guide {
+  margin-top: 12px;
+  padding: 14px;
+  border-radius: 10px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+
+.install-headline {
+  margin: 0 0 6px;
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.install-reassure {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.install-steps {
+  margin: 0 0 12px;
+  padding-left: 20px;
+  font-size: 13.5px;
+}
+
+.install-steps li {
+  margin-bottom: 6px;
+}
+
+.install-cmd {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  background: #161812;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+
+.install-cmd code {
+  flex: 1;
+  color: #e8efe6;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 12.5px;
+  overflow-x: auto;
+  white-space: nowrap;
+  align-self: center;
+}
+
+.install-cmd .copy-cmd {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+  border: none;
+  flex-shrink: 0;
+}
+
+.install-sha {
+  margin: 10px 0 0;
+  font-family: ui-monospace, "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: var(--muted);
+  word-break: break-all;
+}

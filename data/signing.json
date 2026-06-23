@@ -1,0 +1,49 @@
+{
+  "_comment": "Drives the release page's signed/unsigned rendering. Hand-editable — no build-pipeline change needed. Resolution: overrides['<brandId>/<platform>'] wins, else defaults['<platform>']. When signed:true a store badge+link is shown; when signed:false the per-platform install instructions are shown. {APP} is replaced by the brand's app name (overrides[...].appName, else platform default).",
+  "defaults": {
+    "macos": {
+      "signed": false,
+      "appName": "eapp_live.app",
+      "unsigned": {
+        "headline": "Unsigned build — safe, but macOS will ask you to confirm",
+        "reassurance": "This is an independent build that isn't notarized by Apple yet. The app is the same artifact CI produced — verify its SHA-256 if you want certainty. The steps below tell macOS you trust it.",
+        "steps": [
+          "Download the .zip below and double-click to unzip it.",
+          "Drag the app into your Applications folder.",
+          "macOS may say it \"cannot be opened because the developer cannot be verified\" — that's expected for an un-notarized build, not a sign of danger.",
+          "Open Terminal and run the command below to clear the quarantine flag, then launch the app normally."
+        ],
+        "command": "xattr -dr com.apple.quarantine /Applications/{APP}"
+      }
+    },
+    "windows": {
+      "signed": false,
+      "appName": "the installer",
+      "unsigned": {
+        "headline": "Unsigned installer — safe, but SmartScreen will warn",
+        "reassurance": "This installer isn't code-signed with an EV certificate yet, so Windows SmartScreen flags new publishers. The build is the same artifact CI produced.",
+        "steps": [
+          "Download the .exe installer below.",
+          "Windows SmartScreen may show \"Windows protected your PC\" — click \"More info\".",
+          "Click \"Run anyway\", then follow the installer."
+        ],
+        "command": ""
+      }
+    },
+    "linux": {
+      "signed": false,
+      "appName": "the bundle",
+      "unsigned": {
+        "headline": "Portable build — extract and run",
+        "reassurance": "A self-contained tarball. No installer, no root needed.",
+        "steps": [
+          "Download the .tar.gz below.",
+          "Extract it: tar -xzf <file>.tar.gz",
+          "Make the binary executable and run it from the extracted folder."
+        ],
+        "command": ""
+      }
+    }
+  },
+  "overrides": {}
+}
