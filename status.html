@@ -3,211 +3,321 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>EP&amp;N Mesh Status — Eutopia Releases</title>
+    <title>EP&amp;N Mesh Status</title>
     <meta
       name="description"
-      content="Live health of the EP&N bootstrap fleet — peer counts, uptime, reachable addresses."
+      content="Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry."
     >
+    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+    <meta name="theme-color" content="#0f62fe">
+    <meta name="color-scheme" content="light dark">
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="EP&N Mesh Status">
+    <meta property="og:description" content="Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="EP&N Mesh Status">
+    <meta name="twitter:description" content="Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry.">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebPage",
+        "name": "EP&N Mesh Status",
+        "description": "Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry.",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "publisher": {
+          "@type": "Organization",
+          "name": "50GRAMx"
+        }
+      }
+    </script>
     <link rel="stylesheet" href="styles.css">
-    <style>
-      .status-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
-        margin-top: 24px;
-      }
-      .status-card {
-        background: var(--panel);
-        border: 1px solid var(--line);
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: var(--shadow);
-      }
-      .status-card h3 {
-        margin: 0 0 8px;
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.06em;
-        color: var(--muted);
-      }
-      .status-card .value {
-        font-size: 28px;
-        font-weight: 600;
-      }
-      .pill {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 4px 10px;
-        border-radius: 999px;
-        font-size: 13px;
-        font-weight: 600;
-      }
-      .pill.online { background: rgba(31, 122, 84, 0.12); color: var(--green); }
-      .pill.offline { background: rgba(184, 50, 50, 0.12); color: #b83232; }
-      .pill .dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
-      .addrs { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--muted); word-break: break-all; }
-      .stale-warning { display: none; margin-top: 16px; padding: 12px 16px; border-radius: 10px; background: rgba(184, 111, 32, 0.12); color: var(--amber); font-size: 14px; }
-      .updated-at { margin-top: 28px; font-size: 13px; color: var(--muted); }
-      .verified-badge { display: inline-flex; align-items: center; gap: 4px; margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #fff; background: var(--blue); vertical-align: middle; }
-      .community-badge { margin-left: 8px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--muted); background: var(--panel-2); vertical-align: middle; }
-      .node-banner { padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); margin-bottom: 18px; }
-      .node-name { font-size: 20px; font-weight: 700; }
-      .node-state { margin-left: 10px; font-size: 13px; font-weight: 600; }
-      .node-state.on { color: var(--green); }
-      .node-state.off { color: #b83232; }
-      .node-sub { margin-top: 6px; font-size: 13px; color: var(--muted); }
-      .insight-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
-      .insight { padding: 18px 20px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
-      .insight-value { font-size: 30px; font-weight: 700; line-height: 1.1; }
-      .insight-label { margin-top: 4px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
-      .insight-meaning { margin-top: 8px; font-size: 13.5px; color: var(--ink); line-height: 1.45; }
-      .not-measured { margin-top: 18px; padding: 14px 16px; border-radius: 10px; background: var(--panel-2); border: 1px dashed var(--line); font-size: 13.5px; color: var(--muted); line-height: 1.5; }
-      .block-title { margin: 36px 0 14px; font-size: 18px; }
-      table.founders { width: 100%; border-collapse: collapse; background: var(--panel); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; font-size: 14px; }
-      table.founders th { text-align: left; padding: 12px 14px; background: var(--panel-2); font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
-      table.founders td { padding: 12px 14px; border-top: 1px solid var(--line); vertical-align: top; }
-      .td-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
-      .td-mono { font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12px; color: var(--muted); }
-      .enable-card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px 22px; }
-      .enable-steps { margin: 0; padding-left: 20px; line-height: 1.6; }
-      .enable-steps li { margin-bottom: 12px; }
-      .enable-cmd { margin-top: 8px; background: #161812; border-radius: 8px; padding: 10px 12px; }
-      .enable-cmd code { color: #e8efe6; font-family: ui-monospace, "SF Mono", Consolas, monospace; font-size: 12.5px; white-space: pre-wrap; }
-      .enable-note { margin: 14px 0 0; font-size: 13px; color: var(--muted); }
-    </style>
   </head>
-  <body>
-    <header class="site-header">
-      <a class="brand" href="./" aria-label="Eutopia releases home">
-        <span class="brand-mark" aria-hidden="true"></span>
-        <span>
-          <strong>Eutopia Releases</strong>
-          <small>public builds from 50GRAMx</small>
-        </span>
+  <body data-page="status">
+    <a class="catalog-skip-link" href="#main-content">Skip to main content</a>
+    <header class="cds--header" aria-label="EP&N Mesh Status">
+      <a class="cds--header__name" href="./">
+        <span class="catalog-header-mark" aria-hidden="true"></span>
+        <span class="cds--header__name--prefix">50GRAMx</span>
+        <span>Eutopia Release Operations</span>
       </a>
-      <nav aria-label="Release catalog">
-        <a href="./">Products</a>
-        <a href="status.html">Mesh Status</a>
+      <nav id="primaryNav" class="cds--header__nav" aria-label="Primary">
+        <ul class="cds--header__menu-bar">
+          <li><a class="cds--header__menu-item" href="./">Catalog</a></li>
+          <li><a class="cds--header__menu-item cds--header__menu-item--current" aria-current="page" href="status.html">Mesh Status</a></li>
+        </ul>
       </nav>
     </header>
 
-    <main>
-      <section class="intro" aria-labelledby="intro-title">
-        <div class="intro-copy">
-          <p class="eyebrow">EP&amp;N network · proof of life</p>
-          <h1 id="intro-title">AI inference, served on your own mesh</h1>
-          <p>
-            Enterprises pay thousands per employee for cloud AI inference. EP&amp;N
-            serves it on nodes you (and your trusted circle) already run — bytes
-            never leave, no per-seat bill. Every number below is real, counted by
-            the daemons themselves, kept permanently. Nothing here is faked.
-          </p>
-        </div>
-      </section>
+    <main id="main-content" class="cds--content" tabindex="-1">
+      <div class="status-page">
+        <section class="status-hero">
+          <div class="cds--tile status-hero__primary">
+            <div class="catalog-kicker">
+              <span class="cds--tag cds--tag--blue">Founder telemetry</span>
+              <span class="cds--tag cds--tag--green">Reachability</span>
+              <span class="cds--tag cds--tag--cool-gray">Workload honesty</span>
+            </div>
+            <h1 class="catalog-hero__title">Mesh health should read like operations data, not a promise deck.</h1>
+            <p class="catalog-hero__body">
+              This page reports the observed state of the founder fleet: how many nodes
+              are online, how long they have stayed up, and whether real workload is
+              actually moving through the mesh yet.
+            </p>
+            <div class="catalog-actions">
+              <a class="cds--btn cds--btn--primary" href="#health">Health summary</a>
+              <a class="cds--btn cds--btn--tertiary" href="#founders">Founder nodes</a>
+            </div>
+          </div>
 
-      <section id="value-root">
-        <h2 class="block-title">The value: inference served on the mesh</h2>
-        <div id="value-cards" class="insight-grid"><p>Loading…</p></div>
-      </section>
+          <aside class="cds--tile cds--tile--light catalog-hero__summary">
+            <p class="catalog-panel-label">Current snapshot</p>
+            <div id="statusHeroStats" class="catalog-stat-list">
+              <div class="catalog-stat">
+                <span>Loading</span>
+                <strong>...</strong>
+              </div>
+            </div>
+          </aside>
+        </section>
 
-      <section id="network-root">
-        <h2 class="block-title">Verifiable work (settlement layer)</h2>
-        <div id="network-cards" class="insight-grid"></div>
-        <p id="updated-at" class="updated-at"></p>
-      </section>
+        <section id="health" class="cds--tile cds--tile--light status-summary-shell">
+          <div class="catalog-controls__header">
+            <div>
+              <p class="catalog-panel-label">Health summary</p>
+              <h2>What the fleet can honestly claim today</h2>
+            </div>
+            <p id="statusSummary" class="catalog-support-copy">Loading founder telemetry...</p>
+          </div>
+          <div id="statusSummaryCards" class="status-card-grid"></div>
+        </section>
 
-      <section id="table-root">
-        <h2 class="block-title">Founder nodes</h2>
-        <div id="founder-table"></div>
-      </section>
+        <section class="status-telemetry-grid">
+          <div class="cds--tile cds--tile--light">
+            <p class="catalog-panel-label">Workload telemetry</p>
+            <h2 class="status-section-title">Signals of actual usage</h2>
+            <div id="telemetryCards" class="status-card-grid status-card-grid--tight"></div>
+            <div id="telemetryNote" class="catalog-note"></div>
+          </div>
 
-      <section id="enable-root">
-        <h2 class="block-title">Become a founder node</h2>
-        <div class="enable-card">
-          <ol class="enable-steps">
-            <li><strong>Get a box with a public IPv4.</strong> Any small cloud VM (≈$3.5/mo) with a static IPv4 works — that's what makes a node reachable as a bootstrap entry point.</li>
-            <li><strong>Install &amp; run epnd as a bootstrap node</strong> (sets up the service + 15-min auto-update):
-              <div class="enable-cmd"><code>curl -fsSL https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/install.sh | sh
-epnd serve --lite</code></div>
-            </li>
-            <li><strong>Announce your public IPv4</strong> so IPv4-only peers can reach you — set <code>EPN_ANNOUNCE_IP=&lt;your.public.ip&gt;</code> in the service environment and restart.</li>
-            <li><strong>Enable status reporting</strong> — add the founder reporter (pushes your node's vitals + KPIs here, every 15 min) with <code>EPND_STATUS_NODE_NAME</code> and <code>EPND_STATUS_NODE_CLASS=founder</code>.</li>
-            <li><strong>Complete full founder mode</strong> — point a domain (e.g. <code>node.yourname.com</code>) at the box and set <code>EPND_STATUS_DOMAIN</code>. Full founders are listed by domain in the table above.</li>
-          </ol>
-          <p class="enable-note">Full setup script + the exact reporter config are in <code>epn-daemon/scripts/</code> (<code>bootstrap-node-setup.sh</code>, <code>report-bootstrap-status.*</code>).</p>
-        </div>
-      </section>
+          <div class="cds--tile cds--tile--light">
+            <p class="catalog-panel-label">Founder program</p>
+            <h2 class="status-section-title">What it takes to become visible here</h2>
+            <ul class="cds--contained-list cds--contained-list--on-page status-contained-list">
+              <li class="cds--contained-list-item">
+                <div class="cds--contained-list-item__content">
+                  <div class="status-contained-copy">
+                    <strong>Reachable host</strong>
+                    <span>Start with a machine that has a stable public IPv4 so it can act as a bootstrap entry point.</span>
+                  </div>
+                </div>
+              </li>
+              <li class="cds--contained-list-item">
+                <div class="cds--contained-list-item__content">
+                  <div class="status-contained-copy">
+                    <strong>Founder mode</strong>
+                    <span>Run `epnd` as a founder/bootstrap node and keep the auto-update path active.</span>
+                  </div>
+                </div>
+              </li>
+              <li class="cds--contained-list-item">
+                <div class="cds--contained-list-item__content">
+                  <div class="status-contained-copy">
+                    <strong>Status reporting</strong>
+                    <span>Publish `EPND_STATUS_NODE_NAME` and `EPND_STATUS_NODE_CLASS=founder` so the page can measure your node.</span>
+                  </div>
+                </div>
+              </li>
+              <li class="cds--contained-list-item">
+                <div class="cds--contained-list-item__content">
+                  <div class="status-contained-copy">
+                    <strong>Full founder posture</strong>
+                    <span>Attach a domain and announce it to show stable, domain-backed reachability.</span>
+                  </div>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="founders" class="cds--tile cds--tile--light status-founders-shell">
+          <div class="catalog-controls__header">
+            <div>
+              <p class="catalog-panel-label">Founder nodes</p>
+              <h2>Bootstrap and founder fleet</h2>
+            </div>
+          </div>
+          <div id="founderList"></div>
+        </section>
+      </div>
     </main>
 
     <script>
-      // Every figure is real — counted by the daemons (GET /v1/metrics),
-      // aggregated into data/founders.json. Nothing invented.
+      function fmtNumber(value, digits = 0) {
+        return Number(value ?? 0).toLocaleString(undefined, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+      }
+
+      function fmtDate(value) {
+        return value ? new Date(value).toLocaleString() : "Unknown";
+      }
+
       function fmtDuration(sec) {
-        if (sec == null) return '—';
-        const d = Math.floor(sec / 86400), h = Math.floor((sec % 86400) / 3600);
-        return d > 0 ? `${d}d ${h}h` : `${h}h`;
+        if (sec == null) return "-";
+        const days = Math.floor(sec / 86400);
+        const hours = Math.floor((sec % 86400) / 3600);
+        if (days > 0) return `${days}d ${hours}h`;
+        return `${hours}h`;
       }
-      function insight(value, label, meaning) {
-        return `<div class="insight">
-          <div class="insight-value">${value}</div>
-          <div class="insight-label">${label}</div>
-          <div class="insight-meaning">${meaning}</div>
-        </div>`;
+
+      function statusStat(label, value) {
+        return `<div class="catalog-stat"><span>${label}</span><strong>${value}</strong></div>`;
       }
-      function money(n) {
-        return '$' + (n ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 });
+
+      function summaryCard(label, value, tagClass, tagLabel, body) {
+        return `
+          <article class="cds--tile cds--tile--light status-metric-card">
+            <p class="catalog-panel-label">${label}</p>
+            <div class="status-metric-head">
+              <strong>${value}</strong>
+              ${tagLabel ? `<span class="cds--tag ${tagClass}">${tagLabel}</span>` : ""}
+            </div>
+            <p>${body}</p>
+          </article>
+        `;
       }
+
       async function load() {
-        const val = document.getElementById('value-cards');
-        const net = document.getElementById('network-cards');
-        const tbl = document.getElementById('founder-table');
-        const updatedAt = document.getElementById('updated-at');
-        let f;
+        const hero = document.getElementById("statusHeroStats");
+        const summary = document.getElementById("statusSummary");
+        const summaryCards = document.getElementById("statusSummaryCards");
+        const telemetryCards = document.getElementById("telemetryCards");
+        const telemetryNote = document.getElementById("telemetryNote");
+        const founderList = document.getElementById("founderList");
+
+        let founders;
         try {
-          f = await (await fetch('data/founders.json', { cache: 'no-store' })).json();
-        } catch {
-          val.innerHTML = '<p>Founder data not available yet.</p>';
+          founders = await (await fetch("data/founders.json", { cache: "no-store" })).json();
+        } catch (error) {
+          hero.innerHTML = "";
+          summary.textContent = "Founder telemetry could not be loaded.";
+          summaryCards.innerHTML = '<section class="cds--tile cds--tile--light catalog-brand-empty"><h3>Founder telemetry unavailable</h3></section>';
+          founderList.innerHTML = "";
+          telemetryCards.innerHTML = "";
+          telemetryNote.textContent = "";
+          console.error(error);
           return;
         }
-        const t = f.totals || {};
-        const rate = f.cloud_rate_usd_per_1m ?? 10;
-        val.innerHTML = `
-          ${insight((t.inferences_served ?? 0).toLocaleString(), 'Inferences served locally', 'AI inferences answered on mesh-owned compute — bytes never left the owner.')}
-          ${insight((t.tokens_served ?? 0).toLocaleString(), 'Tokens served', 'Output tokens produced on the mesh instead of a cloud vendor.')}
-          ${insight(money(t.displaced_cloud_usd), 'Cloud cost displaced', `What those tokens would have cost at ~$${rate}/1M on a cloud vendor — money that stayed with you.`)}`;
-        net.innerHTML = `
-          ${insight(f.founder_count ?? 0, 'Founder nodes', 'People running a verified founder/bootstrap node the network connects to first.')}
-          ${insight(f.full_founder_count ?? 0, 'Full founders', 'Founder nodes that completed full mode — reachable by their own domain.')}
-          ${insight((t.receipts_verified ?? 0).toLocaleString(), 'Receipts verified', 'Co-signed metering-receipt chains the fleet has cryptographically verified.')}
-          ${insight((t.proofs_issued ?? 0).toLocaleString(), 'Capability proofs', 'Proofs answered on challenge — capability shown, not self-claimed.')}
-          ${insight((t.disputes_resolved ?? 0).toLocaleString(), 'Disputes resolved', 'Payment-channel disputes adjudicated on co-signed evidence.')}
-          ${insight((t.node_years_uptime ?? 0), 'Node-years uptime', 'Cumulative running time across founder nodes.')}`;
 
-        const rows = (f.nodes || []).map((n) => `
-          <tr>
-            <td><strong>${n.name || '—'}</strong>
-              ${n.class === 'founder' ? '<span class="verified-badge">✓</span>' : ''}
-              ${n.domain ? `<div class="td-sub">${n.domain}</div>` : '<div class="td-sub">no domain yet</div>'}</td>
-            <td><span class="node-state ${n.online ? 'on' : 'off'}">${n.online ? '● live' : '○ offline'}</span></td>
-            <td>${n.peer_count ?? '—'}</td>
-            <td>${fmtDuration(n.uptime_seconds)}</td>
-            <td>${(n.inferences_served ?? 0).toLocaleString()}</td>
-            <td>${(n.tokens_served ?? 0).toLocaleString()}</td>
-            <td>${(n.receipts_verified ?? 0).toLocaleString()}</td>
-            <td class="td-mono">${(n.epnd_version || '—').slice(0, 12)}</td>
-          </tr>`).join('');
-        tbl.innerHTML = `<table class="founders">
-          <thead><tr>
-            <th>Node</th><th>State</th><th>Peers</th><th>Uptime</th>
-            <th>Inferences</th><th>Tokens</th><th>Receipts</th><th>Version</th>
-          </tr></thead><tbody>${rows || '<tr><td colspan="8">No founder nodes yet.</td></tr>'}</tbody></table>`;
+        const totals = founders.totals || {};
+        const founderCount = founders.founder_count ?? 0;
+        const onlineCount = founders.online_count ?? 0;
+        const fullFounderCount = founders.full_founder_count ?? 0;
+        const onlineRatio = founderCount ? Math.round((onlineCount / founderCount) * 100) : 0;
+        const nodeDays = Number(totals.node_years_uptime ?? 0) * 365;
+        const redundancyRisk = founderCount <= 1;
+        const lastCheck = founders.nodes?.reduce((latest, node) => {
+          if (!node.checked_at) return latest;
+          return !latest || new Date(node.checked_at) > new Date(latest) ? node.checked_at : latest;
+        }, null);
 
-        if (f.generated_at) {
-          updatedAt.textContent = 'Aggregated: ' + new Date(f.generated_at).toLocaleString()
-            + ' · ' + (f.online_count ?? 0) + ' of ' + (f.founder_count ?? 0) + ' online';
-        }
+        hero.innerHTML = [
+          statusStat("Founders online", `${onlineCount}/${founderCount || 0}`),
+          statusStat("Full founders", `${fullFounderCount}`),
+          statusStat("Observed peers", fmtNumber(founders.nodes?.reduce((sum, node) => sum + (node.peer_count ?? 0), 0) || 0)),
+          statusStat("Last heartbeat", lastCheck ? fmtDate(lastCheck) : "Unknown"),
+        ].join("");
+
+        summary.textContent = founders.generated_at
+          ? `Aggregated ${fmtDate(founders.generated_at)}. This fleet currently has ${founderCount} founder node${founderCount === 1 ? "" : "s"}, with ${onlineCount} online and ${fullFounderCount} domain-backed founder${fullFounderCount === 1 ? "" : "s"}.`
+          : "Founder telemetry loaded.";
+
+        summaryCards.innerHTML = [
+          summaryCard(
+            "Availability",
+            `${onlineRatio}%`,
+            onlineRatio === 100 ? "cds--tag--green" : "cds--tag--warm-gray",
+            onlineRatio === 100 ? "Healthy" : "Watch",
+            founderCount
+              ? `${onlineCount} of ${founderCount} founder nodes are currently responding.`
+              : "No founder nodes are reporting yet."
+          ),
+          summaryCard(
+            "Reachability",
+            `${fullFounderCount}/${founderCount || 0}`,
+            fullFounderCount === founderCount && founderCount > 0 ? "cds--tag--green" : "cds--tag--cool-gray",
+            fullFounderCount === founderCount && founderCount > 0 ? "Complete" : "Partial",
+            "Full founders have finished the domain-backed posture that makes public entry points easier to trust."
+          ),
+          summaryCard(
+            "Cumulative uptime",
+            `${fmtNumber(nodeDays, 1)} days`,
+            nodeDays > 0 ? "cds--tag--blue" : "cds--tag--cool-gray",
+            nodeDays > 0 ? "Observed" : "Early",
+            "The uptime number is still small, but it is a real signal from real founder nodes rather than marketing filler."
+          ),
+          summaryCard(
+            "Redundancy",
+            founderCount <= 1 ? "Single node" : `${founderCount} nodes`,
+            redundancyRisk ? "cds--tag--red" : "cds--tag--green",
+            redundancyRisk ? "Risk" : "Distributed",
+            redundancyRisk
+              ? "The fleet currently depends on a single founder node, so resilience is limited even while the node is healthy."
+              : "Founder coverage is distributed enough that a single node failure is less likely to become a public incident."
+          ),
+        ].join("");
+
+        telemetryCards.innerHTML = [
+          summaryCard("Inferences served", fmtNumber(totals.inferences_served), totals.inferences_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.inferences_served ? "Active" : "Quiet", "Measured inference workload on founder nodes."),
+          summaryCard("Tokens served", fmtNumber(totals.tokens_served), totals.tokens_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.tokens_served ? "Active" : "Quiet", "Generated output tokens observed by the reporter."),
+          summaryCard("Receipts verified", fmtNumber(totals.receipts_verified), totals.receipts_verified ? "cds--tag--green" : "cds--tag--warm-gray", totals.receipts_verified ? "Active" : "Quiet", "Cryptographic settlement or metering receipts verified by the fleet."),
+          summaryCard("Displaced cloud cost", `$${fmtNumber(totals.displaced_cloud_usd, 2)}`, totals.displaced_cloud_usd ? "cds--tag--green" : "cds--tag--warm-gray", totals.displaced_cloud_usd ? "Observed" : "Quiet", "Equivalent cloud spend displaced by mesh-served workload."),
+        ].join("");
+
+        telemetryNote.textContent = totals.inferences_served || totals.tokens_served || totals.receipts_verified
+          ? "Real workload is now appearing in the fleet metrics, which gives the page a stronger enterprise value story than health alone."
+          : "The health story is real, but the workload story is still early: the fleet is up while inference, token, and settlement counters remain near zero.";
+
+        founderList.innerHTML = `
+          <ul class="cds--contained-list cds--contained-list--on-page status-contained-list">
+            ${(founders.nodes || []).map((node) => `
+              <li class="cds--contained-list-item">
+                <div class="cds--contained-list-item__content">
+                  <div class="status-node-card">
+                    <div class="status-node-head">
+                      <div>
+                        <strong>${node.name || "-"}</strong>
+                        <span>${node.domain || "No domain published yet"}</span>
+                      </div>
+                      <div class="catalog-tag-row">
+                        <span class="cds--tag ${node.online ? "cds--tag--green" : "cds--tag--red"}">${node.online ? "Online" : "Offline"}</span>
+                        <span class="cds--tag cds--tag--cool-gray">${node.class || "node"}</span>
+                      </div>
+                    </div>
+                    <div class="status-node-metrics">
+                      <div><span>Peers</span><strong>${fmtNumber(node.peer_count)}</strong></div>
+                      <div><span>Uptime</span><strong>${fmtDuration(node.uptime_seconds)}</strong></div>
+                      <div><span>Inferences</span><strong>${fmtNumber(node.inferences_served)}</strong></div>
+                      <div><span>Receipts</span><strong>${fmtNumber(node.receipts_verified)}</strong></div>
+                    </div>
+                    <div class="status-node-foot">
+                      <span>Daemon ${String(node.epnd_version || "-").slice(0, 12)}</span>
+                      <span>Last check ${fmtDate(node.checked_at)}</span>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            `).join("") || `
+              <li class="cds--contained-list-item">
+                <div class="cds--contained-list-item__content">No founder nodes reported yet.</div>
+              </li>
+            `}
+          </ul>
+        `;
       }
+
       load();
     </script>
   </body>
