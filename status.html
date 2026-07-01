@@ -158,37 +158,10 @@
             <h2 class="status-section-title">Cumulative capacity vs the TOP500</h2>
             <p id="meshSummary" class="catalog-support-copy">Loading DHT mesh view…</p>
           </div>
-          <p id="meshCapacity" class="catalog-support-copy"></p>
+          <div id="meshCards" class="status-card-grid status-card-grid--tight"></div>
           <div id="meshTop500" class="catalog-note"></div>
           <div id="meshModels" class="catalog-note"></div>
         </section>
-        <script>
-          (async () => {
-            const num = (v) => (typeof v === 'number' ? v : 0).toLocaleString();
-            try {
-              const r = await fetch('data/mesh.json', { cache: 'no-store' });
-              if (!r.ok) return;
-              const m = await r.json();
-              const c = m.capacity || {}, t = m.top500 || {};
-              const sum = document.getElementById('meshSummary');
-              if (sum) sum.textContent =
-                `${num(m.node_count)} node(s) across ${num(m.reporter_count)} reporter(s) · ${(m.models || []).length} model(s) advertised in the DHT.`;
-              const cap = document.getElementById('meshCapacity');
-              if (cap) cap.textContent =
-                `Aggregate capacity: ${num(c.est_tflops)} TFLOP/s (≈ ${c.est_pflops || 0} PFLOP/s) · ${num(c.vram_gib)} GiB VRAM · ${num(c.vcpu_seconds)} vCPU-s/hr.`;
-              const top = document.getElementById('meshTop500');
-              if (top && t.as_of) top.innerHTML =
-                `${t.would_enter_top500 ? 'This network would place on the TOP500.' : 'Not on the TOP500 yet — and growing in public.'} ` +
-                `Reference ${t.as_of}: #1 ${t.rank_1.name} ${num(t.rank_1.pflops)} PFLOP/s, #500 ≈ ${t.rank_500_pflops} PFLOP/s, total ${num(t.list_sum_pflops)} PFLOP/s. ` +
-                `This network ≈ ${t.est_network_pflops} PFLOP/s (${t.pct_of_rank_1}% of #1). ` +
-                `${t.disclaimer} ` +
-                `<a href="${t.source}" target="_blank" rel="noopener noreferrer">Source: TOP500 ↗</a>`;
-              const mods = document.getElementById('meshModels');
-              if (mods && (m.models || []).length)
-                mods.textContent = 'Models: ' + m.models.slice(0, 8).map((x) => `${x.name} (${x.providers})`).join(', ');
-            } catch (_) { /* mesh view optional */ }
-          })();
-        </script>
 
         <section id="peers" class="cds--tile cds--tile--light status-founders-shell">
           <div class="catalog-controls__header">
@@ -323,9 +296,10 @@
           return;
         }
 
-        const [networkProof, bests] = await Promise.all([
+        const [networkProof, bests, mesh] = await Promise.all([
           optionalJSON("data/network.json"),
           optionalJSON("data/bests.json"),
+          optionalJSON("data/mesh.json"),
         ]);
 
         const totals = founders.totals || {};
@@ -415,6 +389,32 @@
         bestNote.textContent = bests?.generated_at
           ? `Best numbers generated ${fmtDate(bests.generated_at)}. ${bests.trust_model || ""} ${networkProof?.trust_model || ""}`.trim()
           : "Best-number JSON has not been generated yet; waiting for proof snapshots from reporting nodes.";
+
+        // DHT mesh view — cumulative capacity + TOP500 comparison (same card system).
+        const meshSummary = document.getElementById("meshSummary");
+        const meshCards = document.getElementById("meshCards");
+        const meshTop500 = document.getElementById("meshTop500");
+        const meshModels = document.getElementById("meshModels");
+        if (mesh) {
+          const cap = mesh.capacity || {};
+          const t = mesh.top500 || {};
+          const modelCount = (mesh.models || []).length;
+          if (meshSummary)
+            meshSummary.textContent = `${fmtNumber(mesh.node_count)} node${mesh.node_count === 1 ? "" : "s"} seen in the DHT across ${fmtNumber(mesh.reporter_count)} reporter${mesh.reporter_count === 1 ? "" : "s"}; ${modelCount} model${modelCount === 1 ? "" : "s"} advertised.`;
+          if (meshCards)
+            meshCards.innerHTML = [
+              summaryCard("Est. FP16 capacity", `${fmtNumber(cap.est_tflops)} TFLOP/s`, cap.est_tflops ? "cds--tag--green" : "cds--tag--cool-gray", cap.est_tflops ? "Live" : "Quiet", "Order-of-magnitude estimate from advertised GPU/CPU capacity — not a LINPACK measurement."),
+              summaryCard("Aggregate VRAM", `${fmtNumber(cap.vram_gib)} GiB`, cap.vram_gib ? "cds--tag--blue" : "cds--tag--cool-gray", "Sum", "Total advertised GPU memory across DHT-known nodes."),
+              summaryCard("vs TOP500 #1", `${fmtNumber(t.pct_of_rank_1, 4)}%`, "cds--tag--purple", "Estimate", `Share of ${t.rank_1?.name || "the #1 system"} (${fmtNumber(t.rank_1?.pflops)} PFLOP/s LINPACK).`),
+              summaryCard("On the TOP500?", t.would_enter_top500 ? "Yes" : "Not yet", t.would_enter_top500 ? "cds--tag--green" : "cds--tag--warm-gray", t.would_enter_top500 ? "Ranks" : "Growing", `#500 entry ≈ ${t.rank_500_pflops} PFLOP/s; this network ≈ ${t.est_network_pflops} PFLOP/s.`),
+            ].join("");
+          if (meshTop500)
+            meshTop500.innerHTML = `${t.disclaimer || ""} <a href="${t.source || "https://top500.org"}" target="_blank" rel="noopener noreferrer">Source: TOP500 ↗</a>`;
+          if (meshModels && modelCount)
+            meshModels.textContent = "Models advertised: " + mesh.models.slice(0, 10).map((x) => `${x.name} (${x.providers})`).join(", ");
+        } else if (meshSummary) {
+          meshSummary.textContent = "No DHT mesh view has been published yet — reporting nodes will fill this in.";
+        }
 
         peersSummary.textContent = `${fmtNumber(peers.online_now ?? 0)} peer-connections online now across ${nodeCount} node${nodeCount === 1 ? "" : "s"}; ${fmtNumber(peers.connected_ever ?? 0)} distinct peers connected at some point (local peer-cache history, summed per node — not deduplicated across nodes).`;
 
