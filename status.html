@@ -172,6 +172,7 @@
                   <th scope="col">Effective ctx</th>
                   <th scope="col">Capabilities</th>
                   <th scope="col">VRAM</th>
+                  <th scope="col">Tok/s (best/median)</th>
                   <th scope="col">Proof</th>
                 </tr>
               </thead>
@@ -445,6 +446,9 @@
                       : m.best_declared_ctx
                         ? `${fmtNumber(m.best_declared_ctx)} <span class="cds--tag cds--tag--cool-gray">declared</span>`
                         : "—";
+                    const tokRate = m.best_tokens_per_sec
+                      ? `${fmtNumber(m.best_tokens_per_sec, 1)} / ${fmtNumber(m.median_tokens_per_sec, 1)}`
+                      : "—";
                     return `<tr>
                       <td>${m.name}</td>
                       <td>${(m.quants || []).join(", ") || "—"}</td>
@@ -453,11 +457,12 @@
                       <td>${ctx}</td>
                       <td>${caps}</td>
                       <td>${m.max_vram_gib ? fmtNumber(m.max_vram_gib, 1) + " GiB" : "—"}</td>
+                      <td>${tokRate}</td>
                       <td>${m.verified ? '<span class="cds--tag cds--tag--green">✓ signed</span>' : '<span class="cds--tag cds--tag--warm-gray">declared</span>'}</td>
                     </tr>`;
                   })
                   .join("")
-              : `<tr><td colspan="8" class="catalog-note">No models advertised in the DHT yet.</td></tr>`;
+              : `<tr><td colspan="9" class="catalog-note">No models advertised in the DHT yet.</td></tr>`;
           }
         } else if (meshSummary) {
           meshSummary.textContent = "No DHT mesh view has been published yet — reporting nodes will fill this in.";

@@ -533,6 +533,12 @@ function meshNum(v) {
   return typeof v === 'number' && isFinite(v) ? v : 0;
 }
 
+function median(nums) {
+  const sorted = [...nums].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
 // loadMeshViews reads the per-reporter *.mesh.json files (each a node's DHT-known
 // view of the network: peers + resource capacity + model benchmarks).
 function loadMeshViews() {
@@ -615,6 +621,7 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
         name: m.name, providers: 0, total_free_slots: 0,
         best_effective_ctx: 0, best_declared_ctx: 0, max_vram_gib: 0,
         quants: new Set(), caps: {}, verified: false, provider_dids: new Set(),
+        tokens_per_sec_samples: [],
       };
       cur.providers++;
       cur.total_free_slots += meshNum(m.free_slots);
@@ -622,6 +629,7 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
       cur.best_declared_ctx = Math.max(cur.best_declared_ctx, meshNum(m.ctx));
       cur.max_vram_gib = Math.max(cur.max_vram_gib, meshNum(m.vram_needed_gib));
       if (m.quant) cur.quants.add(m.quant);
+      if (meshNum(m.tokens_per_sec) > 0) cur.tokens_per_sec_samples.push(meshNum(m.tokens_per_sec));
       // Capability provenance (EP&N foundation: declared vs measured). A measured
       // (node-signed) capability outranks a merely declared one.
       const measured = m.measured_caps || {};
@@ -675,6 +683,12 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
         quants: [...m.quants],
         caps: m.caps, // { tools: 'measured'|'declared', vision: ..., ... }
         verified: m.verified,
+        best_tokens_per_sec: m.tokens_per_sec_samples.length
+          ? +Math.max(...m.tokens_per_sec_samples).toFixed(2)
+          : undefined,
+        median_tokens_per_sec: m.tokens_per_sec_samples.length
+          ? +median(m.tokens_per_sec_samples).toFixed(2)
+          : undefined,
       }))
       .sort((a, b) => b.providers - a.providers || b.best_effective_ctx - a.best_effective_ctx),
     nodes,
