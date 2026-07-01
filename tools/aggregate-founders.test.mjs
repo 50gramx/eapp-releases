@@ -11,6 +11,7 @@ import {
   buildAggregate,
   buildProofOutputs,
   verifySignedResult,
+  buildMeshView,
 } from './aggregate-founders.mjs';
 
 let passed = 0;
@@ -267,6 +268,28 @@ test('buildProofOutputs sums verified results and picks highest verified bests p
   assert.equal(bests.resources.inference.models['llama3.2:latest'].node_did, a.did);
   assert.equal(bests.resources.cpu.status, 'configured_not_yet_benchmarked');
   assert.equal(bests.rejected_results.length, 1);
+});
+
+test('buildMeshView unions DHT nodes by DID and summarizes resources + models', () => {
+  const views = [
+    { nodes: [
+      { did: 'did:epn:A', vram_gib: 8, ram_pool_gib: 16, models: [{ name: 'gemma4:e2b', effective_ctx: 4096 }] },
+      { did: 'did:epn:B', vram_gib: 24, models: [] },
+    ] },
+    { nodes: [
+      // A seen again by a second reporter — the richer entry (more models) wins.
+      { did: 'did:epn:A', vram_gib: 8, models: [{ name: 'gemma4:e2b', effective_ctx: 8192 }, { name: 'llama3.2', effective_ctx: 2048 }] },
+      { did: 'did:epn:C', vcpu_seconds: 100, models: [{ name: 'gemma4:e2b', effective_ctx: 2048 }] },
+    ] },
+  ];
+  const mesh = buildMeshView(views, '2026-07-01T00:00:00Z');
+  assert.equal(mesh.reporter_count, 2);
+  assert.equal(mesh.node_count, 3); // A, B, C distinct — A not double-counted
+  assert.equal(mesh.totals.vram_gib, 32); // 8(A once) + 24(B) + 0(C)
+  assert.equal(mesh.totals.vcpu_seconds, 100);
+  const g = mesh.models.find((m) => m.name === 'gemma4:e2b');
+  assert.equal(g.providers, 2); // A + C
+  assert.equal(g.best_effective_ctx, 8192); // A's richer entry
 });
 
 console.log(`\n${passed} test(s) passed`);

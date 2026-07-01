@@ -440,7 +440,9 @@ function readHistory(name) {
 }
 
 function loadNodes() {
-  const files = existsSync(NODES_DIR) ? readdirSync(NODES_DIR).filter((f) => f.endsWith('.json')) : [];
+  const files = existsSync(NODES_DIR)
+    ? readdirSync(NODES_DIR).filter((f) => f.endsWith('.json') && !f.endsWith('.mesh.json'))
+    : [];
   const nodes = [];
   const nodeHistories = {};
   for (const f of files) {
@@ -527,6 +529,79 @@ export function buildAggregate(nodes, nodeHistories) {
   };
 }
 
+function meshNum(v) {
+  return typeof v === 'number' && isFinite(v) ? v : 0;
+}
+
+// loadMeshViews reads the per-reporter *.mesh.json files (each a node's DHT-known
+// view of the network: peers + resource capacity + model benchmarks).
+function loadMeshViews() {
+  const files = existsSync(NODES_DIR)
+    ? readdirSync(NODES_DIR).filter((f) => f.endsWith('.mesh.json'))
+    : [];
+  const out = [];
+  for (const f of files) {
+    try {
+      out.push(JSON.parse(readFileSync(`${NODES_DIR}/${f}`, 'utf8')));
+    } catch {
+      /* skip unreadable */
+    }
+  }
+  return out;
+}
+
+// buildMeshView unions the DHT-known nodes across every reporter's mesh view
+// (by DID, keeping the richest entry) and summarizes network-wide resource
+// capacity and model availability. Purely additive — never touches
+// founders/network/bests.
+export function buildMeshView(views, generatedAt = new Date().toISOString()) {
+  const byDid = new Map();
+  let reporterCount = 0;
+  for (const view of views) {
+    if (!view || !Array.isArray(view.nodes)) continue;
+    reporterCount++;
+    for (const n of view.nodes) {
+      const did = n.did || n.DID;
+      if (!did) continue;
+      const prev = byDid.get(did);
+      const nModels = Array.isArray(n.models) ? n.models.length : 0;
+      const pModels = prev && Array.isArray(prev.models) ? prev.models.length : 0;
+      if (!prev || nModels > pModels) byDid.set(did, n);
+    }
+  }
+  const nodes = [...byDid.values()];
+  const totals = {
+    vram_gib: 0, ram_pool_gib: 0, vcpu_seconds: 0,
+    storage_block_gib: 0, storage_object_gib: 0, egress_gbps: 0,
+  };
+  const models = new Map();
+  for (const n of nodes) {
+    totals.vram_gib += meshNum(n.vram_gib);
+    totals.ram_pool_gib += meshNum(n.ram_pool_gib);
+    totals.vcpu_seconds += meshNum(n.vcpu_seconds);
+    totals.storage_block_gib += meshNum(n.storage_block_gib);
+    totals.storage_object_gib += meshNum(n.storage_object_gib);
+    totals.egress_gbps += meshNum(n.egress_gbps);
+    for (const m of n.models || []) {
+      if (!m || !m.name) continue;
+      const cur = models.get(m.name) || { name: m.name, providers: 0, best_effective_ctx: 0 };
+      cur.providers++;
+      cur.best_effective_ctx = Math.max(cur.best_effective_ctx, meshNum(m.effective_ctx));
+      models.set(m.name, cur);
+    }
+  }
+  for (const k of Object.keys(totals)) totals[k] = +totals[k].toFixed(3);
+  return {
+    generated_at: generatedAt,
+    label: 'DHT-known network, unioned across founder mesh reports',
+    reporter_count: reporterCount,
+    node_count: nodes.length,
+    totals,
+    models: [...models.values()].sort((a, b) => b.providers - a.providers),
+    nodes,
+  };
+}
+
 function main() {
   const { nodes, nodeHistories } = loadNodes();
   const out = buildAggregate(nodes, nodeHistories);
@@ -534,6 +609,9 @@ function main() {
   writeFileSync('data/founders.json', JSON.stringify(out, null, 2) + '\n');
   writeFileSync('data/network.json', JSON.stringify(proof.network, null, 2) + '\n');
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
+  const mesh = buildMeshView(loadMeshViews(), out.generated_at);
+  writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
+  console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length);
   console.log(
     'nodes:', out.node_count,
     'founders:', out.founder_count,
