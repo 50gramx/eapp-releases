@@ -32,10 +32,10 @@ jobs:
             git fetch -q origin main
             git reset -q --hard origin/main
             node tools/aggregate-founders.mjs
-            if git diff --quiet -- data/founders.json data/network.json data/bests.json; then
+            if git diff --quiet -- data/founders.json data/network.json data/bests.json data/mesh.json; then
               echo "no change"; exit 0
             fi
-            git add data/founders.json data/network.json data/bests.json
+            git add data/founders.json data/network.json data/bests.json data/mesh.json
             git commit -q -m "ci: aggregate founder nodes + network/bests proof"
             if git push -q origin HEAD:main; then
               echo "pushed"; exit 0
