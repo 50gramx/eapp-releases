@@ -52,7 +52,14 @@ jobs:
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
             git add data/catalog.json
             git commit -m "Update release catalog"
-            git push
+            # Conflict-safe: several scheduled workflows push this branch, so a
+            # bare push races. Rebase onto latest and retry; give up gracefully.
+            for i in $(seq 1 6); do
+              git pull --rebase --autostash -q origin main || git rebase --abort || true
+              if git push -q origin HEAD:main; then echo "pushed"; exit 0; fi
+              echo "push raced (attempt $i) — retrying"; sleep $((RANDOM % 4 + 2))
+            done
+            echo "gave up after retries (not a failure)"; exit 0
           fi
 
       - name: Configure Pages
