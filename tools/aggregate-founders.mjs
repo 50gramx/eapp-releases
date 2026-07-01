@@ -228,14 +228,18 @@ function proofSnapshotOf(node) {
   return node?.proof_snapshot || node?.proofSnapshot || null;
 }
 
-function collectSignedResults(nodes) {
+// collectSignedResultsFrom pulls every signed benchmark candidate out of a
+// list of { name, proof_snapshot } entries. Shared by self-reported nodes
+// (data/nodes/<name>.json) and DHT-fetched peer snapshots (mesh views) —
+// both carry the identical proofsnapshot.Snapshot shape from the daemon.
+function collectSignedResultsFrom(entries) {
   const out = [];
-  for (const node of nodes) {
-    const resources = proofSnapshotOf(node)?.resources || {};
+  for (const { name, proof_snapshot } of entries) {
+    const resources = proof_snapshot?.resources || {};
     const network = resources.network;
     if (network?.result) {
       out.push({
-        node_name: node.name || null,
+        node_name: name || null,
         resource_type: 'network',
         model: null,
         signed_result: network.result,
@@ -246,7 +250,7 @@ function collectSignedResults(nodes) {
     const modelPayloads = inference?.model_signing_payloads || {};
     for (const [model, signedResult] of Object.entries(inference?.models || {})) {
       out.push({
-        node_name: node.name || null,
+        node_name: name || null,
         resource_type: 'inference',
         model,
         signed_result: signedResult,
@@ -258,7 +262,7 @@ function collectSignedResults(nodes) {
       const proof = resources[resourceType];
       if (proof?.result) {
         out.push({
-          node_name: node.name || null,
+          node_name: name || null,
           resource_type: resourceType,
           model: null,
           signed_result: proof.result,
@@ -268,6 +272,47 @@ function collectSignedResults(nodes) {
     }
   }
   return out;
+}
+
+function collectSignedResults(nodes) {
+  return collectSignedResultsFrom(nodes.map((node) => ({ name: node.name, proof_snapshot: proofSnapshotOf(node) })));
+}
+
+// collectMeshSignedResults pulls signed benchmarks out of every peer's
+// DHT-fetched proof snapshot across all reporters' mesh views (data/nodes/
+// *.mesh.json). This is how a peer's benchmarks reach network.json/bests.json
+// even when that peer isn't itself running the bootstrap reporter — any
+// founder that saw it on the DHT carries its signed proof forward. The same
+// physical node's result can appear in multiple reporters' mesh views (and in
+// its own self-report); buildProofOutputs dedupes by (node_did, resource_type,
+// model) after verification so it is never double-counted.
+function collectMeshSignedResults(meshViews) {
+  const entries = [];
+  for (const view of meshViews) {
+    if (!view || !Array.isArray(view.nodes)) continue;
+    for (const n of view.nodes) {
+      if (!n || !n.proof_snapshot) continue;
+      entries.push({ name: null, proof_snapshot: n.proof_snapshot });
+    }
+  }
+  return collectSignedResultsFrom(entries);
+}
+
+// dedupeVerified keeps one verified result per (node_did, resource_type,
+// model) — the one with the newest result.ts — so a benchmark seen via the
+// node's own self-report AND via one or more reporters' mesh views (DHT
+// republication) is only ever counted once in aggregate/best.
+function dedupeVerified(verified) {
+  const byKey = new Map();
+  for (const item of verified) {
+    const r = item.signed_result.result;
+    const key = `${r.node_did}|${item.resource_type}|${item.model || ''}`;
+    const existing = byKey.get(key);
+    if (!existing || (Number(r.ts) || 0) > (Number(existing.signed_result.result.ts) || 0)) {
+      byKey.set(key, item);
+    }
+  }
+  return [...byKey.values()];
 }
 
 function bestRecord(candidate, verification) {
@@ -300,10 +345,11 @@ function emptyAggregate(resourceType) {
   };
 }
 
-export function buildProofOutputs(nodes, generatedAt = new Date().toISOString()) {
+export function buildProofOutputs(nodes, generatedAt = new Date().toISOString(), meshViews = []) {
   const verified = [];
   const rejected = [];
-  for (const candidate of collectSignedResults(nodes)) {
+  const candidates = [...collectSignedResults(nodes), ...collectMeshSignedResults(meshViews)];
+  for (const candidate of candidates) {
     const verification = verifySignedResult(candidate.signed_result, candidate.payload_b64);
     if (verification.ok) {
       verified.push({ ...candidate, verification });
@@ -320,7 +366,7 @@ export function buildProofOutputs(nodes, generatedAt = new Date().toISOString())
   const networkResources = Object.fromEntries(RESOURCE_TYPES.map((type) => [type, emptyAggregate(type)]));
   const bestResources = Object.fromEntries(RESOURCE_TYPES.map((type) => [type, marker(type)]));
   const byResource = new Map();
-  for (const item of verified) {
+  for (const item of dedupeVerified(verified)) {
     if (!byResource.has(item.resource_type)) byResource.set(item.resource_type, []);
     byResource.get(item.resource_type).push(item);
   }
@@ -697,12 +743,13 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
 
 function main() {
   const { nodes, nodeHistories } = loadNodes();
+  const meshViews = loadMeshViews();
   const out = buildAggregate(nodes, nodeHistories);
-  const proof = buildProofOutputs(nodes, out.generated_at);
+  const proof = buildProofOutputs(nodes, out.generated_at, meshViews);
   writeFileSync('data/founders.json', JSON.stringify(out, null, 2) + '\n');
   writeFileSync('data/network.json', JSON.stringify(proof.network, null, 2) + '\n');
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
-  const mesh = buildMeshView(loadMeshViews(), out.generated_at);
+  const mesh = buildMeshView(meshViews, out.generated_at);
   writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length);
   console.log(

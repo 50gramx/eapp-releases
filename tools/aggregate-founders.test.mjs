@@ -296,4 +296,41 @@ test('buildMeshView unions DHT nodes by DID and summarizes resources + models', 
   assert.ok(mesh.top500.pct_of_rank_1 > 0);
 });
 
+test('buildProofOutputs folds in peer benchmarks from mesh views without double-counting self-reports', () => {
+  const a = testIdentity(); // reports itself AND is re-seen via a mesh view
+  const c = testIdentity(); // only ever seen via a mesh view (no bootstrap reporter)
+
+  const aNetwork = signedResult(a, 'tunnel.throughput', 100, 'MB/s', {}, 1000);
+  const cNetwork = signedResult(c, 'tunnel.throughput', 50, 'MB/s', {}, 1000);
+
+  const nodes = [
+    {
+      name: 'a',
+      proof_snapshot: {
+        resources: { network: { result: aNetwork.envelope, signing_payload_b64: aNetwork.payloadB64 } },
+      },
+    },
+  ];
+
+  // Two reporters' mesh views both saw node A (DHT republication of the SAME
+  // signed result — same ts) and node C (never self-reports).
+  const meshViews = [
+    { nodes: [
+      { did: a.did, proof_snapshot: { resources: { network: { result: aNetwork.envelope, signing_payload_b64: aNetwork.payloadB64 } } } },
+      { did: c.did, proof_snapshot: { resources: { network: { result: cNetwork.envelope, signing_payload_b64: cNetwork.payloadB64 } } } },
+    ] },
+    { nodes: [
+      { did: a.did, proof_snapshot: { resources: { network: { result: aNetwork.envelope, signing_payload_b64: aNetwork.payloadB64 } } } },
+    ] },
+  ];
+
+  const { network, bests } = buildProofOutputs(nodes, '2026-07-01T00:00:00Z', meshViews);
+  // A's result appears 3 times across sources (self + 2 mesh views) but must
+  // count once; C only ever appears via mesh views and must still be counted.
+  assert.equal(network.resources.network.aggregate.sample_count, 2);
+  assert.equal(network.resources.network.aggregate.value, 150);
+  assert.equal(bests.resources.network.value, 100);
+  assert.equal(bests.resources.network.node_did, a.did);
+});
+
 console.log(`\n${passed} test(s) passed`);
