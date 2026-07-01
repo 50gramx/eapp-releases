@@ -608,11 +608,30 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     totals.storage_block_gib += meshNum(n.storage_block_gib);
     totals.storage_object_gib += meshNum(n.storage_object_gib);
     totals.egress_gbps += meshNum(n.egress_gbps);
+    const nodeDid = n.did || n.DID || '';
     for (const m of n.models || []) {
       if (!m || !m.name) continue;
-      const cur = models.get(m.name) || { name: m.name, providers: 0, best_effective_ctx: 0 };
+      const cur = models.get(m.name) || {
+        name: m.name, providers: 0, total_free_slots: 0,
+        best_effective_ctx: 0, best_declared_ctx: 0, max_vram_gib: 0,
+        quants: new Set(), caps: {}, verified: false, provider_dids: new Set(),
+      };
       cur.providers++;
+      cur.total_free_slots += meshNum(m.free_slots);
       cur.best_effective_ctx = Math.max(cur.best_effective_ctx, meshNum(m.effective_ctx));
+      cur.best_declared_ctx = Math.max(cur.best_declared_ctx, meshNum(m.ctx));
+      cur.max_vram_gib = Math.max(cur.max_vram_gib, meshNum(m.vram_needed_gib));
+      if (m.quant) cur.quants.add(m.quant);
+      // Capability provenance (EP&N foundation: declared vs measured). A measured
+      // (node-signed) capability outranks a merely declared one.
+      const measured = m.measured_caps || {};
+      const declared = m.declared_caps || {};
+      for (const k of ['tools', 'vision', 'audio', 'embedding', 'thinking', 'structured_output']) {
+        if (measured[k]) cur.caps[k] = 'measured';
+        else if (declared[k] && cur.caps[k] !== 'measured') cur.caps[k] = 'declared';
+      }
+      if (m.bench_digest) cur.verified = true; // a signed benchmark backs this model somewhere
+      if (nodeDid) cur.provider_dids.add(nodeDid);
       models.set(m.name, cur);
     }
   }
@@ -644,7 +663,20 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
       est_pflops: estPflops,
     },
     top500,
-    models: [...models.values()].sort((a, b) => b.providers - a.providers),
+    models: [...models.values()]
+      .map((m) => ({
+        name: m.name,
+        providers: m.providers,
+        provider_count: m.provider_dids.size,
+        total_free_slots: m.total_free_slots,
+        best_effective_ctx: m.best_effective_ctx,
+        best_declared_ctx: m.best_declared_ctx,
+        max_vram_gib: +m.max_vram_gib.toFixed(2),
+        quants: [...m.quants],
+        caps: m.caps, // { tools: 'measured'|'declared', vision: ..., ... }
+        verified: m.verified,
+      }))
+      .sort((a, b) => b.providers - a.providers || b.best_effective_ctx - a.best_effective_ctx),
     nodes,
   };
 }

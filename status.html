@@ -160,7 +160,24 @@
           </div>
           <div id="meshCards" class="status-card-grid status-card-grid--tight"></div>
           <div id="meshTop500" class="catalog-note"></div>
-          <div id="meshModels" class="catalog-note"></div>
+          <p id="meshModels" class="catalog-support-copy" style="margin-top:1.25rem;"></p>
+          <div class="cds--data-table-container">
+            <table class="cds--data-table cds--data-table--sm">
+              <thead class="cds--data-table-header">
+                <tr>
+                  <th scope="col">Model</th>
+                  <th scope="col">Quant</th>
+                  <th scope="col">Nodes</th>
+                  <th scope="col">Free slots</th>
+                  <th scope="col">Effective ctx</th>
+                  <th scope="col">Capabilities</th>
+                  <th scope="col">VRAM</th>
+                  <th scope="col">Proof</th>
+                </tr>
+              </thead>
+              <tbody id="meshModelsBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <section id="peers" class="cds--tile cds--tile--light status-founders-shell">
@@ -410,8 +427,38 @@
             ].join("");
           if (meshTop500)
             meshTop500.innerHTML = `${t.disclaimer || ""} <a href="${t.source || "https://top500.org"}" target="_blank" rel="noopener noreferrer">Source: TOP500 ↗</a>`;
-          if (meshModels && modelCount)
-            meshModels.textContent = "Models advertised: " + mesh.models.slice(0, 10).map((x) => `${x.name} (${x.providers})`).join(", ");
+          if (meshModels)
+            meshModels.textContent = modelCount
+              ? `${modelCount} model${modelCount === 1 ? "" : "s"} advertised across the DHT. Capability tags are green when node-measured (signed), grey when only declared — proof over prestige.`
+              : "No models advertised in the DHT yet — nodes serving models will appear here with capabilities, context, and signed benchmarks.";
+          const meshModelsBody = document.getElementById("meshModelsBody");
+          if (meshModelsBody) {
+            meshModelsBody.innerHTML = modelCount
+              ? mesh.models
+                  .map((m) => {
+                    const caps =
+                      Object.entries(m.caps || {})
+                        .map(([k, prov]) => `<span class="cds--tag ${prov === "measured" ? "cds--tag--green" : "cds--tag--cool-gray"}" title="${prov}">${k.replace(/_/g, " ")}</span>`)
+                        .join(" ") || "—";
+                    const ctx = m.best_effective_ctx
+                      ? `${fmtNumber(m.best_effective_ctx)} <span class="cds--tag cds--tag--green">measured</span>`
+                      : m.best_declared_ctx
+                        ? `${fmtNumber(m.best_declared_ctx)} <span class="cds--tag cds--tag--cool-gray">declared</span>`
+                        : "—";
+                    return `<tr>
+                      <td>${m.name}</td>
+                      <td>${(m.quants || []).join(", ") || "—"}</td>
+                      <td>${fmtNumber(m.provider_count || m.providers)}</td>
+                      <td>${fmtNumber(m.total_free_slots)}</td>
+                      <td>${ctx}</td>
+                      <td>${caps}</td>
+                      <td>${m.max_vram_gib ? fmtNumber(m.max_vram_gib, 1) + " GiB" : "—"}</td>
+                      <td>${m.verified ? '<span class="cds--tag cds--tag--green">✓ signed</span>' : '<span class="cds--tag cds--tag--warm-gray">declared</span>'}</td>
+                    </tr>`;
+                  })
+                  .join("")
+              : `<tr><td colspan="8" class="catalog-note">No models advertised in the DHT yet.</td></tr>`;
+          }
         } else if (meshSummary) {
           meshSummary.textContent = "No DHT mesh view has been published yet — reporting nodes will fill this in.";
         }
