@@ -104,6 +104,7 @@ jobs:
           # epnd-autoupdate can keep it in sync (the binary swap alone never
           # updates scripts).
           cp epn-daemon/scripts/report-bootstrap-status.sh epn-daemon/dist/report-bootstrap-status.sh
+          cp epn-daemon/scripts/epnd-autoupdate.sh epn-daemon/dist/epnd-autoupdate.sh
           cd epn-daemon/dist
           sha256sum epnd-* > checksums.txt
 
@@ -121,6 +122,7 @@ jobs:
             epn-daemon/dist/epnd-darwin-arm64
             epn-daemon/dist/install.sh
             epn-daemon/dist/report-bootstrap-status.sh
+            epn-daemon/dist/epnd-autoupdate.sh
             epn-daemon/dist/checksums.txt
 
       - name: Update built-marker
