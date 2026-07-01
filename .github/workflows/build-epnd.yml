@@ -122,12 +122,29 @@ jobs:
         run: echo "${{ needs.check.outputs.sha }}" > epnd-last-built.txt
 
       - name: Commit marker
+        # eapp-releases main is pushed by several scheduled workflows on
+        # overlapping crons, so a bare push races ("fetch first" rejection).
+        # Re-sync to origin, re-write the marker, retry; give up gracefully —
+        # the release already published, and the next run catches up. Mirrors
+        # aggregate-founders.yml's conflict-free pattern.
         run: |
           git config user.name "eutopia-ci"
           git config user.email "ci@50gramx.com"
-          git add epnd-last-built.txt
-          git commit -m "ci: built epnd @ ${{ needs.check.outputs.sha }}" || exit 0
-          git push
+          for i in $(seq 1 6); do
+            git fetch -q origin main
+            git reset -q --hard origin/main
+            echo "${{ needs.check.outputs.sha }}" > epnd-last-built.txt
+            if git diff --quiet -- epnd-last-built.txt; then
+              echo "marker already current"; exit 0
+            fi
+            git add epnd-last-built.txt
+            git commit -q -m "ci: built epnd @ ${{ needs.check.outputs.sha }}"
+            if git push -q origin HEAD:main; then
+              echo "pushed"; exit 0
+            fi
+            echo "push raced (attempt $i) — re-syncing"; sleep $((RANDOM % 4 + 2))
+          done
+          echo "gave up after retries — next run will catch up (not a failure)"; exit 0
 
       - name: Refresh bundled-epnd app builds for every already-released brand
         # epnd just changed — rebuild every brand/platform/channel combo that
