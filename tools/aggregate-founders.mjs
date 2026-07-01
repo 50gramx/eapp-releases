@@ -553,13 +553,20 @@ function loadMeshViews() {
 // Rough FP16 TFLOP/s per node by GPU class (order-of-magnitude estimate only) —
 // enough to place the network on a TOP500 scale, clearly labelled as an estimate.
 const GPU_TFLOPS = { nvidia: 80, amd: 45, apple: 15, intel: 4, none: 0 };
-// Static TOP500 anchors (LINPACK Rmax). There is no official free JSON API, so
-// these are hardcoded reference points — bump when a new list ships.
+// Published TOP500 reference figures (HPL/LINPACK Rmax) from the official list.
+// There is no free JSON API, so these are transcribed from top500.org and must
+// be bumped when a new list ships. Attributed + disclaimed below; our own number
+// is an independent estimate, not a TOP500 result.
+// Source: https://top500.org/lists/top500/2024/11/ (November 2024, 64th list):
+//   #1 El Capitan 1.742 EFlop/s · #500 entry 2.31 PFlop/s · total 11.72 EFlop/s.
 const TOP500_REF = {
-  as_of: 'TOP500 Nov 2024 (LINPACK Rmax)',
+  as_of: 'TOP500 November 2024 (HPL/LINPACK Rmax)',
+  source: 'https://top500.org/lists/top500/2024/11/',
   rank_1: { name: 'El Capitan', pflops: 1742 },
   rank_500_pflops: 2.31,
-  list_sum_pflops: 11700,
+  list_sum_pflops: 11720,
+  disclaimer:
+    'TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement.',
 };
 function estNodeTflops(n) {
   const gpu = GPU_TFLOPS[n.gpu_class || 'none'] ?? 0;
@@ -613,6 +620,7 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
   const estPflops = +(estTflops / 1000).toFixed(4);
   const top500 = {
     as_of: TOP500_REF.as_of,
+    source: TOP500_REF.source,
     est_network_tflops: +estTflops.toFixed(2),
     est_network_pflops: estPflops,
     pct_of_rank_1: +((estPflops / TOP500_REF.rank_1.pflops) * 100).toFixed(4),
@@ -620,7 +628,8 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     would_enter_top500: estPflops >= TOP500_REF.rank_500_pflops,
     rank_1: TOP500_REF.rank_1,
     rank_500_pflops: TOP500_REF.rank_500_pflops,
-    note: 'Order-of-magnitude estimate of aggregate FP16 capacity from advertised GPU/CPU capacity — not a LINPACK measurement.',
+    list_sum_pflops: TOP500_REF.list_sum_pflops,
+    disclaimer: TOP500_REF.disclaimer,
   };
   return {
     generated_at: generatedAt,

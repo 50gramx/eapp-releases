@@ -177,10 +177,12 @@
               if (cap) cap.textContent =
                 `Aggregate capacity: ${num(c.est_tflops)} TFLOP/s (≈ ${c.est_pflops || 0} PFLOP/s) · ${num(c.vram_gib)} GiB VRAM · ${num(c.vcpu_seconds)} vCPU-s/hr.`;
               const top = document.getElementById('meshTop500');
-              if (top && t.as_of) top.textContent =
+              if (top && t.as_of) top.innerHTML =
                 `${t.would_enter_top500 ? 'This network would place on the TOP500.' : 'Not on the TOP500 yet — and growing in public.'} ` +
-                `Reference ${t.as_of}: #1 ${t.rank_1.name} ${num(t.rank_1.pflops)} PFLOP/s, #500 ≈ ${t.rank_500_pflops} PFLOP/s. ` +
-                `This network ≈ ${t.est_network_pflops} PFLOP/s (${t.pct_of_rank_1}% of #1). ${t.note}`;
+                `Reference ${t.as_of}: #1 ${t.rank_1.name} ${num(t.rank_1.pflops)} PFLOP/s, #500 ≈ ${t.rank_500_pflops} PFLOP/s, total ${num(t.list_sum_pflops)} PFLOP/s. ` +
+                `This network ≈ ${t.est_network_pflops} PFLOP/s (${t.pct_of_rank_1}% of #1). ` +
+                `${t.disclaimer} ` +
+                `<a href="${t.source}" target="_blank" rel="noopener noreferrer">Source: TOP500 ↗</a>`;
               const mods = document.getElementById('meshModels');
               if (mods && (m.models || []).length)
                 mods.textContent = 'Models: ' + m.models.slice(0, 8).map((x) => `${x.name} (${x.providers})`).join(', ');
