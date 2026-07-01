@@ -152,6 +152,42 @@
           </div>
         </section>
 
+        <section id="mesh" class="cds--tile cds--tile--light status-founders-shell">
+          <div class="status-founders-heading">
+            <p class="catalog-panel-label">The whole network (as seen in the DHT)</p>
+            <h2 class="status-section-title">Cumulative capacity vs the TOP500</h2>
+            <p id="meshSummary" class="catalog-support-copy">Loading DHT mesh view…</p>
+          </div>
+          <p id="meshCapacity" class="catalog-support-copy"></p>
+          <div id="meshTop500" class="catalog-note"></div>
+          <div id="meshModels" class="catalog-note"></div>
+        </section>
+        <script>
+          (async () => {
+            const num = (v) => (typeof v === 'number' ? v : 0).toLocaleString();
+            try {
+              const r = await fetch('data/mesh.json', { cache: 'no-store' });
+              if (!r.ok) return;
+              const m = await r.json();
+              const c = m.capacity || {}, t = m.top500 || {};
+              const sum = document.getElementById('meshSummary');
+              if (sum) sum.textContent =
+                `${num(m.node_count)} node(s) across ${num(m.reporter_count)} reporter(s) · ${(m.models || []).length} model(s) advertised in the DHT.`;
+              const cap = document.getElementById('meshCapacity');
+              if (cap) cap.textContent =
+                `Aggregate capacity: ${num(c.est_tflops)} TFLOP/s (≈ ${c.est_pflops || 0} PFLOP/s) · ${num(c.vram_gib)} GiB VRAM · ${num(c.vcpu_seconds)} vCPU-s/hr.`;
+              const top = document.getElementById('meshTop500');
+              if (top && t.as_of) top.textContent =
+                `${t.would_enter_top500 ? 'This network would place on the TOP500.' : 'Not on the TOP500 yet — and growing in public.'} ` +
+                `Reference ${t.as_of}: #1 ${t.rank_1.name} ${num(t.rank_1.pflops)} PFLOP/s, #500 ≈ ${t.rank_500_pflops} PFLOP/s. ` +
+                `This network ≈ ${t.est_network_pflops} PFLOP/s (${t.pct_of_rank_1}% of #1). ${t.note}`;
+              const mods = document.getElementById('meshModels');
+              if (mods && (m.models || []).length)
+                mods.textContent = 'Models: ' + m.models.slice(0, 8).map((x) => `${x.name} (${x.providers})`).join(', ');
+            } catch (_) { /* mesh view optional */ }
+          })();
+        </script>
+
         <section id="peers" class="cds--tile cds--tile--light status-founders-shell">
           <div class="catalog-controls__header">
             <div>

@@ -550,6 +550,23 @@ function loadMeshViews() {
   return out;
 }
 
+// Rough FP16 TFLOP/s per node by GPU class (order-of-magnitude estimate only) —
+// enough to place the network on a TOP500 scale, clearly labelled as an estimate.
+const GPU_TFLOPS = { nvidia: 80, amd: 45, apple: 15, intel: 4, none: 0 };
+// Static TOP500 anchors (LINPACK Rmax). There is no official free JSON API, so
+// these are hardcoded reference points — bump when a new list ships.
+const TOP500_REF = {
+  as_of: 'TOP500 Nov 2024 (LINPACK Rmax)',
+  rank_1: { name: 'El Capitan', pflops: 1742 },
+  rank_500_pflops: 2.31,
+  list_sum_pflops: 11700,
+};
+function estNodeTflops(n) {
+  const gpu = GPU_TFLOPS[n.gpu_class || 'none'] ?? 0;
+  const cpu = (meshNum(n.vcpu_seconds) / 3600) * 0.05; // ~0.05 TFLOP/s per vCPU
+  return gpu + cpu;
+}
+
 // buildMeshView unions the DHT-known nodes across every reporter's mesh view
 // (by DID, keeping the richest entry) and summarizes network-wide resource
 // capacity and model availability. Purely additive — never touches
@@ -575,7 +592,9 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     storage_block_gib: 0, storage_object_gib: 0, egress_gbps: 0,
   };
   const models = new Map();
+  let estTflops = 0;
   for (const n of nodes) {
+    estTflops += estNodeTflops(n);
     totals.vram_gib += meshNum(n.vram_gib);
     totals.ram_pool_gib += meshNum(n.ram_pool_gib);
     totals.vcpu_seconds += meshNum(n.vcpu_seconds);
@@ -591,12 +610,31 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     }
   }
   for (const k of Object.keys(totals)) totals[k] = +totals[k].toFixed(3);
+  const estPflops = +(estTflops / 1000).toFixed(4);
+  const top500 = {
+    as_of: TOP500_REF.as_of,
+    est_network_tflops: +estTflops.toFixed(2),
+    est_network_pflops: estPflops,
+    pct_of_rank_1: +((estPflops / TOP500_REF.rank_1.pflops) * 100).toFixed(4),
+    pct_of_list_sum: +((estPflops / TOP500_REF.list_sum_pflops) * 100).toFixed(4),
+    would_enter_top500: estPflops >= TOP500_REF.rank_500_pflops,
+    rank_1: TOP500_REF.rank_1,
+    rank_500_pflops: TOP500_REF.rank_500_pflops,
+    note: 'Order-of-magnitude estimate of aggregate FP16 capacity from advertised GPU/CPU capacity — not a LINPACK measurement.',
+  };
   return {
     generated_at: generatedAt,
     label: 'DHT-known network, unioned across founder mesh reports',
     reporter_count: reporterCount,
     node_count: nodes.length,
     totals,
+    capacity: {
+      vram_gib: totals.vram_gib,
+      vcpu_seconds: totals.vcpu_seconds,
+      est_tflops: +estTflops.toFixed(2),
+      est_pflops: estPflops,
+    },
+    top500,
     models: [...models.values()].sort((a, b) => b.providers - a.providers),
     nodes,
   };

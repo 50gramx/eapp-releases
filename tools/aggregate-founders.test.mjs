@@ -273,12 +273,12 @@ test('buildProofOutputs sums verified results and picks highest verified bests p
 test('buildMeshView unions DHT nodes by DID and summarizes resources + models', () => {
   const views = [
     { nodes: [
-      { did: 'did:epn:A', vram_gib: 8, ram_pool_gib: 16, models: [{ name: 'gemma4:e2b', effective_ctx: 4096 }] },
-      { did: 'did:epn:B', vram_gib: 24, models: [] },
+      { did: 'did:epn:A', vram_gib: 8, ram_pool_gib: 16, gpu_class: 'nvidia', models: [{ name: 'gemma4:e2b', effective_ctx: 4096 }] },
+      { did: 'did:epn:B', vram_gib: 24, gpu_class: 'amd', models: [] },
     ] },
     { nodes: [
       // A seen again by a second reporter — the richer entry (more models) wins.
-      { did: 'did:epn:A', vram_gib: 8, models: [{ name: 'gemma4:e2b', effective_ctx: 8192 }, { name: 'llama3.2', effective_ctx: 2048 }] },
+      { did: 'did:epn:A', vram_gib: 8, gpu_class: 'nvidia', models: [{ name: 'gemma4:e2b', effective_ctx: 8192 }, { name: 'llama3.2', effective_ctx: 2048 }] },
       { did: 'did:epn:C', vcpu_seconds: 100, models: [{ name: 'gemma4:e2b', effective_ctx: 2048 }] },
     ] },
   ];
@@ -290,6 +290,10 @@ test('buildMeshView unions DHT nodes by DID and summarizes resources + models', 
   const g = mesh.models.find((m) => m.name === 'gemma4:e2b');
   assert.equal(g.providers, 2); // A + C
   assert.equal(g.best_effective_ctx, 8192); // A's richer entry
+  // capacity + TOP500 comparison: 80(nvidia A) + 45(amd B) + ~0(C) TFLOP/s
+  assert.equal(Math.round(mesh.capacity.est_tflops), 125);
+  assert.equal(mesh.top500.would_enter_top500, false); // 0.125 PFLOP/s << #500 (2.31)
+  assert.ok(mesh.top500.pct_of_rank_1 > 0);
 });
 
 console.log(`\n${passed} test(s) passed`);
