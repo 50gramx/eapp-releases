@@ -4,6 +4,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # Data commits from aggregate-founders / catalog run under GITHUB_TOKEN, which
+  # by design does NOT trigger `push` workflows — so Pages would never redeploy
+  # with fresh network/bests/founders data. Redeploy when those finish, plus a
+  # periodic fallback so the live site always catches up.
+  workflow_run:
+    workflows: ["Aggregate founder nodes", "Generate Release Catalog", "Build epnd (free public CI)"]
+    types: [completed]
+  schedule:
+    - cron: '12,27,42,57 * * * *'
 
 permissions:
   contents: read

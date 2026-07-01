@@ -3,26 +3,26 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>EP&amp;N Mesh Status</title>
+    <title>EP&amp;N Node Self-Reports</title>
     <meta
       name="description"
-      content="Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry."
+      content="Self-reported status from EP&N founder and community nodes: lifetime uptime, peer counts, and per-node workload counters. Not an independently verified network total."
     >
     <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
     <meta name="theme-color" content="#0f62fe">
     <meta name="color-scheme" content="light dark">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="EP&N Mesh Status">
-    <meta property="og:description" content="Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry.">
+    <meta property="og:title" content="EP&N Node Self-Reports">
+    <meta property="og:description" content="Self-reported status from EP&N founder and community nodes: lifetime uptime, peer counts, and per-node workload counters. Not an independently verified network total.">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="EP&N Mesh Status">
-    <meta name="twitter:description" content="Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry.">
+    <meta name="twitter:title" content="EP&N Node Self-Reports">
+    <meta name="twitter:description" content="Self-reported status from EP&N founder and community nodes: lifetime uptime, peer counts, and per-node workload counters. Not an independently verified network total.">
     <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebPage",
-        "name": "EP&N Mesh Status",
-        "description": "Measured health for the EP&N bootstrap fleet, including founder coverage, uptime, and workload telemetry.",
+        "name": "EP&N Node Self-Reports",
+        "description": "Self-reported status from EP&N founder and community nodes: lifetime uptime, peer counts, and per-node workload counters. Not an independently verified network total.",
         "inLanguage": "en",
         "isAccessibleForFree": true,
         "publisher": {
@@ -44,7 +44,7 @@
       <nav id="primaryNav" class="cds--header__nav" aria-label="Primary">
         <ul class="cds--header__menu-bar">
           <li><a class="cds--header__menu-item" href="./">Catalog</a></li>
-          <li><a class="cds--header__menu-item cds--header__menu-item--current" aria-current="page" href="status.html">Mesh Status</a></li>
+          <li><a class="cds--header__menu-item cds--header__menu-item--current" aria-current="page" href="status.html">Node Self-Reports</a></li>
         </ul>
       </nav>
     </header>
@@ -54,19 +54,22 @@
         <section class="status-hero">
           <div class="cds--tile status-hero__primary">
             <div class="catalog-kicker">
-              <span class="cds--tag cds--tag--blue">Founder telemetry</span>
-              <span class="cds--tag cds--tag--green">Reachability</span>
-              <span class="cds--tag cds--tag--cool-gray">Workload honesty</span>
+              <span class="cds--tag cds--tag--blue">Founder / community self-reports</span>
+              <span class="cds--tag cds--tag--cool-gray">Not independently verified</span>
             </div>
-            <h1 class="catalog-hero__title">Mesh health should read like operations data, not a promise deck.</h1>
+            <h1 class="catalog-hero__title">This is what each node says about itself — not a verified mesh health signal.</h1>
             <p class="catalog-hero__body">
-              This page reports the observed state of the founder fleet: how many nodes
-              are online, how long they have stayed up, and whether real workload is
-              actually moving through the mesh yet.
+              Every number on this page is pushed by a node's own daemon over a
+              write-only credential; nothing here is cross-checked by another
+              node or by a settlement ledger. "Uptime" is a lifetime figure
+              derived from each node's heartbeat history (so an auto-update
+              restart does not zero it), and workload counters are sums of
+              each node's own local, self-reported counts.
             </p>
             <div class="catalog-actions">
               <a class="cds--btn cds--btn--primary" href="#health">Health summary</a>
-              <a class="cds--btn cds--btn--tertiary" href="#founders">Founder nodes</a>
+              <a class="cds--btn cds--btn--tertiary" href="#peers">Peers</a>
+              <a class="cds--btn cds--btn--tertiary" href="#founders">Reporting nodes</a>
             </div>
           </div>
 
@@ -94,21 +97,30 @@
 
         <section class="status-telemetry-grid">
           <div class="cds--tile cds--tile--light">
-            <p class="catalog-panel-label">Workload telemetry</p>
-            <h2 class="status-section-title">Signals of actual usage</h2>
+            <p class="catalog-panel-label">Network activity (self-reported)</p>
+            <h2 class="status-section-title">Sum of every reporting node's own counters</h2>
+            <p class="catalog-support-copy">Not a settlement-verified total — see the note below.</p>
             <div id="telemetryCards" class="status-card-grid status-card-grid--tight"></div>
             <div id="telemetryNote" class="catalog-note"></div>
           </div>
 
           <div class="cds--tile cds--tile--light">
-            <p class="catalog-panel-label">Founder program</p>
+            <p class="catalog-panel-label">Best in network</p>
+            <h2 class="status-section-title">Highest verified signed result per resource</h2>
+            <p class="catalog-support-copy">Best = one producing node's verified signed benchmark, traceable to its DID.</p>
+            <div id="bestCards" class="status-card-grid status-card-grid--tight"></div>
+            <div id="bestNote" class="catalog-note"></div>
+          </div>
+
+          <div class="cds--tile cds--tile--light">
+            <p class="catalog-panel-label">Founder / community program</p>
             <h2 class="status-section-title">What it takes to become visible here</h2>
             <ul class="cds--contained-list cds--contained-list--on-page status-contained-list">
               <li class="cds--contained-list-item">
                 <div class="cds--contained-list-item__content">
                   <div class="status-contained-copy">
-                    <strong>Reachable host</strong>
-                    <span>Start with a machine that has a stable public IPv4 so it can act as a bootstrap entry point.</span>
+                    <strong>Any epnd node can report</strong>
+                    <span>Community and keeper nodes are welcome, not just bootstrap boxes — set `EPND_STATUS_NODE_CLASS=community` (the default) or `founder`.</span>
                   </div>
                 </div>
               </li>
@@ -116,7 +128,7 @@
                 <div class="cds--contained-list-item__content">
                   <div class="status-contained-copy">
                     <strong>Founder mode</strong>
-                    <span>Run `epnd` as a founder/bootstrap node and keep the auto-update path active.</span>
+                    <span>`founder` is reserved for a full, non-lite `epnd` bootstrap install — lite/mobile boxes self-report as `community`.</span>
                   </div>
                 </div>
               </li>
@@ -124,7 +136,7 @@
                 <div class="cds--contained-list-item__content">
                   <div class="status-contained-copy">
                     <strong>Status reporting</strong>
-                    <span>Publish `EPND_STATUS_NODE_NAME` and `EPND_STATUS_NODE_CLASS=founder` so the page can measure your node.</span>
+                    <span>Publish a unique `EPND_STATUS_NODE_NAME` so the page can track your node's own heartbeat history.</span>
                   </div>
                 </div>
               </li>
@@ -140,11 +152,23 @@
           </div>
         </section>
 
+        <section id="peers" class="cds--tile cds--tile--light status-founders-shell">
+          <div class="catalog-controls__header">
+            <div>
+              <p class="catalog-panel-label">Peers (self-reported, local peer stores)</p>
+              <h2>Online now vs. connected ever</h2>
+            </div>
+            <p id="peersSummary" class="catalog-support-copy">Loading peer telemetry...</p>
+          </div>
+          <div id="peersCards" class="status-card-grid status-card-grid--tight"></div>
+          <div id="peersTrend" class="catalog-note"></div>
+        </section>
+
         <section id="founders" class="cds--tile cds--tile--light status-founders-shell">
           <div class="catalog-controls__header">
             <div>
-              <p class="catalog-panel-label">Founder nodes</p>
-              <h2>Bootstrap and founder fleet</h2>
+              <p class="catalog-panel-label">Reporting nodes</p>
+              <h2>Founder and community fleet</h2>
             </div>
           </div>
           <div id="founderList"></div>
@@ -172,6 +196,11 @@
         return `${hours}h`;
       }
 
+      function shortDID(did) {
+        if (!did || did.length <= 24) return did || "-";
+        return `${did.slice(0, 16)}...${did.slice(-6)}`;
+      }
+
       function statusStat(label, value) {
         return `<div class="catalog-stat"><span>${label}</span><strong>${value}</strong></div>`;
       }
@@ -189,33 +218,86 @@
         `;
       }
 
+      async function optionalJSON(path) {
+        try {
+          const response = await fetch(path, { cache: "no-store" });
+          if (!response.ok) return null;
+          return await response.json();
+        } catch {
+          return null;
+        }
+      }
+
+      function bestValue(best) {
+        if (!best || best.status !== "signed") return "Not yet benchmarked";
+        const digits = Math.abs(Number(best.value)) < 10 ? 2 : 1;
+        return `${fmtNumber(best.value, digits)} ${best.unit || ""}`.trim();
+      }
+
+      function bestCard(label, best) {
+        if (!best || best.status !== "signed") {
+          return summaryCard(label, "Not yet benchmarked", "cds--tag--cool-gray", "Commissioning", "No verified signed result has been reported for this resource yet.");
+        }
+        const model = best.model ? ` (${best.model})` : "";
+        return summaryCard(label, bestValue(best), "cds--tag--green", "Verified", `${best.metric || "benchmark"}${model}; signed by ${shortDID(best.node_did)}.`);
+      }
+
+      function sparkline(points, width = 320, height = 48) {
+        if (!points || points.length < 2) return "";
+        const values = points.map((p) => p.peers_online_total ?? 0);
+        const max = Math.max(1, ...values);
+        const stepX = width / (values.length - 1);
+        const coords = values.map((v, i) => `${(i * stepX).toFixed(1)},${(height - (v / max) * height).toFixed(1)}`);
+        return `<svg viewBox="0 0 ${width} ${height}" width="${width}" height="${height}" role="img" aria-label="Peers online over time">
+          <polyline fill="none" stroke="#0f62fe" stroke-width="2" points="${coords.join(" ")}"></polyline>
+        </svg>`;
+      }
+
       async function load() {
         const hero = document.getElementById("statusHeroStats");
         const summary = document.getElementById("statusSummary");
         const summaryCards = document.getElementById("statusSummaryCards");
         const telemetryCards = document.getElementById("telemetryCards");
         const telemetryNote = document.getElementById("telemetryNote");
+        const bestCards = document.getElementById("bestCards");
+        const bestNote = document.getElementById("bestNote");
         const founderList = document.getElementById("founderList");
+        const peersSummary = document.getElementById("peersSummary");
+        const peersCards = document.getElementById("peersCards");
+        const peersTrend = document.getElementById("peersTrend");
 
         let founders;
         try {
           founders = await (await fetch("data/founders.json", { cache: "no-store" })).json();
         } catch (error) {
           hero.innerHTML = "";
-          summary.textContent = "Founder telemetry could not be loaded.";
-          summaryCards.innerHTML = '<section class="cds--tile cds--tile--light catalog-brand-empty"><h3>Founder telemetry unavailable</h3></section>';
+          summary.textContent = "Node self-reports could not be loaded.";
+          summaryCards.innerHTML = '<section class="cds--tile cds--tile--light catalog-brand-empty"><h3>Node self-reports unavailable</h3></section>';
           founderList.innerHTML = "";
           telemetryCards.innerHTML = "";
           telemetryNote.textContent = "";
+          bestCards.innerHTML = "";
+          bestNote.textContent = "";
+          peersSummary.textContent = "";
+          peersCards.innerHTML = "";
+          peersTrend.innerHTML = "";
           console.error(error);
           return;
         }
 
+        const [networkProof, bests] = await Promise.all([
+          optionalJSON("data/network.json"),
+          optionalJSON("data/bests.json"),
+        ]);
+
         const totals = founders.totals || {};
+        const peers = founders.peers || {};
+        const nodeCount = founders.node_count ?? founders.nodes?.length ?? 0;
         const founderCount = founders.founder_count ?? 0;
+        const communityCount = founders.community_count ?? 0;
         const onlineCount = founders.online_count ?? 0;
         const fullFounderCount = founders.full_founder_count ?? 0;
-        const onlineRatio = founderCount ? Math.round((onlineCount / founderCount) * 100) : 0;
+        const onlineRatio = nodeCount ? Math.round((onlineCount / nodeCount) * 100) : 0;
         const nodeDays = Number(totals.node_years_uptime ?? 0) * 365;
         const redundancyRisk = founderCount <= 1;
         const lastCheck = founders.nodes?.reduce((latest, node) => {
@@ -224,61 +306,88 @@
         }, null);
 
         hero.innerHTML = [
-          statusStat("Founders online", `${onlineCount}/${founderCount || 0}`),
-          statusStat("Full founders", `${fullFounderCount}`),
-          statusStat("Observed peers", fmtNumber(founders.nodes?.reduce((sum, node) => sum + (node.peer_count ?? 0), 0) || 0)),
+          statusStat("Nodes online", `${onlineCount}/${nodeCount || 0}`),
+          statusStat("Founder / community", `${founderCount} / ${communityCount}`),
+          statusStat("Peers online now", fmtNumber(peers.online_now ?? 0)),
           statusStat("Last heartbeat", lastCheck ? fmtDate(lastCheck) : "Unknown"),
         ].join("");
 
         summary.textContent = founders.generated_at
-          ? `Aggregated ${fmtDate(founders.generated_at)}. This fleet currently has ${founderCount} founder node${founderCount === 1 ? "" : "s"}, with ${onlineCount} online and ${fullFounderCount} domain-backed founder${fullFounderCount === 1 ? "" : "s"}.`
-          : "Founder telemetry loaded.";
+          ? `Aggregated ${fmtDate(founders.generated_at)} from self-reported node heartbeats. ${nodeCount} node${nodeCount === 1 ? "" : "s"} reporting (${founderCount} founder, ${communityCount} community), ${onlineCount} online right now.`
+          : "Node self-reports loaded.";
 
         summaryCards.innerHTML = [
           summaryCard(
-            "Availability",
+            "Online right now",
             `${onlineRatio}%`,
             onlineRatio === 100 ? "cds--tag--green" : "cds--tag--warm-gray",
             onlineRatio === 100 ? "Healthy" : "Watch",
-            founderCount
-              ? `${onlineCount} of ${founderCount} founder nodes are currently responding.`
-              : "No founder nodes are reporting yet."
+            nodeCount
+              ? `${onlineCount} of ${nodeCount} reporting nodes are currently responding.`
+              : "No nodes are reporting yet."
           ),
           summaryCard(
-            "Reachability",
+            "Domain-backed founders",
             `${fullFounderCount}/${founderCount || 0}`,
             fullFounderCount === founderCount && founderCount > 0 ? "cds--tag--green" : "cds--tag--cool-gray",
             fullFounderCount === founderCount && founderCount > 0 ? "Complete" : "Partial",
-            "Full founders have finished the domain-backed posture that makes public entry points easier to trust."
+            "Full founders have attached a stable domain — a self-reported posture, not a verified SLA."
           ),
           summaryCard(
-            "Cumulative uptime",
+            "Lifetime uptime",
             `${fmtNumber(nodeDays, 1)} days`,
             nodeDays > 0 ? "cds--tag--blue" : "cds--tag--cool-gray",
             nodeDays > 0 ? "Observed" : "Early",
-            "The uptime number is still small, but it is a real signal from real founder nodes rather than marketing filler."
+            "Derived from each node's heartbeat history, not its raw process uptime — an auto-update restart does not reset this number."
           ),
           summaryCard(
             "Redundancy",
-            founderCount <= 1 ? "Single node" : `${founderCount} nodes`,
+            founderCount <= 1 ? "Single founder" : `${founderCount} founders`,
             redundancyRisk ? "cds--tag--red" : "cds--tag--green",
             redundancyRisk ? "Risk" : "Distributed",
             redundancyRisk
-              ? "The fleet currently depends on a single founder node, so resilience is limited even while the node is healthy."
+              ? "The fleet currently depends on a single founder node for bootstrap entry, so resilience is limited even while it is healthy."
               : "Founder coverage is distributed enough that a single node failure is less likely to become a public incident."
           ),
         ].join("");
 
         telemetryCards.innerHTML = [
-          summaryCard("Inferences served", fmtNumber(totals.inferences_served), totals.inferences_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.inferences_served ? "Active" : "Quiet", "Measured inference workload on founder nodes."),
-          summaryCard("Tokens served", fmtNumber(totals.tokens_served), totals.tokens_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.tokens_served ? "Active" : "Quiet", "Generated output tokens observed by the reporter."),
-          summaryCard("Receipts verified", fmtNumber(totals.receipts_verified), totals.receipts_verified ? "cds--tag--green" : "cds--tag--warm-gray", totals.receipts_verified ? "Active" : "Quiet", "Cryptographic settlement or metering receipts verified by the fleet."),
-          summaryCard("Displaced cloud cost", `$${fmtNumber(totals.displaced_cloud_usd, 2)}`, totals.displaced_cloud_usd ? "cds--tag--green" : "cds--tag--warm-gray", totals.displaced_cloud_usd ? "Observed" : "Quiet", "Equivalent cloud spend displaced by mesh-served workload."),
+          summaryCard("Inferences served", fmtNumber(totals.inferences_served), totals.inferences_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.inferences_served ? "Active" : "Quiet", "Sum of each node's own local inference counter — self-reported, not independently verified."),
+          summaryCard("Tokens served", fmtNumber(totals.tokens_served), totals.tokens_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.tokens_served ? "Active" : "Quiet", "Sum of each node's own local output-token counter."),
+          summaryCard("Receipts verified", fmtNumber(totals.receipts_verified), totals.receipts_verified ? "cds--tag--green" : "cds--tag--warm-gray", totals.receipts_verified ? "Active" : "Quiet", "Sum of each node's own local settlement/metering receipt counter."),
+          summaryCard("Displaced cloud cost", `$${fmtNumber(totals.displaced_cloud_usd, 2)}`, totals.displaced_cloud_usd ? "cds--tag--green" : "cds--tag--warm-gray", totals.displaced_cloud_usd ? "Observed" : "Quiet", "Estimated from the tokens-served sum above at a flat cloud-equivalent rate."),
         ].join("");
 
-        telemetryNote.textContent = totals.inferences_served || totals.tokens_served || totals.receipts_verified
-          ? "Real workload is now appearing in the fleet metrics, which gives the page a stronger enterprise value story than health alone."
-          : "The health story is real, but the workload story is still early: the fleet is up while inference, token, and settlement counters remain near zero.";
+        telemetryNote.textContent = (totals.inferences_served || totals.tokens_served || totals.receipts_verified
+          ? "Real workload is now appearing across the reporting fleet. "
+          : "The health story is real, but the workload story is still early: the fleet is up while inference, token, and settlement counters remain near zero. ")
+          + "These are self-reported per-node counters summed together — there is no settlement-ledger-backed verification behind this total yet.";
+
+        const bestResources = bests?.resources || {};
+        const inferenceModels = Object.entries(bestResources.inference?.models || {});
+        bestCards.innerHTML = [
+          bestCard("Network throughput", bestResources.network),
+          ...inferenceModels.slice(0, 3).map(([model, best]) => bestCard(`Inference ${model}`, { ...best, model })),
+          bestCard("CPU", bestResources.cpu),
+          bestCard("Memory", bestResources.mem),
+          bestCard("Storage", bestResources.storage),
+          bestCard("GPU", bestResources.gpu),
+          bestCard("Energy", bestResources.energy),
+        ].join("");
+        bestNote.textContent = bests?.generated_at
+          ? `Best numbers generated ${fmtDate(bests.generated_at)}. ${bests.trust_model || ""} ${networkProof?.trust_model || ""}`.trim()
+          : "Best-number JSON has not been generated yet; waiting for proof snapshots from reporting nodes.";
+
+        peersSummary.textContent = `${fmtNumber(peers.online_now ?? 0)} peer-connections online now across ${nodeCount} node${nodeCount === 1 ? "" : "s"}; ${fmtNumber(peers.connected_ever ?? 0)} distinct peers connected at some point (local peer-cache history, summed per node — not deduplicated across nodes).`;
+
+        peersCards.innerHTML = [
+          summaryCard("Online now", fmtNumber(peers.online_now ?? 0), "cds--tag--green", "Live", "Sum of each node's currently-connected peer count."),
+          summaryCard("Connected ever", fmtNumber(peers.connected_ever ?? 0), "cds--tag--blue", "Cumulative", "Sum of each node's own cumulative distinct-peer count, from its local peer cache."),
+        ].join("");
+
+        peersTrend.innerHTML = (peers.trend && peers.trend.length > 1)
+          ? `<p class="catalog-panel-label">Peers online — trend</p>${sparkline(peers.trend)}`
+          : "Not enough history yet for a trend.";
 
         founderList.innerHTML = `
           <ul class="cds--contained-list cds--contained-list--on-page status-contained-list">
@@ -297,10 +406,12 @@
                       </div>
                     </div>
                     <div class="status-node-metrics">
-                      <div><span>Peers</span><strong>${fmtNumber(node.peer_count)}</strong></div>
-                      <div><span>Uptime</span><strong>${fmtDuration(node.uptime_seconds)}</strong></div>
-                      <div><span>Inferences</span><strong>${fmtNumber(node.inferences_served)}</strong></div>
-                      <div><span>Receipts</span><strong>${fmtNumber(node.receipts_verified)}</strong></div>
+                      <div><span>Peers online</span><strong>${fmtNumber(node.peers_online ?? node.peer_count)}</strong></div>
+                      <div><span>Peers ever</span><strong>${fmtNumber(node.peers_distinct_total)}</strong></div>
+                      <div><span>Lifetime uptime</span><strong>${fmtDuration(node.uptime_seconds)}</strong></div>
+                      <div><span>Availability</span><strong>${node.availability_pct != null ? node.availability_pct + "%" : "-"}</strong></div>
+                      <div><span>Inferences (local)</span><strong>${fmtNumber(node.inferences_served)}</strong></div>
+                      <div><span>Receipts (local)</span><strong>${fmtNumber(node.receipts_verified)}</strong></div>
                     </div>
                     <div class="status-node-foot">
                       <span>Daemon ${String(node.epnd_version || "-").slice(0, 12)}</span>
@@ -311,7 +422,7 @@
               </li>
             `).join("") || `
               <li class="cds--contained-list-item">
-                <div class="cds--contained-list-item__content">No founder nodes reported yet.</div>
+                <div class="cds--contained-list-item__content">No nodes reported yet.</div>
               </li>
             `}
           </ul>
