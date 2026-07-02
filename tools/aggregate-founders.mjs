@@ -645,7 +645,12 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
       if (!prev || nModels > pModels) byDid.set(did, n);
     }
   }
-  const nodes = [...byDid.values()];
+  let nodes = [...byDid.values()];
+  // Ensure each node has a class field, defaulting to "community" (WP-5)
+  nodes = nodes.map((n) => ({
+    ...n,
+    class: n.class || "community",
+  }));
   const totals = {
     vram_gib: 0, ram_pool_gib: 0, vcpu_seconds: 0,
     storage_block_gib: 0, storage_object_gib: 0, egress_gbps: 0,

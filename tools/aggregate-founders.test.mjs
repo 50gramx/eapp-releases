@@ -347,4 +347,24 @@ test('buildProofOutputs folds in peer benchmarks from mesh views without double-
   assert.equal(bests.resources.network.node_did, a.did);
 });
 
+test('buildMeshView preserves class field and defaults community nodes (WP-5)', () => {
+  const views = [
+    { nodes: [
+      { did: 'did:epn:founder1', class: 'founder', vram_gib: 8, models: [] },
+      { did: 'did:epn:community1', vram_gib: 4, models: [] }, // no class field, should default
+      { did: 'did:epn:community2', class: 'community', vram_gib: 6, models: [] },
+    ] },
+  ];
+  const mesh = buildMeshView(views, '2026-07-01T00:00:00Z');
+  assert.equal(mesh.node_count, 3);
+  const founder = mesh.nodes.find((n) => n.did === 'did:epn:founder1');
+  assert.equal(founder.class, 'founder');
+  const comm1 = mesh.nodes.find((n) => n.did === 'did:epn:community1');
+  assert.equal(comm1.class, 'community', 'nodes without explicit class must default to "community"');
+  const comm2 = mesh.nodes.find((n) => n.did === 'did:epn:community2');
+  assert.equal(comm2.class, 'community');
+  // Verify community nodes are NOT filtered out — all three appear
+  assert.equal(mesh.nodes.length, 3, 'all nodes, including community, must appear');
+});
+
 console.log(`\n${passed} test(s) passed`);

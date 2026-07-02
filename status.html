@@ -160,6 +160,23 @@
           </div>
           <div id="meshCards" class="status-card-grid status-card-grid--tight"></div>
           <div id="meshTop500" class="catalog-note"></div>
+          <p id="meshNodes" class="catalog-support-copy" style="margin-top:1.25rem;"></p>
+          <div class="cds--data-table-container">
+            <table class="cds--data-table cds--data-table--sm">
+              <thead class="cds--data-table-header">
+                <tr>
+                  <th scope="col">Node</th>
+                  <th scope="col">Class</th>
+                  <th scope="col">Models</th>
+                  <th scope="col">VRAM</th>
+                  <th scope="col">vCPU/h</th>
+                  <th scope="col">Inferences</th>
+                  <th scope="col">Tokens</th>
+                </tr>
+              </thead>
+              <tbody id="meshNodesBody"></tbody>
+            </table>
+          </div>
           <p id="meshModels" class="catalog-support-copy" style="margin-top:1.25rem;"></p>
           <div class="cds--data-table-container">
             <table class="cds--data-table cds--data-table--sm">
@@ -417,6 +434,7 @@
         const meshSummary = document.getElementById("meshSummary");
         const meshCards = document.getElementById("meshCards");
         const meshTop500 = document.getElementById("meshTop500");
+        const meshNodes = document.getElementById("meshNodes");
         const meshModels = document.getElementById("meshModels");
         if (mesh) {
           const cap = mesh.capacity || {};
@@ -433,6 +451,46 @@
             ].join("");
           if (meshTop500)
             meshTop500.innerHTML = `${t.disclaimer || ""} <a href="${t.source || "https://top500.org"}" target="_blank" rel="noopener noreferrer">Source: TOP500 ↗</a>`;
+          // WP-5: Nodes table with class grouping (founder vs community)
+          const nodeCount = (mesh.nodes || []).length;
+          if (meshNodes)
+            meshNodes.textContent = nodeCount
+              ? `${nodeCount} DHT-known node${nodeCount === 1 ? "" : "s"}. Founder nodes are trusted validators; community nodes are peers contributing to the network.`
+              : "No nodes discovered in the DHT yet.";
+          const meshNodesBody = document.getElementById("meshNodesBody");
+          if (meshNodesBody) {
+            meshNodesBody.innerHTML = nodeCount
+              ? mesh.nodes
+                  .sort((a, b) => {
+                    // Founder nodes first, then community
+                    const aClass = a.class || "community";
+                    const bClass = b.class || "community";
+                    if (aClass !== bClass) return aClass === "founder" ? -1 : 1;
+                    return (a.name || a.did || "").localeCompare(b.name || b.did || "");
+                  })
+                  .map((n) => {
+                    const nodeClass = n.class || "community";
+                    const classTag = `<span class="cds--tag ${nodeClass === "founder" ? "cds--tag--green" : "cds--tag--cool-gray"}">${nodeClass}</span>`;
+                    const nodeLabel = n.name || (n.did ? n.did.substring(0, 16) : "Unknown");
+                    const modelCount = Array.isArray(n.models) ? n.models.length : 0;
+                    const vram = n.vram_gib ? fmtNumber(n.vram_gib, 1) + " GiB" : "—";
+                    const vcpu = n.vcpu_seconds ? fmtNumber(n.vcpu_seconds / 3600, 1) + " vCPU/h" : "—";
+                    const pm = (n.proof_snapshot && n.proof_snapshot.metrics) || {};
+                    const inferences = fmtNumber(pm.inferences_served || 0);
+                    const tokens = fmtNumber(pm.tokens_served || 0);
+                    return `<tr>
+                      <td>${nodeLabel}</td>
+                      <td>${classTag}</td>
+                      <td>${fmtNumber(modelCount)}</td>
+                      <td>${vram}</td>
+                      <td>${vcpu}</td>
+                      <td>${inferences}</td>
+                      <td>${tokens}</td>
+                    </tr>`;
+                  })
+                  .join("")
+              : `<tr><td colspan="7" class="catalog-note">No nodes discovered in the DHT yet.</td></tr>`;
+          }
           if (meshModels)
             meshModels.textContent = modelCount
               ? `${modelCount} model${modelCount === 1 ? "" : "s"} advertised across the DHT. Capability tags are green when node-measured (signed), grey when only declared — proof over prestige.`
