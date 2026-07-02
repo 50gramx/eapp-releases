@@ -651,9 +651,25 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     storage_block_gib: 0, storage_object_gib: 0, egress_gbps: 0,
   };
   const models = new Map();
+  // Network-wide settlement activity, summed from each node's SIGNED proof
+  // snapshot (the mesh path), NOT from self-reported node files. This is how
+  // inference/token/receipt counts from serving peers (who never run the
+  // status reporter themselves) reach the public page — the bootstrap that
+  // does report serves nothing, so without this the totals read all-zero.
+  // Nodes are already deduped by DID above, so no double counting.
+  const activity = {
+    inferences_served: 0, tokens_served: 0, receipts_verified: 0,
+    proofs_issued: 0, disputes_resolved: 0,
+  };
   let estTflops = 0;
   for (const n of nodes) {
     estTflops += estNodeTflops(n);
+    const pm = (n.proof_snapshot && n.proof_snapshot.metrics) || {};
+    activity.inferences_served += meshNum(pm.inferences_served);
+    activity.tokens_served += meshNum(pm.tokens_served);
+    activity.receipts_verified += meshNum(pm.receipts_verified);
+    activity.proofs_issued += meshNum(pm.proofs_issued);
+    activity.disputes_resolved += meshNum(pm.disputes_resolved);
     totals.vram_gib += meshNum(n.vram_gib);
     totals.ram_pool_gib += meshNum(n.ram_pool_gib);
     totals.vcpu_seconds += meshNum(n.vcpu_seconds);
@@ -690,6 +706,8 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     }
   }
   for (const k of Object.keys(totals)) totals[k] = +totals[k].toFixed(3);
+  activity.displaced_cloud_usd = +((activity.tokens_served / 1e6) * CLOUD_RATE_USD_PER_1M).toFixed(2);
+  activity.label = 'sum of signed per-node proof-snapshot counters across the DHT-known network';
   const estPflops = +(estTflops / 1000).toFixed(4);
   const top500 = {
     as_of: TOP500_REF.as_of,
@@ -710,6 +728,7 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     reporter_count: reporterCount,
     node_count: nodes.length,
     totals,
+    activity,
     capacity: {
       vram_gib: totals.vram_gib,
       vcpu_seconds: totals.vcpu_seconds,

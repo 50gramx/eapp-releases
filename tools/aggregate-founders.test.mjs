@@ -273,13 +273,19 @@ test('buildProofOutputs sums verified results and picks highest verified bests p
 test('buildMeshView unions DHT nodes by DID and summarizes resources + models', () => {
   const views = [
     { nodes: [
-      { did: 'did:epn:A', vram_gib: 8, ram_pool_gib: 16, gpu_class: 'nvidia', models: [{ name: 'gemma4:e2b', effective_ctx: 4096 }] },
+      { did: 'did:epn:A', vram_gib: 8, ram_pool_gib: 16, gpu_class: 'nvidia',
+        proof_snapshot: { metrics: { inferences_served: 10, tokens_served: 2_000_000, receipts_verified: 4 } },
+        models: [{ name: 'gemma4:e2b', effective_ctx: 4096, vram_needed_gib: 3.1, tokens_per_sec: 6 }] },
       { did: 'did:epn:B', vram_gib: 24, gpu_class: 'amd', models: [] },
     ] },
     { nodes: [
       // A seen again by a second reporter — the richer entry (more models) wins.
-      { did: 'did:epn:A', vram_gib: 8, gpu_class: 'nvidia', models: [{ name: 'gemma4:e2b', effective_ctx: 8192 }, { name: 'llama3.2', effective_ctx: 2048 }] },
-      { did: 'did:epn:C', vcpu_seconds: 100, models: [{ name: 'gemma4:e2b', effective_ctx: 2048 }] },
+      { did: 'did:epn:A', vram_gib: 8, gpu_class: 'nvidia',
+        proof_snapshot: { metrics: { inferences_served: 10, tokens_served: 2_000_000, receipts_verified: 4 } },
+        models: [{ name: 'gemma4:e2b', effective_ctx: 8192, vram_needed_gib: 3.1, tokens_per_sec: 6 }, { name: 'llama3.2', effective_ctx: 2048 }] },
+      { did: 'did:epn:C', vcpu_seconds: 100,
+        proof_snapshot: { metrics: { inferences_served: 5, tokens_served: 1_000_000, receipts_verified: 1 } },
+        models: [{ name: 'gemma4:e2b', effective_ctx: 2048, vram_needed_gib: 2.4, tokens_per_sec: 9 }] },
     ] },
   ];
   const mesh = buildMeshView(views, '2026-07-01T00:00:00Z');
@@ -287,9 +293,17 @@ test('buildMeshView unions DHT nodes by DID and summarizes resources + models', 
   assert.equal(mesh.node_count, 3); // A, B, C distinct — A not double-counted
   assert.equal(mesh.totals.vram_gib, 32); // 8(A once) + 24(B) + 0(C)
   assert.equal(mesh.totals.vcpu_seconds, 100);
+  // Network-wide activity summed from signed proof snapshots (A once + C), NOT
+  // double-counting A even though two reporters saw it.
+  assert.equal(mesh.activity.inferences_served, 15); // 10(A) + 5(C)
+  assert.equal(mesh.activity.tokens_served, 3_000_000);
+  assert.equal(mesh.activity.receipts_verified, 5);
+  assert.equal(mesh.activity.displaced_cloud_usd, 30); // 3M/1e6 * $10
   const g = mesh.models.find((m) => m.name === 'gemma4:e2b');
   assert.equal(g.providers, 2); // A + C
   assert.equal(g.best_effective_ctx, 8192); // A's richer entry
+  assert.equal(g.max_vram_gib, 3.1); // max(A 3.1, C 2.4)
+  assert.equal(g.best_tokens_per_sec, 9); // max(A 6, C 9)
   // capacity + TOP500 comparison: 80(nvidia A) + 45(amd B) + ~0(C) TFLOP/s
   assert.equal(Math.round(mesh.capacity.est_tflops), 125);
   assert.equal(mesh.top500.would_enter_top500, false); // 0.125 PFLOP/s << #500 (2.31)

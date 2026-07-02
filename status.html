@@ -97,8 +97,8 @@
 
         <section class="status-telemetry-grid">
           <div class="cds--tile cds--tile--light">
-            <p class="catalog-panel-label">Network activity (self-reported)</p>
-            <h2 class="status-section-title">Sum of every reporting node's own counters</h2>
+            <p class="catalog-panel-label">Network activity (mesh-wide)</p>
+            <h2 class="status-section-title">Sum of every DHT-known node's signed proof-snapshot counters</h2>
             <p class="catalog-support-copy">Not a settlement-verified total — see the note below.</p>
             <div id="telemetryCards" class="status-card-grid status-card-grid--tight"></div>
             <div id="telemetryNote" class="catalog-note"></div>
@@ -381,11 +381,16 @@
           ),
         ].join("");
 
+        // Network activity is sourced from the mesh view's signed proof-snapshot
+        // sum (data/mesh.json → activity) so counters from serving peers — who
+        // never run the status reporter themselves — are counted. Falls back to
+        // the self-reported founders totals only if the mesh view is unavailable.
+        const act = (mesh && mesh.activity) || totals;
         telemetryCards.innerHTML = [
-          summaryCard("Inferences served", fmtNumber(totals.inferences_served), totals.inferences_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.inferences_served ? "Active" : "Quiet", "Sum of each node's own local inference counter — self-reported, not independently verified."),
-          summaryCard("Tokens served", fmtNumber(totals.tokens_served), totals.tokens_served ? "cds--tag--green" : "cds--tag--warm-gray", totals.tokens_served ? "Active" : "Quiet", "Sum of each node's own local output-token counter."),
-          summaryCard("Receipts verified", fmtNumber(totals.receipts_verified), totals.receipts_verified ? "cds--tag--green" : "cds--tag--warm-gray", totals.receipts_verified ? "Active" : "Quiet", "Sum of each node's own local settlement/metering receipt counter."),
-          summaryCard("Displaced cloud cost", `$${fmtNumber(totals.displaced_cloud_usd, 2)}`, totals.displaced_cloud_usd ? "cds--tag--green" : "cds--tag--warm-gray", totals.displaced_cloud_usd ? "Observed" : "Quiet", "Estimated from the tokens-served sum above at a flat cloud-equivalent rate."),
+          summaryCard("Inferences served", fmtNumber(act.inferences_served), act.inferences_served ? "cds--tag--green" : "cds--tag--warm-gray", act.inferences_served ? "Active" : "Quiet", "Network-wide sum from each node's signed proof snapshot (includes serving peers, not just reporters) — self-reported counters, not yet settlement-verified."),
+          summaryCard("Tokens served", fmtNumber(act.tokens_served), act.tokens_served ? "cds--tag--green" : "cds--tag--warm-gray", act.tokens_served ? "Active" : "Quiet", "Network-wide sum of each node's signed output-token counter across the DHT-known mesh."),
+          summaryCard("Receipts verified", fmtNumber(act.receipts_verified), act.receipts_verified ? "cds--tag--green" : "cds--tag--warm-gray", act.receipts_verified ? "Active" : "Quiet", "Network-wide sum of each node's signed settlement/metering receipt counter."),
+          summaryCard("Displaced cloud cost", `$${fmtNumber(act.displaced_cloud_usd, 2)}`, act.displaced_cloud_usd ? "cds--tag--green" : "cds--tag--warm-gray", act.displaced_cloud_usd ? "Observed" : "Quiet", "Estimated from the network-wide tokens-served sum above at a flat cloud-equivalent rate."),
         ].join("");
 
         telemetryNote.textContent = (totals.inferences_served || totals.tokens_served || totals.receipts_verified
