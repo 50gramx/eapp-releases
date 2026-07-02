@@ -1,37 +1,37 @@
 {
-  "generated_at": "2026-07-02T10:43:33.806Z",
+  "generated_at": "2026-07-02T14:00:29.721Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
-  "node_count": 1,
+  "node_count": 2,
   "totals": {
-    "vram_gib": 0,
-    "ram_pool_gib": 0,
-    "vcpu_seconds": 3600,
-    "storage_block_gib": 0,
-    "storage_object_gib": 0,
+    "vram_gib": 2,
+    "ram_pool_gib": 1.912,
+    "vcpu_seconds": 28800,
+    "storage_block_gib": 7.225,
+    "storage_object_gib": 4.335,
     "egress_gbps": 1
   },
   "activity": {
-    "inferences_served": 0,
-    "tokens_served": 0,
+    "inferences_served": 37,
+    "tokens_served": 9036,
     "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 0,
+    "displaced_cloud_usd": 0.09,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
-    "vram_gib": 0,
-    "vcpu_seconds": 3600,
-    "est_tflops": 0.05,
-    "est_pflops": 0.0001
+    "vram_gib": 2,
+    "vcpu_seconds": 28800,
+    "est_tflops": 4.4,
+    "est_pflops": 0.0044
   },
   "top500": {
     "as_of": "TOP500 November 2024 (HPL/LINPACK Rmax)",
     "source": "https://top500.org/lists/top500/2024/11/",
-    "est_network_tflops": 0.05,
-    "est_network_pflops": 0.0001,
-    "pct_of_rank_1": 0,
+    "est_network_tflops": 4.4,
+    "est_network_pflops": 0.0044,
+    "pct_of_rank_1": 0.0003,
     "pct_of_list_sum": 0,
     "would_enter_top500": false,
     "rank_1": {
@@ -42,7 +42,57 @@
     "list_sum_pflops": 11720,
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
-  "models": [],
+  "models": [
+    {
+      "name": "tinyllama:1.1b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 2048,
+      "max_vram_gib": 0.69,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {},
+      "verified": true
+    },
+    {
+      "name": "gemma4:e2b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 3.21,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "declared",
+        "vision": "declared",
+        "audio": "declared",
+        "thinking": "declared"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 6.13,
+      "median_tokens_per_sec": 6.13
+    },
+    {
+      "name": "phi3:3.8b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 2.39,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {},
+      "verified": true
+    }
+  ],
   "nodes": [
     {
       "did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
@@ -70,9 +120,9 @@
         "device_did": "did:epn:device:002408011220d807dea3ee3bd1e12dec3cf055a9b225c587a4731d881e233c096aebafbb82ab",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
         "role": "primary",
-        "issued_at": 1782987449,
-        "expires_at": 1814523449,
-        "signature": "EsQLBHbl9FJB/PIYwU0Na5jfHTqNL1P7IYQF7OPBLqpd9y1etmxProUYOH8wavOXLtsjSbUdVcFAwirntUATAQ=="
+        "issued_at": 1782994455,
+        "expires_at": 1814530455,
+        "signature": "I0qdqbNA8btllDYJ0zKXL5UWYeBxCN97ojgfwIO3eo83Al4b9C/tUn+AsTOShmT6UgMtm2O5M29wdIowbBYLCw=="
       },
       "price_per_unit": {
         "egress_gb": 50000,
@@ -93,7 +143,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-02T10:42:49Z",
+        "generated_at": "2026-07-02T13:59:35Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -114,19 +164,19 @@
             "result": {
               "result": {
                 "metric": "cpu.throughput",
-                "value": 332.24192854542474,
+                "value": 331.60208479349365,
                 "unit": "hashes/s",
-                "ts": 1782987499101320700,
+                "ts": 1782994488255814000,
                 "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
                 "extra": {
-                  "duration_ms": 502,
+                  "duration_ms": 500,
                   "payload": "sha256(1MB) single-threaded"
                 }
               },
-              "signature": "+XOsa3uAf4HidO2AH/9HIAGlclLPar0y6Z1iz9WZ2IstP8fhQxfaYFQw+rl+/+iFj+0OmyzH7osDpZW2a4szAw==",
-              "hash": "YGMS7HW5PKMTv++vGcm/zpp97VawvnM09ydkiROUYf0="
+              "signature": "MCyrvQ3i8ThQKZ/MyrMFu39JJIw+YM+hNqwgf6LoAwPHRycSOPo/ZuUNq1G9MNoRn1IJcCE+hY+j5jI4LoKMBA==",
+              "hash": "lSqBFTx42wgwXjIVwv3lcOS6uEXsq6OfS1JEccZvaCA="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjozMzIuMjQxOTI4NTQ1NDI0NzQsInVuaXQiOiJoYXNoZXMvcyIsInRzIjoxNzgyOTg3NDk5MTAxMzIwNTk4LCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwYzY1NWE4YjYzYjRiYWIyYWZjMzcyZGViOTE5NDMyOWY4Nzc5ODNhZDYzN2Q1NzBhNTQ5NmNlN2YxNzFlMGFmNSIsImV4dHJhIjp7ImR1cmF0aW9uX21zIjo1MDIsInBheWxvYWQiOiJzaGEyNTYoMU1CKSBzaW5nbGUtdGhyZWFkZWQifX0="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjozMzEuNjAyMDg0NzkzNDkzNjUsInVuaXQiOiJoYXNoZXMvcyIsInRzIjoxNzgyOTk0NDg4MjU1ODEzOTM0LCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwYzY1NWE4YjYzYjRiYWIyYWZjMzcyZGViOTE5NDMyOWY4Nzc5ODNhZDYzN2Q1NzBhNTQ5NmNlN2YxNzFlMGFmNSIsImV4dHJhIjp7ImR1cmF0aW9uX21zIjo1MDAsInBheWxvYWQiOiJzaGEyNTYoMU1CKSBzaW5nbGUtdGhyZWFkZWQifX0="
           },
           "energy": {
             "resource_type": "energy",
@@ -157,18 +207,18 @@
             "result": {
               "result": {
                 "metric": "mem.bandwidth",
-                "value": 2600.9355449041827,
+                "value": 2593.9166759735976,
                 "unit": "MB/s",
-                "ts": 1782987499624462000,
+                "ts": 1782994488779401000,
                 "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
                 "extra": {
                   "payload_mb": 64
                 }
               },
-              "signature": "ynOQWxOirmC8TkNE5eQfc6Z/Ao0MoR/Z3J3Uz7jVawHyRzgeihpfc4pdpfXH8PLYuDz+IXTylCQVb3qCuGXvBw==",
-              "hash": "FsCB3lT1hp09igRIl1U7oM7vrEAe4ekPQNti1nZRcXs="
+              "signature": "yOIsHaRRoClZ/tfwGKjB2hmVDSJdrOBHJuJRx6WN0ywPqNVWcw8bBCUL9PNoR/cQtNhnAJOI5/306qlP3N0PAQ==",
+              "hash": "AD101sCvAK5YVp/eS0Rwizrb/mEcqnvaKteH4AELThQ="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjI2MDAuOTM1NTQ0OTA0MTgyNywidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4Mjk4NzQ5OTYyNDQ2MTk5MSwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMGM2NTVhOGI2M2I0YmFiMmFmYzM3MmRlYjkxOTQzMjlmODc3OTgzYWQ2MzdkNTcwYTU0OTZjZTdmMTcxZTBhZjUiLCJleHRyYSI6eyJwYXlsb2FkX21iIjo2NH19"
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjI1OTMuOTE2Njc1OTczNTk3NiwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4Mjk5NDQ4ODc3OTQwMDkwNywibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMGM2NTVhOGI2M2I0YmFiMmFmYzM3MmRlYjkxOTQzMjlmODc3OTgzYWQ2MzdkNTcwYTU0OTZjZTdmMTcxZTBhZjUiLCJleHRyYSI6eyJwYXlsb2FkX21iIjo2NH19"
           },
           "network": {
             "resource_type": "network",
@@ -178,20 +228,20 @@
             "result": {
               "result": {
                 "metric": "tunnel.throughput",
-                "value": 387.70626094240345,
+                "value": 459.4178154074148,
                 "unit": "MB/s",
-                "ts": 1782987500725631000,
+                "ts": 1782994489482729200,
                 "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
                 "extra": {
-                  "direct_throughput_mbps": 476.9081377756611,
+                  "direct_throughput_mbps": 1808.716067073522,
                   "mode": "loopback",
-                  "rtt_ms": 0.07843295
+                  "rtt_ms": 0.09351209
                 }
               },
-              "signature": "T1Ld7e/+OAQYplaaH0coovoP6n6OXnC+WuPMpy2j/DESfhctJPpB6Gr0C/cZvuttdgVYRmtzDMoImw0oLUq0BQ==",
-              "hash": "suOEqjEYvAwoQ3VwkHfsMtbiLHtDMGv7L6EA2XlE2X4="
+              "signature": "7X3Iwl5nfPPk0hRR0Wf/qkbqW4rX8JZMiTSy57gyuKhcSVbxxu5YPbdXjiixuU1nDxA70pdtXImFvZZbf5GlAg==",
+              "hash": "DMaOiTF2rmLUs3Lxo1VPv6K28WuvLrD5FtEPzQpoUU0="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjozODcuNzA2MjYwOTQyNDAzNDUsInVuaXQiOiJNQi9zIiwidHMiOjE3ODI5ODc1MDA3MjU2MzA5MDEsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjBjNjU1YThiNjNiNGJhYjJhZmMzNzJkZWI5MTk0MzI5Zjg3Nzk4M2FkNjM3ZDU3MGE1NDk2Y2U3ZjE3MWUwYWY1IiwiZXh0cmEiOnsiZGlyZWN0X3Rocm91Z2hwdXRfbWJwcyI6NDc2LjkwODEzNzc3NTY2MTEsIm1vZGUiOiJsb29wYmFjayIsInJ0dF9tcyI6MC4wNzg0MzI5NX19"
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjo0NTkuNDE3ODE1NDA3NDE0OCwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4Mjk5NDQ4OTQ4MjcyOTI4Miwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMGM2NTVhOGI2M2I0YmFiMmFmYzM3MmRlYjkxOTQzMjlmODc3OTgzYWQ2MzdkNTcwYTU0OTZjZTdmMTcxZTBhZjUiLCJleHRyYSI6eyJkaXJlY3RfdGhyb3VnaHB1dF9tYnBzIjoxODA4LjcxNjA2NzA3MzUyMiwibW9kZSI6Imxvb3BiYWNrIiwicnR0X21zIjowLjA5MzUxMjA5fX0="
           },
           "storage": {
             "resource_type": "storage",
@@ -201,20 +251,263 @@
             "result": {
               "result": {
                 "metric": "storage.iops",
-                "value": 557.5957121098837,
+                "value": 560.3989543200687,
                 "unit": "MB/s",
-                "ts": 1782987500326896600,
+                "ts": 1782994489117322000,
                 "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
                 "extra": {
                   "payload_mb": 64,
-                  "read_mbps": 328.51257554352,
-                  "write_mbps": 557.5957121098837
+                  "read_mbps": 344.98843148675564,
+                  "write_mbps": 560.3989543200687
                 }
               },
-              "signature": "XJ5ucgVMykRtnPpuD1JQEZSjT8ZSkfSz31kxffqUcno3unWlXHXbylI7UCUY3pEZjbCpPJkGPJX9HT/C3pMfAQ==",
-              "hash": "ZSshYo5XAJ8X1fWLPM2ddgAjr5KdK0AVGAtIDrdqkx4="
+              "signature": "mxYV/cb7eBdHNWe61zcWkntILI0L1MVhKdeH5o17SDMvaHV09cGsYbrd04uaRmt6LeAc2CqB56tJeIAHv58HDw==",
+              "hash": "oWAbgWuDqsesiL+B/1grQRx4DxJpUHj8oc71wXipHp4="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6NTU3LjU5NTcxMjEwOTg4MzcsInVuaXQiOiJNQi9zIiwidHMiOjE3ODI5ODc1MDAzMjY4OTY3NDEsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjBjNjU1YThiNjNiNGJhYjJhZmMzNzJkZWI5MTk0MzI5Zjg3Nzk4M2FkNjM3ZDU3MGE1NDk2Y2U3ZjE3MWUwYWY1IiwiZXh0cmEiOnsicGF5bG9hZF9tYiI6NjQsInJlYWRfbWJwcyI6MzI4LjUxMjU3NTU0MzUyLCJ3cml0ZV9tYnBzIjo1NTcuNTk1NzEyMTA5ODgzN319"
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6NTYwLjM5ODk1NDMyMDA2ODcsInVuaXQiOiJNQi9zIiwidHMiOjE3ODI5OTQ0ODkxMTczMjE5NTAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjBjNjU1YThiNjNiNGJhYjJhZmMzNzJkZWI5MTk0MzI5Zjg3Nzk4M2FkNjM3ZDU3MGE1NDk2Y2U3ZjE3MWUwYWY1IiwiZXh0cmEiOnsicGF5bG9hZF9tYiI6NjQsInJlYWRfbWJwcyI6MzQ0Ljk4ODQzMTQ4Njc1NTY0LCJ3cml0ZV9tYnBzIjo1NjAuMzk4OTU0MzIwMDY4N319"
+          }
+        }
+      }
+    },
+    {
+      "did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+      "peer_id": "12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+      "addrs": [
+        "/ip4/127.0.0.1/tcp/53683/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip4/192.168.0.5/tcp/53683/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip6/::1/tcp/53683/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv"
+      ],
+      "operator_ids": [
+        "epn.batch.v1",
+        "epn.filesystem.v1",
+        "epn.gpu.v1",
+        "epn.memory.v1",
+        "epn.object.v1",
+        "epn.ollama.v1",
+        "epn.pi.v1",
+        "epn.relay.v1",
+        "epn.remote-inference.v1"
+      ],
+      "connected_at": "2026-06-23T06:02:28.143475215Z",
+      "family": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
+      "family_att": {
+        "device_did": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
+        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "role": "primary",
+        "issued_at": 1782999231,
+        "expires_at": 1814535231,
+        "signature": "qHlUiPrfjZWItf1wXYSPL30svgvdTBxCpUyq1Y7oL62DZF1KDh2PWZj9KVyMtvjxPUu288veX4Cy5huqwfhfDA=="
+      },
+      "price_per_unit": {
+        "egress_gb": 50000,
+        "gb_hour": 3,
+        "gb_month": 20,
+        "gpu_second": 100,
+        "relay_second": 1,
+        "vcpu_second": 10
+      },
+      "gpu_class": "intel",
+      "vram_gib": 1.9999961853027344,
+      "ram_pool_gib": 1.9117889404296875,
+      "ram_bw_class": "local-ddr",
+      "vcpu_seconds": 25200,
+      "arch": "x86_64",
+      "simd": "avx2",
+      "storage_block_gib": 7.22523307800293,
+      "storage_object_gib": 4.3351398468017575,
+      "storage_archival_gib": 2.8900932312011722,
+      "redundancy": "none",
+      "energy_kwh_rate": 0.07,
+      "energy_source": "unknown",
+      "carbon_intensity": 475,
+      "models": [
+        {
+          "name": "tinyllama:1.1b",
+          "quant": "Q4_0",
+          "ctx": 2048,
+          "vram_needed_gib": 0.69,
+          "pulled": true,
+          "declared_caps": {},
+          "measured_caps": {},
+          "bench_digest": "3B7zW/XmUu7Hlj6ZZppcmO1CVG7B4CiqbMRQXzdgGOs=",
+          "benched_at": "2026-07-01T20:43:14.598424Z"
+        },
+        {
+          "name": "gemma4:e2b",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 3.21,
+          "pulled": true,
+          "declared_caps": {
+            "tools": true,
+            "vision": true,
+            "audio": true,
+            "thinking": true
+          },
+          "measured_caps": {},
+          "bench_digest": "foPwDsAGm48LOcRqfhjOpQEAgPCJPMdFK7EUi4yUfRw=",
+          "benched_at": "2026-07-01T20:43:14.598424Z",
+          "tokens_per_sec": 6.126497229887683
+        },
+        {
+          "name": "phi3:3.8b",
+          "quant": "Q4_0",
+          "ctx": 131072,
+          "vram_needed_gib": 2.39,
+          "pulled": true,
+          "declared_caps": {},
+          "measured_caps": {},
+          "bench_digest": "tGKpr8Ounvqll7JXoVWB9HS28t4nSoZKgrGaf3VeUWk=",
+          "benched_at": "2026-07-01T20:43:14.598424Z"
+        }
+      ],
+      "proof_snapshot": {
+        "schema_version": "epn.proof.snapshot.v1",
+        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "generated_at": "2026-07-02T13:59:11Z",
+        "metrics": {
+          "disputes_resolved": 0,
+          "inferences_served": 37,
+          "local_inference_last_hash": "4058abd36c5176c0d1ede7c11a0370fad310df9ebb388de9e23423d157a4c7d1",
+          "local_inference_receipts": 7,
+          "models_tokens_per_sec": {
+            "gemma4:e2b": 6.126497229887683
+          },
+          "proofs_issued": 0,
+          "receipts_verified": 0,
+          "since": "2026-06-23T08:27:24Z",
+          "tokens_served": 9036
+        },
+        "resources": {
+          "cpu": {
+            "resource_type": "cpu",
+            "status": "signed",
+            "metric": "cpu.throughput",
+            "unit": "hashes/s",
+            "result": {
+              "result": {
+                "metric": "cpu.throughput",
+                "value": 642.728169498197,
+                "unit": "hashes/s",
+                "ts": 1782999305149930800,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "duration_ms": 500,
+                  "payload": "sha256(1MB) single-threaded"
+                }
+              },
+              "signature": "MuHhWs9nzmCMyN9HF2RYjNe7SWeed/WqXlu1F0vaGGkmlo+1+wRCkp8o2Ep0Rqrx0CAMkS5Lo4nRgyLiBnD6CQ==",
+              "hash": "kZFW5ykocQJgRkP/iq7d5oMBr5pN02IkXLaIpbAppgI="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjo2NDIuNzI4MTY5NDk4MTk3LCJ1bml0IjoiaGFzaGVzL3MiLCJ0cyI6MTc4Mjk5OTMwNTE0OTkzMDgwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJkdXJhdGlvbl9tcyI6NTAwLCJwYXlsb2FkIjoic2hhMjU2KDFNQikgc2luZ2xlLXRocmVhZGVkIn19"
+          },
+          "energy": {
+            "resource_type": "energy",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "energy.joules_per_token",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "gpu": {
+            "resource_type": "gpu",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "gpu.throughput",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "inference": {
+            "resource_type": "inference",
+            "status": "signed",
+            "metric": "inference.tokens_per_sec",
+            "unit": "tokens/s",
+            "models": {
+              "gemma4:e2b": {
+                "result": {
+                  "metric": "inference.tokens_per_sec",
+                  "value": 6.126497229887683,
+                  "unit": "tokens/s",
+                  "ts": 1783000751684592600,
+                  "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                  "extra": {
+                    "model": "gemma4:e2b",
+                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
+                    "source": "metrics.models_tokens_per_sec"
+                  }
+                },
+                "signature": "uq3Sa2iLEA2n3PS7Crho39+UQvld1bF94e8qX4eO7jo4pBa/P4zB3MfjzpSb0Bv069DCO56upz2mA25KRugaAw==",
+                "hash": "PuxliXiw0cDWhlW1bgsBiRyNz2k3oGfJjws8VIuoguM="
+              }
+            },
+            "model_signing_payloads": {
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni4xMjY0OTcyMjk4ODc2ODMsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzMDAwNzUxNjg0NTkyNjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01Iiwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMifX0="
+            }
+          },
+          "mem": {
+            "resource_type": "mem",
+            "status": "signed",
+            "metric": "mem.bandwidth",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "mem.bandwidth",
+                "value": 2877.0200951644756,
+                "unit": "MB/s",
+                "ts": 1782999305668081400,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "payload_mb": 64
+                }
+              },
+              "signature": "5HJgZKwWaLd9V4zkA9T9JJ9O4q6sjy1N9PWbnnIeBGuM1SBzK4rBb4VDAWYOeNlEusBbtVaPn7eCXntmhhz+BA==",
+              "hash": "nATeRfkLgBDNwewSjo3tEMUq3oOUJhh+db9dGVRRU1g="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjI4NzcuMDIwMDk1MTY0NDc1NiwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4Mjk5OTMwNTY2ODA4MTUwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJwYXlsb2FkX21iIjo2NH19"
+          },
+          "network": {
+            "resource_type": "network",
+            "status": "signed",
+            "metric": "tunnel.throughput",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "tunnel.throughput",
+                "value": 32.33432397618415,
+                "unit": "MB/s",
+                "ts": 1782999306767173400,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "direct_throughput_mbps": 85.15104198265686,
+                  "mode": "loopback",
+                  "rtt_ms": 0.5416905
+                }
+              },
+              "signature": "u7m8gsMjD6q/6xFyn70GHqUrKoAdtBLsEonNMYvx+zXOw1hsOPu4WzLqVZt9KUxLTBHfjDde5BQMDvPPoo7/Cg==",
+              "hash": "NK+fVyYNFuhUwA5kXgnU3Uq912NYqkKW40vQgLkaI90="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjozMi4zMzQzMjM5NzYxODQxNSwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4Mjk5OTMwNjc2NzE3MzQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJkaXJlY3RfdGhyb3VnaHB1dF9tYnBzIjo4NS4xNTEwNDE5ODI2NTY4NiwibW9kZSI6Imxvb3BiYWNrIiwicnR0X21zIjowLjU0MTY5MDV9fQ=="
+          },
+          "storage": {
+            "resource_type": "storage",
+            "status": "signed",
+            "metric": "storage.iops",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "storage.iops",
+                "value": 241.36616265137715,
+                "unit": "MB/s",
+                "ts": 1782999306023991800,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "payload_mb": 64,
+                  "read_mbps": 1747.0920471824047,
+                  "write_mbps": 241.36616265137715
+                }
+              },
+              "signature": "jBuRbsD8O09HAEuSOwFFIFA/hSFUqqZFNXD65IJ0EX5cQg4JWZrjxIezVF1CAcEuWRs/AofRNw6yiHCNyRyAAA==",
+              "hash": "t4sxpF27WC/jDo/xvgjUd4TOLKeXKoBShSOxd5cg7DU="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6MjQxLjM2NjE2MjY1MTM3NzE1LCJ1bml0IjoiTUIvcyIsInRzIjoxNzgyOTk5MzA2MDIzOTkxOTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7InBheWxvYWRfbWIiOjY0LCJyZWFkX21icHMiOjE3NDcuMDkyMDQ3MTgyNDA0Nywid3JpdGVfbWJwcyI6MjQxLjM2NjE2MjY1MTM3NzE1fX0="
           }
         }
       }
