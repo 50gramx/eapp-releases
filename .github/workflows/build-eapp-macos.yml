@@ -142,6 +142,26 @@ jobs:
           cd macos
           pod install --repo-update
 
+      # Brand the native bundle name (Finder / Dock / menu bar) BEFORE the build,
+      # so the branded Info.plist is covered by the build's ad-hoc signature
+      # (patching post-build would invalidate CODE_SIGN_IDENTITY="-"). Fully
+      # guarded: with no brand product-name it leaves the default plist untouched,
+      # i.e. identical to prior behaviour. Icons stay the shared default until
+      # per-brand logo assets exist.
+      - name: Brand macOS bundle name
+        env:
+          BRAND_PRODUCT_NAME: ${{ steps.brand.outputs.brand_product_name }}
+        run: |
+          set -euo pipefail
+          if [ -z "${BRAND_PRODUCT_NAME:-}" ]; then
+            echo "No brand_product_name resolved — leaving default bundle name."
+            exit 0
+          fi
+          PLIST="macos/Runner/Info.plist"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $BRAND_PRODUCT_NAME" "$PLIST" 2>/dev/null \
+            || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $BRAND_PRODUCT_NAME" "$PLIST"
+          echo "Branded macOS bundle display name -> $BRAND_PRODUCT_NAME"
+
       - name: Build macOS App
         run: |
           flutter build macos --release \
