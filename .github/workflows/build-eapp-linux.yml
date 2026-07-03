@@ -127,11 +127,13 @@ jobs:
       - name: Enable Linux Desktop
         run: flutter config --enable-linux-desktop
 
-      - name: Ensure Linux desktop project structure
-        run: flutter create --platforms=linux . --no-overwrite
-
+      # Must run before `flutter create`, which triggers pub resolution and
+      # would otherwise fail to clone the private git dependencies.
       - name: Configure git for private dependencies
         run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Ensure Linux desktop project structure
+        run: flutter create --platforms=linux . --no-overwrite
 
       - name: Get Dependencies
         run: flutter pub get
