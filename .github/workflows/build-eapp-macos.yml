@@ -151,16 +151,26 @@ jobs:
       - name: Brand macOS bundle name
         env:
           BRAND_PRODUCT_NAME: ${{ steps.brand.outputs.brand_product_name }}
+          MACOS_BUNDLE_ID: ${{ steps.brand.outputs.macos_bundle_id }}
         run: |
           set -euo pipefail
-          if [ -z "${BRAND_PRODUCT_NAME:-}" ]; then
-            echo "No brand_product_name resolved — leaving default bundle name."
-            exit 0
-          fi
           PLIST="macos/Runner/Info.plist"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $BRAND_PRODUCT_NAME" "$PLIST" 2>/dev/null \
-            || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $BRAND_PRODUCT_NAME" "$PLIST"
-          echo "Branded macOS bundle display name -> $BRAND_PRODUCT_NAME"
+          if [ -n "${BRAND_PRODUCT_NAME:-}" ]; then
+            /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $BRAND_PRODUCT_NAME" "$PLIST" 2>/dev/null \
+              || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $BRAND_PRODUCT_NAME" "$PLIST"
+            echo "Branded macOS bundle display name -> $BRAND_PRODUCT_NAME"
+          else
+            echo "No brand_product_name resolved — leaving default bundle name."
+          fi
+          # Bundle identifier comes from contracts (resolver derives it from the
+          # brand launch-environment); never hardcoded. Overrides the default
+          # $(PRODUCT_BUNDLE_IDENTIFIER) so each brand is a distinct macOS app.
+          if [ -n "${MACOS_BUNDLE_ID:-}" ]; then
+            /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $MACOS_BUNDLE_ID" "$PLIST"
+            echo "Branded macOS bundle identifier -> $MACOS_BUNDLE_ID"
+          else
+            echo "No macos_bundle_id resolved — leaving default identifier."
+          fi
 
       - name: Build macOS App
         run: |
