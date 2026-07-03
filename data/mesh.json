@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-07-03T12:24:10.024Z",
+  "generated_at": "2026-07-03T12:39:03.188Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
-  "node_count": 3,
+  "node_count": 4,
   "totals": {
-    "vram_gib": 1,
-    "ram_pool_gib": 3.847,
-    "vcpu_seconds": 39600,
-    "storage_block_gib": 124.616,
-    "storage_object_gib": 74.77,
+    "vram_gib": 3,
+    "ram_pool_gib": 9.625,
+    "vcpu_seconds": 64800,
+    "storage_block_gib": 131.226,
+    "storage_object_gib": 78.736,
     "egress_gbps": 1
   },
   "activity": {
-    "inferences_served": 0,
-    "tokens_served": 0,
+    "inferences_served": 37,
+    "tokens_served": 9036,
     "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 0,
+    "displaced_cloud_usd": 0.09,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
-    "vram_gib": 1,
-    "vcpu_seconds": 39600,
-    "est_tflops": 4.55,
-    "est_pflops": 0.0046
+    "vram_gib": 3,
+    "vcpu_seconds": 64800,
+    "est_tflops": 8.9,
+    "est_pflops": 0.0089
   },
   "top500": {
     "as_of": "TOP500 November 2024 (HPL/LINPACK Rmax)",
     "source": "https://top500.org/lists/top500/2024/11/",
-    "est_network_tflops": 4.55,
-    "est_network_pflops": 0.0046,
-    "pct_of_rank_1": 0.0003,
-    "pct_of_list_sum": 0,
+    "est_network_tflops": 8.9,
+    "est_network_pflops": 0.0089,
+    "pct_of_rank_1": 0.0005,
+    "pct_of_list_sum": 0.0001,
     "would_enter_top500": false,
     "rank_1": {
       "name": "El Capitan",
@@ -42,7 +42,57 @@
     "list_sum_pflops": 11720,
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
-  "models": [],
+  "models": [
+    {
+      "name": "tinyllama:1.1b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 2048,
+      "max_vram_gib": 0.69,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {},
+      "verified": false
+    },
+    {
+      "name": "gemma4:e2b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 3.21,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "declared",
+        "vision": "declared",
+        "audio": "declared",
+        "thinking": "declared"
+      },
+      "verified": false,
+      "best_tokens_per_sec": 6.13,
+      "median_tokens_per_sec": 6.13
+    },
+    {
+      "name": "phi3:3.8b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 2.39,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {},
+      "verified": false
+    }
+  ],
   "nodes": [
     {
       "did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
@@ -93,7 +143,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-03T12:22:18Z",
+        "generated_at": "2026-07-03T12:37:18Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -221,6 +271,247 @@
       "class": "community"
     },
     {
+      "did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+      "peer_id": "12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+      "addrs": [
+        "/ip4/127.0.0.1/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip4/192.168.0.5/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip6/::1/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv"
+      ],
+      "operator_ids": [
+        "epn.batch.v1",
+        "epn.filesystem.v1",
+        "epn.gpu.v1",
+        "epn.memory.v1",
+        "epn.object.v1",
+        "epn.ollama.v1",
+        "epn.pi.v1",
+        "epn.relay.v1",
+        "epn.remote-inference.v1"
+      ],
+      "connected_at": "2026-06-23T06:02:28.143475215Z",
+      "family": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
+      "family_att": {
+        "device_did": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
+        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "role": "primary",
+        "issued_at": 1783082144,
+        "expires_at": 1814618144,
+        "signature": "PJyZNTJlfMX9XZ/pqUTcA5PyfH3Jlvag941ldjVl/pw/FnryuvgGzTkkg1s3xqSVuxMxVfrajf0gOtJ7HoD+Bg=="
+      },
+      "price_per_unit": {
+        "egress_gb": 50000,
+        "gb_hour": 3,
+        "gb_month": 20,
+        "gpu_second": 100,
+        "relay_second": 1,
+        "vcpu_second": 10
+      },
+      "gpu_class": "intel",
+      "vram_gib": 1.9999961853027344,
+      "ram_pool_gib": 5.777442932128906,
+      "ram_bw_class": "local-ddr",
+      "vcpu_seconds": 25200,
+      "arch": "x86_64",
+      "simd": "avx2",
+      "storage_block_gib": 6.610147476196289,
+      "storage_object_gib": 3.966088485717773,
+      "storage_archival_gib": 2.644058990478516,
+      "redundancy": "none",
+      "energy_kwh_rate": 0.07,
+      "energy_source": "unknown",
+      "carbon_intensity": 475,
+      "models": [
+        {
+          "name": "tinyllama:1.1b",
+          "quant": "Q4_0",
+          "ctx": 2048,
+          "vram_needed_gib": 0.69,
+          "pulled": true,
+          "declared_caps": {},
+          "measured_caps": {},
+          "benched_at": "0001-01-01T00:00:00Z"
+        },
+        {
+          "name": "gemma4:e2b",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 3.21,
+          "pulled": true,
+          "declared_caps": {
+            "tools": true,
+            "vision": true,
+            "audio": true,
+            "thinking": true
+          },
+          "measured_caps": {},
+          "benched_at": "0001-01-01T00:00:00Z",
+          "tokens_per_sec": 6.126497229887683
+        },
+        {
+          "name": "phi3:3.8b",
+          "quant": "Q4_0",
+          "ctx": 131072,
+          "vram_needed_gib": 2.39,
+          "pulled": true,
+          "declared_caps": {},
+          "measured_caps": {},
+          "benched_at": "0001-01-01T00:00:00Z"
+        }
+      ],
+      "proof_snapshot": {
+        "schema_version": "epn.proof.snapshot.v1",
+        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "generated_at": "2026-07-03T12:36:04Z",
+        "metrics": {
+          "disputes_resolved": 0,
+          "inferences_served": 37,
+          "local_inference_last_hash": "",
+          "local_inference_receipts": 0,
+          "models_tokens_per_sec": {
+            "gemma4:e2b": 6.126497229887683
+          },
+          "proofs_issued": 0,
+          "receipts_verified": 0,
+          "since": "2026-06-23T08:27:24Z",
+          "tokens_served": 9036
+        },
+        "resources": {
+          "cpu": {
+            "resource_type": "cpu",
+            "status": "signed",
+            "metric": "cpu.throughput",
+            "unit": "hashes/s",
+            "result": {
+              "result": {
+                "metric": "cpu.throughput",
+                "value": 991.634483529371,
+                "unit": "hashes/s",
+                "ts": 1783042506129452300,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "duration_ms": 500,
+                  "payload": "sha256(1MB) single-threaded"
+                }
+              },
+              "signature": "eKnKqqJHlxRiTkzs3GbHx7ZtGJ/AwbHehVT3CX/YpeNxpchzR/iA2u2F0zRcUf3ulWkEABoq5EhXBM6sGVbRBQ==",
+              "hash": "cNG0sD5dSvYVtgrzWMicsOqUF/lMPmNi9tRTD1ogiUA="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjo5OTEuNjM0NDgzNTI5MzcxLCJ1bml0IjoiaGFzaGVzL3MiLCJ0cyI6MTc4MzA0MjUwNjEyOTQ1MjMwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJkdXJhdGlvbl9tcyI6NTAwLCJwYXlsb2FkIjoic2hhMjU2KDFNQikgc2luZ2xlLXRocmVhZGVkIn19"
+          },
+          "energy": {
+            "resource_type": "energy",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "energy.joules_per_token",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "gpu": {
+            "resource_type": "gpu",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "gpu.throughput",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "inference": {
+            "resource_type": "inference",
+            "status": "signed",
+            "metric": "inference.tokens_per_sec",
+            "unit": "tokens/s",
+            "models": {
+              "gemma4:e2b": {
+                "result": {
+                  "metric": "inference.tokens_per_sec",
+                  "value": 6.126497229887683,
+                  "unit": "tokens/s",
+                  "ts": 1783082164805684700,
+                  "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                  "extra": {
+                    "model": "gemma4:e2b",
+                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
+                    "source": "metrics.models_tokens_per_sec"
+                  }
+                },
+                "signature": "HYptW2hxtF5SHNhTYOxr3sw34CxhkWeu9hb7AHX11tc/B/ei0YcqS2UwASLqVFwOgEDMvaWKTpfsSdJmiDnaDQ==",
+                "hash": "5Lmb4oSlReZpJOL8/4yE+WkhJOhYX6mDrJJs2ZNNBBA="
+              }
+            },
+            "model_signing_payloads": {
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni4xMjY0OTcyMjk4ODc2ODMsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzMDgyMTY0ODA1Njg0NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01Iiwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMifX0="
+            }
+          },
+          "mem": {
+            "resource_type": "mem",
+            "status": "signed",
+            "metric": "mem.bandwidth",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "mem.bandwidth",
+                "value": 4175.523012924548,
+                "unit": "MB/s",
+                "ts": 1783042506683956500,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "payload_mb": 64
+                }
+              },
+              "signature": "EKDUUtzO/xQWgiVUoNNyjn3UATs+8u6y1PLfzpJxMFkFIVtcdlJ6WvE8MyPFnDiFuRbFZcPZIxF6FTVMiOcoDg==",
+              "hash": "XMQjQ7qUJp3uCgD4OOHS8BGv+LCRm5/wf8vXTG9+R+I="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjQxNzUuNTIzMDEyOTI0NTQ4LCJ1bml0IjoiTUIvcyIsInRzIjoxNzgzMDQyNTA2NjgzOTU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7InBheWxvYWRfbWIiOjY0fX0="
+          },
+          "network": {
+            "resource_type": "network",
+            "status": "signed",
+            "metric": "tunnel.throughput",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "tunnel.throughput",
+                "value": 206.5758249476459,
+                "unit": "MB/s",
+                "ts": 1783042507171106000,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "direct_throughput_mbps": 295.02006136417276,
+                  "mode": "loopback",
+                  "rtt_ms": 0.16422599999999998
+                }
+              },
+              "signature": "eaPpm6gLXYMcCxYpkfwpgBl12gRuegX2TYOEM7NWsVjMONqnIErWPzv4lS+C7Nd8wl2Iq9mU1J9Ha2f5ba+UAA==",
+              "hash": "6ArvHopWGNTjlkaapIzc21U8y3FaG8H+Bpbq41AYor4="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjoyMDYuNTc1ODI0OTQ3NjQ1OSwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4MzA0MjUwNzE3MTEwNjAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJkaXJlY3RfdGhyb3VnaHB1dF9tYnBzIjoyOTUuMDIwMDYxMzY0MTcyNzYsIm1vZGUiOiJsb29wYmFjayIsInJ0dF9tcyI6MC4xNjQyMjU5OTk5OTk5OTk5OH19"
+          },
+          "storage": {
+            "resource_type": "storage",
+            "status": "signed",
+            "metric": "storage.iops",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "storage.iops",
+                "value": 542.091728696642,
+                "unit": "MB/s",
+                "ts": 1783042506906749700,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "payload_mb": 64,
+                  "read_mbps": 2299.13961884576,
+                  "write_mbps": 542.091728696642
+                }
+              },
+              "signature": "mJrD2iBtnuN143fc3woyuXQTZlL2G3Fc109JChPmegWI0EPPWwbBZ45GhTyvZjx6zy437MJ5NitsN+pxiqM2CA==",
+              "hash": "QqgEA8m7fdjvSlV91GSiOwxFRP3D8WOjuQmaF918HFk="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6NTQyLjA5MTcyODY5NjY0MiwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4MzA0MjUwNjkwNjc0OTYwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJwYXlsb2FkX21iIjo2NCwicmVhZF9tYnBzIjoyMjk5LjEzOTYxODg0NTc2LCJ3cml0ZV9tYnBzIjo1NDIuMDkxNzI4Njk2NjQyfX0="
+          }
+        }
+      },
+      "class": "community"
+    },
+    {
       "did": "did:epn:0024080112202764f512df5f7054d10bc12e2f6a97aa02aaf80fa447d072eceff3a2e7626ae0",
       "peer_id": "12D3KooWCU9McUCa2EUWvGMzQ7HRdSVCHto2Y8Pp2dnRbW24Pg9M",
       "addrs": [
@@ -263,7 +554,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112202764f512df5f7054d10bc12e2f6a97aa02aaf80fa447d072eceff3a2e7626ae0",
-        "generated_at": "2026-07-03T12:20:05Z",
+        "generated_at": "2026-07-03T12:35:05Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -453,7 +744,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112201536df94f88c2f2dce9c87297f42e0902d5d635ea2736f99141c3ebcea2e5c02",
-        "generated_at": "2026-07-03T12:19:33Z",
+        "generated_at": "2026-07-03T12:34:33Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
