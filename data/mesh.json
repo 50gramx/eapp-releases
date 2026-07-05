@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-05T15:58:26.763Z",
+  "generated_at": "2026-07-05T16:13:27.684Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
   "node_count": 3,
@@ -12,12 +12,12 @@
     "egress_gbps": 1
   },
   "activity": {
-    "inferences_served": 147,
-    "tokens_served": 24712,
+    "inferences_served": 157,
+    "tokens_served": 26855,
     "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 0.25,
+    "displaced_cloud_usd": 0.27,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
@@ -48,68 +48,76 @@
       "providers": 1,
       "provider_count": 1,
       "total_free_slots": 0,
-      "best_effective_ctx": 0,
+      "best_effective_ctx": 8192,
       "best_declared_ctx": 40960,
       "max_vram_gib": 0.47,
       "quants": [
         "Q4_K_M"
       ],
       "caps": {
-        "tools": "declared",
-        "thinking": "declared"
+        "tools": "measured",
+        "thinking": "declared",
+        "structured_output": "measured"
       },
-      "verified": false,
-      "best_tokens_per_sec": 7.24,
-      "median_tokens_per_sec": 7.24
+      "verified": true,
+      "best_tokens_per_sec": 29.24,
+      "median_tokens_per_sec": 29.24
     },
     {
       "name": "tinyllama:1.1b",
       "providers": 1,
       "provider_count": 1,
       "total_free_slots": 0,
-      "best_effective_ctx": 0,
+      "best_effective_ctx": 4096,
       "best_declared_ctx": 2048,
       "max_vram_gib": 0.69,
       "quants": [
         "Q4_0"
       ],
       "caps": {},
-      "verified": false
+      "verified": true,
+      "best_tokens_per_sec": 19.93,
+      "median_tokens_per_sec": 19.93
     },
     {
       "name": "gemma4:e2b",
       "providers": 1,
       "provider_count": 1,
       "total_free_slots": 0,
-      "best_effective_ctx": 0,
+      "best_effective_ctx": 4096,
       "best_declared_ctx": 131072,
       "max_vram_gib": 3.21,
       "quants": [
         "Q4_K_M"
       ],
       "caps": {
-        "tools": "declared",
-        "vision": "declared",
+        "tools": "measured",
+        "vision": "measured",
         "audio": "declared",
-        "thinking": "declared"
+        "thinking": "declared",
+        "structured_output": "measured"
       },
-      "verified": false,
-      "best_tokens_per_sec": 6.93,
-      "median_tokens_per_sec": 6.93
+      "verified": true,
+      "best_tokens_per_sec": 5.95,
+      "median_tokens_per_sec": 5.95
     },
     {
       "name": "phi3:3.8b",
       "providers": 1,
       "provider_count": 1,
       "total_free_slots": 0,
-      "best_effective_ctx": 0,
+      "best_effective_ctx": 4096,
       "best_declared_ctx": 131072,
       "max_vram_gib": 2.39,
       "quants": [
         "Q4_0"
       ],
-      "caps": {},
-      "verified": false
+      "caps": {
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 7.04,
+      "median_tokens_per_sec": 7.04
     }
   ],
   "nodes": [
@@ -162,7 +170,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-05T15:53:41Z",
+        "generated_at": "2026-07-05T16:08:41Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -334,7 +342,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-        "generated_at": "2026-07-05T15:53:52Z",
+        "generated_at": "2026-07-05T16:08:52Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -528,13 +536,19 @@
           "ctx": 40960,
           "vram_needed_gib": 0.47,
           "pulled": true,
+          "effective_ctx": 8192,
           "declared_caps": {
             "tools": true,
             "thinking": true
           },
-          "measured_caps": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "tokens_per_sec": 7.237319924150298
+          "measured_caps": {
+            "tools": true,
+            "structured_output": true
+          },
+          "bench_digest": "qegGD9LZk5tDW8N8FhX7vDDcwvp08mMRGXlmH2hvP+I=",
+          "benched_at": "2026-07-05T15:55:36.6213354Z",
+          "tokens_per_sec": 29.23962711313132,
+          "probe_version": 2
         },
         {
           "name": "tinyllama:1.1b",
@@ -542,9 +556,13 @@
           "ctx": 2048,
           "vram_needed_gib": 0.69,
           "pulled": true,
+          "effective_ctx": 4096,
           "declared_caps": {},
           "measured_caps": {},
-          "benched_at": "0001-01-01T00:00:00Z"
+          "bench_digest": "yfe/kE1z4Y5gPneSCOTQHx157aTMpZf6ryJ4Vual9fY=",
+          "benched_at": "2026-07-05T15:58:08.2669093Z",
+          "tokens_per_sec": 19.931943713834826,
+          "probe_version": 2
         },
         {
           "name": "gemma4:e2b",
@@ -552,15 +570,22 @@
           "ctx": 131072,
           "vram_needed_gib": 3.21,
           "pulled": true,
+          "effective_ctx": 4096,
           "declared_caps": {
             "tools": true,
             "vision": true,
             "audio": true,
             "thinking": true
           },
-          "measured_caps": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "tokens_per_sec": 6.932194165184495
+          "measured_caps": {
+            "tools": true,
+            "vision": true,
+            "structured_output": true
+          },
+          "bench_digest": "8kK55mT2BsTjyq8KcfIW8JM83BpefiApwpAJk/3Lauc=",
+          "benched_at": "2026-07-05T15:58:49.7831415Z",
+          "tokens_per_sec": 5.945623556560531,
+          "probe_version": 2
         },
         {
           "name": "phi3:3.8b",
@@ -568,28 +593,34 @@
           "ctx": 131072,
           "vram_needed_gib": 2.39,
           "pulled": true,
+          "effective_ctx": 4096,
           "declared_caps": {},
-          "measured_caps": {},
-          "benched_at": "0001-01-01T00:00:00Z"
+          "measured_caps": {
+            "structured_output": true
+          },
+          "bench_digest": "9c8/Pz5fGOZmKd9TfP9lx/nHhYaobcf2lidRlVWTYGs=",
+          "benched_at": "2026-07-05T16:03:41.554743Z",
+          "tokens_per_sec": 7.043524865918377,
+          "probe_version": 2
         }
       ],
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "generated_at": "2026-07-05T15:55:56Z",
+        "generated_at": "2026-07-05T16:10:56Z",
         "metrics": {
           "disputes_resolved": 0,
-          "inferences_served": 147,
+          "inferences_served": 157,
           "local_inference_last_hash": "",
           "local_inference_receipts": 0,
           "models_tokens_per_sec": {
-            "gemma4:e2b": 6.932194165184495,
-            "qwen3:0.6b": 7.237319924150298
+            "gemma4:e2b": 6.930279881995822,
+            "qwen3:0.6b": 12.164661163435943
           },
           "proofs_issued": 0,
           "receipts_verified": 0,
           "since": "2026-06-23T08:27:24Z",
-          "tokens_served": 24712
+          "tokens_served": 26855
         },
         "resources": {
           "cpu": {
@@ -600,19 +631,19 @@
             "result": {
               "result": {
                 "metric": "cpu.throughput",
-                "value": 1834.7013824076068,
+                "value": 1528.538411570856,
                 "unit": "hashes/s",
-                "ts": 1783261419630928100,
+                "ts": 1783266974642529000,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
-                  "duration_ms": 501,
+                  "duration_ms": 500,
                   "payload": "sha256(1MB) single-threaded"
                 }
               },
-              "signature": "JJyLX3ZFOPvyvpA12SxnGAgYeJ6p7msf3f+Tskm3SFgBfG81SM02jpTkHxLJnJ+nUCEKEmWNDDS0h45kcdnGBw==",
-              "hash": "sssE5QErh1TplWaaAvww1hJtnMbUct+Ch8cNNBqG3NU="
+              "signature": "xU3UCv6cneDdQINNtAsKTJJf9va9ydXquCclEyVZZ/KLjsgWi946TdMv/2mlARiRaIPHJaJwaT/GqV0liXx4Dg==",
+              "hash": "Ph5jdT0TYWIB6sNLm9BQQAMjKo1Ip21DQ5qgtIwCaxE="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoxODM0LjcwMTM4MjQwNzYwNjgsInVuaXQiOiJoYXNoZXMvcyIsInRzIjoxNzgzMjYxNDE5NjMwOTI4MjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImR1cmF0aW9uX21zIjo1MDEsInBheWxvYWQiOiJzaGEyNTYoMU1CKSBzaW5nbGUtdGhyZWFkZWQifX0="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoxNTI4LjUzODQxMTU3MDg1NiwidW5pdCI6Imhhc2hlcy9zIiwidHMiOjE3ODMyNjY5NzQ2NDI1Mjg5MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsiZHVyYXRpb25fbXMiOjUwMCwicGF5bG9hZCI6InNoYTI1NigxTUIpIHNpbmdsZS10aHJlYWRlZCJ9fQ=="
           },
           "energy": {
             "resource_type": "energy",
@@ -637,9 +668,9 @@
               "gemma4:e2b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
-                  "value": 6.932194165184495,
+                  "value": 6.930279881995822,
                   "unit": "tokens/s",
-                  "ts": 1783266956618318000,
+                  "ts": 1783267856654568400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "gemma4:e2b",
@@ -647,15 +678,15 @@
                     "source": "metrics.models_tokens_per_sec"
                   }
                 },
-                "signature": "zS3fVkGIk5voG3GLh/tIqk0M6S/eja5zwS7BltTGLDeBQgXsiR8EG/PPRAX/w6G95mxGmkWFS/ap6yZJrgLJBg==",
-                "hash": "HgQmDch5JgI1Koiu5hl/1te4bPUR4RDcP+UB1XmoNPI="
+                "signature": "ruJ5gqL+iSHNdDBd94OUWIySEymFqc0MppsXwJL3+MkxEbvJueo0I2gsa07fmfVn7iQdrrdQC7wu2vZrlim5Bg==",
+                "hash": "pKlCFi83H9OsRCDkRtb0iSpmFYFozLkL7+rdTmbwG0M="
               },
               "qwen3:0.6b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
-                  "value": 7.237319924150298,
+                  "value": 12.164661163435943,
                   "unit": "tokens/s",
-                  "ts": 1783266956618318000,
+                  "ts": 1783267856654568400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "qwen3:0.6b",
@@ -663,13 +694,13 @@
                     "source": "metrics.models_tokens_per_sec"
                   }
                 },
-                "signature": "ACbn0In2e4beSXqzamNdZGgxFbVcqc2S443zNFl4hhZCwOBhC62cbVaF46ohTgaENr1IspCu98l3cJkh0oh0DA==",
-                "hash": "SFxiPya0jp6PgsH3Ijvxzg6zOV/pGTPWokskxH4I8XQ="
+                "signature": "5415ArXnYrW2r+bdxpb/GV3IJrBZwUYdIi0fCGRS8KDh4eahADTD7qUWxBmuSEubcs2JPWXbMTs4DotdXkIfBg==",
+                "hash": "iwoz+Uy/YTZwxz/Zh6m/PBVNkGl8Wn6EGl/rB8PPOIw="
               }
             },
             "model_signing_payloads": {
-              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni45MzIxOTQxNjUxODQ0OTUsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzMjY2OTU2NjE4MzE4MjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01Iiwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMifX0=",
-              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny4yMzczMTk5MjQxNTAyOTgsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzMjY2OTU2NjE4MzE4MjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01Iiwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMifX0="
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni45MzAyNzk4ODE5OTU4MjIsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzMjY3ODU2NjU0NTY4NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01Iiwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMifX0=",
+              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTIuMTY0NjYxMTYzNDM1OTQzLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4MzI2Nzg1NjY1NDU2ODQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InF3ZW4zOjAuNmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIn19"
             }
           },
           "mem": {
@@ -680,18 +711,18 @@
             "result": {
               "result": {
                 "metric": "mem.bandwidth",
-                "value": 3529.6469663649464,
+                "value": 2914.3961468198336,
                 "unit": "MB/s",
-                "ts": 1783261420142676200,
+                "ts": 1783266975153132300,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
                   "payload_mb": 64
                 }
               },
-              "signature": "5tVY4cwKd2OBPpJyv/ZUD4PyCQETqwFG9bbLExsmTLqp74m6q2wb+u8AjguSVib4CaV1hXOzs0MA7D2vQP4OAw==",
-              "hash": "/lIejSwHRBrjDnmzjQfoRfxFSAQ6wmJLJQFlPLf659s="
+              "signature": "f4weOzQsStjzsZ3+rj6Xujubbc3/C44VtEBxOHZTo/f6LG5QYuEuEnik13FN9gX/J74tEHB7+13VU5cNCuVvDQ==",
+              "hash": "ABXrhIKwIxVyoSIESJ5/SqE5GskQxgZxTP0iKd1sruU="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjM1MjkuNjQ2OTY2MzY0OTQ2NCwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4MzI2MTQyMDE0MjY3NjIwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJwYXlsb2FkX21iIjo2NH19"
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjI5MTQuMzk2MTQ2ODE5ODMzNiwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4MzI2Njk3NTE1MzEzMjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJwYXlsb2FkX21iIjo2NH19"
           },
           "network": {
             "resource_type": "network",
@@ -701,20 +732,20 @@
             "result": {
               "result": {
                 "metric": "tunnel.throughput",
-                "value": 402.65348647587604,
+                "value": 149.63451769054086,
                 "unit": "MB/s",
-                "ts": 1783261420511602400,
+                "ts": 1783266975790144500,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
-                  "direct_throughput_mbps": 346.3293418876681,
+                  "direct_throughput_mbps": 49.93003553770279,
                   "mode": "loopback",
-                  "rtt_ms": 0.0960085
+                  "rtt_ms": 0.1233235
                 }
               },
-              "signature": "GaDIeRFvg3VCK8bpEZpAqgkS58N77v2X8wGKpbcUy3OQZYSactsBD/Aj2VMz8ij5/Qe9K8t8rJWZKKZk441KDw==",
-              "hash": "FYsJ85Va7vQlZY84FubDezUW9V5ptHCsUkQbXaTmaiA="
+              "signature": "8gIt3pCh89L2tYZU93OCbmY42lHfA5jVcFoKifInex/wrDlrdh1od311bim7kOIt/CFskljVYdxEcy78OvkqCQ==",
+              "hash": "K8qZ0vLyG+G46Byc82oYJbNwYD9ttVlu+wQRMdpTM7A="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjo0MDIuNjUzNDg2NDc1ODc2MDQsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNjE0MjA1MTE2MDI1MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsiZGlyZWN0X3Rocm91Z2hwdXRfbWJwcyI6MzQ2LjMyOTM0MTg4NzY2ODEsIm1vZGUiOiJsb29wYmFjayIsInJ0dF9tcyI6MC4wOTYwMDg1fX0="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjoxNDkuNjM0NTE3NjkwNTQwODYsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNjY5NzU3OTAxNDQ1MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsiZGlyZWN0X3Rocm91Z2hwdXRfbWJwcyI6NDkuOTMwMDM1NTM3NzAyNzksIm1vZGUiOiJsb29wYmFjayIsInJ0dF9tcyI6MC4xMjMzMjM1fX0="
           },
           "storage": {
             "resource_type": "storage",
@@ -724,20 +755,20 @@
             "result": {
               "result": {
                 "metric": "storage.iops",
-                "value": 549.6950051619797,
+                "value": 418.1484257038451,
                 "unit": "MB/s",
-                "ts": 1783261420322447000,
+                "ts": 1783266975411774200,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
                   "payload_mb": 64,
-                  "read_mbps": 2404.803595181375,
-                  "write_mbps": 549.6950051619797
+                  "read_mbps": 1069.0738646519078,
+                  "write_mbps": 418.1484257038451
                 }
               },
-              "signature": "twgoJzvKmWBVTABiwNVYKpbOhY08Lj2PaBN7guw+cyJ2OXjuEH4z3VUqGjKzdAzdIAxxrhMznKuA75yRPX9BDA==",
-              "hash": "QNR+DZ7ssqfk8+phVSYlC4F8LZv83pIql9ODLZBooFY="
+              "signature": "kU1wYxq02x4N4xWyjd5V9OWwdyVneEiVL1K4UiW8iABfcJnz1cdD1iRjaW/EQw09/Pz+xW3XrJXlELY+/UIxDA==",
+              "hash": "SmYZoF0whS2h2jRR60zAj/4ViXOTtdGlrIj4kymWIVg="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6NTQ5LjY5NTAwNTE2MTk3OTcsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNjE0MjAzMjI0NDcyMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsicGF5bG9hZF9tYiI6NjQsInJlYWRfbWJwcyI6MjQwNC44MDM1OTUxODEzNzUsIndyaXRlX21icHMiOjU0OS42OTUwMDUxNjE5Nzk3fX0="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6NDE4LjE0ODQyNTcwMzg0NTEsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNjY5NzU0MTE3NzQxMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsicGF5bG9hZF9tYiI6NjQsInJlYWRfbWJwcyI6MTA2OS4wNzM4NjQ2NTE5MDc4LCJ3cml0ZV9tYnBzIjo0MTguMTQ4NDI1NzAzODQ1MX19"
           }
         }
       },
