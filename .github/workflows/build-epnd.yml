@@ -136,10 +136,15 @@ jobs:
             # Export in a subshell rather than an inline `VAR=v … \` prefix: the
             # multiline-backslash prefix form was being mis-parsed by bash (it
             # tried to exec `CC=<path>` as a command, hence the 127).
+            # -checklinkname=0: Go 1.23+ rejects //go:linkname to unexported
+            # stdlib symbols by default, but go-libp2p's Android interface-
+            # enumeration dep (wlynxg/anet) links to net.zoneCache on purpose.
+            # This is the standard, go-libp2p-recommended escape hatch and only
+            # applies to the Android CGO build (desktop is pure-Go, no anet).
             ( export CGO_ENABLED=1 GOOS=android GOARCH="$goarch" CC="$TC/$cc"
               [ -n "$goarm" ] && export GOARM="$goarm"
               go build -trimpath \
-                -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=$SHA" \
+                -ldflags "-s -w -checklinkname=0 -X epn.io/daemon/internal/cmd.Version=$SHA" \
                 -o "dist/epnd-android-$abi" ./cmd/epnd )
           }
           abuild arm64-v8a   arm64 aarch64-linux-android${API}-clang
