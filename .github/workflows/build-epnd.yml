@@ -116,16 +116,27 @@ jobs:
         working-directory: epn-daemon
         run: |
           set -euo pipefail
+          SHA="${{ needs.check.outputs.sha }}"
           TC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
           API=21   # Android 5.0 floor — binary built at API 21 runs on 21+.
           abuild() {
             local abi="$1" goarch="$2" cc="$3" goarm="${4:-}"
             echo "→ android/$abi ($goarch)"
-            CGO_ENABLED=1 GOOS=android GOARCH="$goarch" ${goarm:+GOARM=$goarm} \
-              CC="$TC/$cc" \
+            # Fail loudly (with the bin listing) if the NDK toolchain isn't where
+            # we expect, instead of a cryptic 127 from go's cgo child.
+            if [ ! -x "$TC/$cc" ]; then
+              echo "::error::NDK compiler missing: $TC/$cc"
+              echo "toolchain bin contents:"; ls -la "$TC" | head -40
+              exit 1
+            fi
+            # Export in a subshell rather than an inline `VAR=v … \` prefix: the
+            # multiline-backslash prefix form was being mis-parsed by bash (it
+            # tried to exec `CC=<path>` as a command, hence the 127).
+            ( export CGO_ENABLED=1 GOOS=android GOARCH="$goarch" CC="$TC/$cc"
+              [ -n "$goarm" ] && export GOARM="$goarm"
               go build -trimpath \
-                -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=${{ needs.check.outputs.sha }}" \
-                -o "dist/epnd-android-$abi" ./cmd/epnd
+                -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=$SHA" \
+                -o "dist/epnd-android-$abi" ./cmd/epnd )
           }
           abuild arm64-v8a   arm64 aarch64-linux-android${API}-clang
           abuild armeabi-v7a arm   armv7a-linux-androideabi${API}-clang 7
