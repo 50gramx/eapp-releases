@@ -1,0 +1,219 @@
+name: Build and Deploy Web App (free public CI)
+
+# Brand-wise web build — sibling of build-eapp-{linux,macos,windows,android}.
+# Replaces the generic per-push web deploy in eapp-live with a contract-driven,
+# per-brand build + Firebase Hosting deploy.
+#
+# v1 delivery model (works with eapp-live's existing single-site firebase.json,
+# no multi-site setup required): each brand deploys to a named Hosting *channel*
+# on the project's default site. evo -> `live` (production, live.50gramx.com);
+# other brands -> a per-brand preview channel (e.g. epn.web.app-style preview
+# URL) that this cadence keeps refreshed. Upgrade path to real per-brand custom
+# domains is a Firebase multi-site change later (contract already carries
+# web.firebase-site for it).
+#
+# The deploy step is GUARDED on the FIREBASE_SERVICE_ACCOUNT secret: without it
+# the job still builds (validating the brand) and simply skips deploy, so a repo
+# with no secret never touches production.
+#
+# Change-detection mirrors the other build-eapp-* workflows (eapp-live main SHA
+# + interaction-contracts main SHA; no epnd for web).
+on:
+  workflow_dispatch:
+    inputs:
+      brand_id:
+        description: Brand id to build
+        required: true
+        type: string
+      release_channel:
+        description: Release channel
+        required: true
+        default: stable
+        type: choice
+        options: [nightly, weekly, bi-weekly, stable]
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      eapp_sha: ${{ steps.eapp.outputs.sha }}
+      contracts_sha: ${{ steps.contracts_head.outputs.sha }}
+      marker_path: ${{ steps.marker.outputs.path }}
+    steps:
+      - name: Resolve marker path
+        id: marker
+        run: echo "path=data/last-built/${{ inputs.brand_id }}-web-${{ inputs.release_channel }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest eapp-live main SHA
+        id: eapp
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest interaction-contracts main SHA
+        id: contracts_head
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          sha=$(gh api repos/50gramx/eapp-interaction-contracts/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Compare against marker
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EAPP_SHA: ${{ steps.eapp.outputs.sha }}
+          CONTRACTS_SHA: ${{ steps.contracts_head.outputs.sha }}
+          MARKER_PATH: ${{ steps.marker.outputs.path }}
+        run: |
+          gh api "repos/50gramx/eapp-releases/contents/$MARKER_PATH" --jq '.content' 2>/dev/null | base64 -d > /tmp/marker.json 2>/dev/null || echo '{}' > /tmp/marker.json
+          node -e '
+            const fs = require("fs");
+            let last = {};
+            try { last = JSON.parse(fs.readFileSync("/tmp/marker.json", "utf8")); } catch {}
+            const unchanged = last.eapp_sha === process.env.EAPP_SHA && last.contracts_sha === process.env.CONTRACTS_SHA;
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `should_build=${unchanged ? "false" : "true"}\n`);
+            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA, contracts_sha: process.env.CONTRACTS_SHA } });
+          '
+
+  build_and_deploy:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      PLATFORM_ID: web
+
+    steps:
+      - name: Checkout eapp-live source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.eapp_sha }}
+
+      - name: Checkout Interaction Contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .ci/eapp-interaction-contracts
+
+      - name: Resolve Contracts Commit
+        id: contracts
+        run: echo "sha=$(git -C .ci/eapp-interaction-contracts rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Contract Delivery
+        id: brand
+        run: |
+          node tool/ci/resolve_contract_delivery.mjs \
+            --contracts-root ".ci/eapp-interaction-contracts" \
+            --brand-id "${{ inputs.brand_id }}" \
+            --platform "$PLATFORM_ID" \
+            --channel "${{ inputs.release_channel }}" \
+            --github-env "$GITHUB_ENV" \
+            --github-output "$GITHUB_OUTPUT" \
+            --output "brand-delivery.json"
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.3'
+          channel: stable
+          cache: true
+
+      - name: Configure git for private dependencies
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      - name: Build Web App
+        run: |
+          flutter build web --release \
+            --dart-define=BUILD_ID=${{ github.run_number }} \
+            --dart-define=BRAND_ID=${{ steps.brand.outputs.brand_id }} \
+            --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}" \
+            --dart-define=BRAND_DISPLAY_NAME="${{ steps.brand.outputs.brand_display_name }}" \
+            --dart-define=BRAND_PRODUCT_NAME="${{ steps.brand.outputs.brand_product_name }}" \
+            --dart-define=BRAND_WINDOW_TITLE="${{ steps.brand.outputs.brand_window_title }}" \
+            --dart-define=BRAND_LOGO="${{ steps.brand.outputs.brand_logo }}" \
+            --dart-define=BRAND_SESSION_FILE="${{ steps.brand.outputs.brand_session_file }}" \
+            --dart-define=BRAND_SINGLETON_NAME="${{ steps.brand.outputs.brand_singleton_name }}" \
+            --dart-define=BRAND_ORGANISATION="${{ steps.brand.outputs.brand_organisation }}" \
+            --dart-define=BRAND_COMMUNITY_CODE=${{ steps.brand.outputs.brand_community_code }} \
+            --dart-define=BRAND_SHOW_APP_LIBRARY=${{ steps.brand.outputs.brand_show_app_library }} \
+            --dart-define=BRAND_SHOW_PRIVATE_SPACE_TILE=${{ steps.brand.outputs.brand_show_private_space_tile }} \
+            --dart-define=BRAND_SHOW_HISTORY=${{ steps.brand.outputs.brand_show_history }} \
+            --dart-define=BRAND_SHOW_PANE_SWITCHER=${{ steps.brand.outputs.brand_show_pane_switcher }} \
+            --dart-define=BRAND_SHOW_SPOTLIGHT=${{ steps.brand.outputs.brand_show_spotlight }} \
+            --dart-define=BRAND_SHOW_OPEN_TABS_SUMMARY=${{ steps.brand.outputs.brand_show_open_tabs_summary }} \
+            --dart-define=BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY=${{ steps.brand.outputs.brand_show_open_communities_summary }} \
+            --dart-define=BRAND_SHOW_USER_DETAILS=${{ steps.brand.outputs.brand_show_user_details }} \
+            --dart-define=BRAND_SHOW_OPEN_PAGES_TABS=${{ steps.brand.outputs.brand_show_open_pages_tabs }} \
+            --dart-define=BRAND_CLEAR_SESSION_ON_START=${{ steps.brand.outputs.brand_clear_session_on_start }} \
+            --dart-define=BRAND_UNBOUNDED_SOLUTION_NAV=${{ steps.brand.outputs.brand_unbounded_solution_nav }} \
+            --dart-define=BRAND_SHOW_WALLPAPER_CREDIT=${{ steps.brand.outputs.brand_show_wallpaper_credit }} \
+            --dart-define=BRAND_SHOW_AUTO_APP_SELECTOR=${{ steps.brand.outputs.brand_show_auto_app_selector }} \
+            --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}" \
+            --dart-define=BRAND_NAVIGATION_JSON_B64=${{ steps.brand.outputs.brand_navigation_json_b64 }}
+
+      # Deploy to the brand's Firebase Hosting channel. Guarded: no service
+      # account secret -> build-only, production untouched. channelId=live means
+      # production (evo -> live.50gramx.com); any other channel is a preview URL.
+      - name: Deploy to Firebase Hosting (${{ steps.brand.outputs.web_firebase_channel }})
+        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          projectId: ${{ steps.brand.outputs.web_firebase_project }}
+          channelId: ${{ steps.brand.outputs.web_firebase_channel }}
+          expires: 30d
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      - name: Deploy skipped notice
+        if: env.FIREBASE_SERVICE_ACCOUNT == ''
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          echo "::notice::FIREBASE_SERVICE_ACCOUNT not set — web built for '${{ steps.brand.outputs.brand_id }}' but deploy skipped. Target would be channel '${{ steps.brand.outputs.web_firebase_channel }}' on project '${{ steps.brand.outputs.web_firebase_project }}' (${{ steps.brand.outputs.web_url }})."
+
+      - name: Checkout eapp-releases (to write build marker)
+        uses: actions/checkout@v4
+        with:
+          path: .release-meta
+
+      - name: Write + commit build marker
+        env:
+          EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
+          CONTRACTS_SHA: ${{ needs.check.outputs.contracts_sha }}
+          MARKER_PATH: ${{ needs.check.outputs.marker_path }}
+        run: |
+          set -euo pipefail
+          mkdir -p ".release-meta/$(dirname "$MARKER_PATH")"
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync(".release-meta/" + process.env.MARKER_PATH, JSON.stringify({
+              eapp_sha: process.env.EAPP_SHA,
+              contracts_sha: process.env.CONTRACTS_SHA,
+              built_at: new Date().toISOString(),
+            }, null, 2) + "\n");
+          '
+          cd .release-meta
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add "$MARKER_PATH"
+          git commit -m "ci: mark ${{ inputs.brand_id }}/web/${{ inputs.release_channel }} built" || exit 0
+          for i in $(seq 1 6); do
+            git pull --rebase --autostash -q origin main || git rebase --abort || true
+            if git push -q origin HEAD:main; then echo "pushed"; exit 0; fi
+            echo "push raced (attempt $i) — retrying"; sleep $((RANDOM % 4 + 2))
+          done
+          echo "gave up after retries (not a failure)"; exit 0
