@@ -1,37 +1,37 @@
 {
-  "generated_at": "2026-07-05T11:55:21.240Z",
+  "generated_at": "2026-07-05T12:10:12.827Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
-  "node_count": 2,
+  "node_count": 3,
   "totals": {
-    "vram_gib": 0,
-    "ram_pool_gib": 0,
-    "vcpu_seconds": 14400,
-    "storage_block_gib": 0,
-    "storage_object_gib": 0,
+    "vram_gib": 2,
+    "ram_pool_gib": 2.056,
+    "vcpu_seconds": 39600,
+    "storage_block_gib": 5.254,
+    "storage_object_gib": 3.152,
     "egress_gbps": 1
   },
   "activity": {
-    "inferences_served": 0,
-    "tokens_served": 0,
+    "inferences_served": 144,
+    "tokens_served": 24267,
     "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 0,
+    "displaced_cloud_usd": 0.24,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
-    "vram_gib": 0,
-    "vcpu_seconds": 14400,
-    "est_tflops": 0.2,
-    "est_pflops": 0.0002
+    "vram_gib": 2,
+    "vcpu_seconds": 39600,
+    "est_tflops": 4.55,
+    "est_pflops": 0.0046
   },
   "top500": {
     "as_of": "TOP500 November 2024 (HPL/LINPACK Rmax)",
     "source": "https://top500.org/lists/top500/2024/11/",
-    "est_network_tflops": 0.2,
-    "est_network_pflops": 0.0002,
-    "pct_of_rank_1": 0,
+    "est_network_tflops": 4.55,
+    "est_network_pflops": 0.0046,
+    "pct_of_rank_1": 0.0003,
     "pct_of_list_sum": 0,
     "would_enter_top500": false,
     "rank_1": {
@@ -42,7 +42,79 @@
     "list_sum_pflops": 11720,
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
-  "models": [],
+  "models": [
+    {
+      "name": "tinyllama:1.1b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 4096,
+      "best_declared_ctx": 2048,
+      "max_vram_gib": 0.69,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {},
+      "verified": true,
+      "best_tokens_per_sec": 13.61,
+      "median_tokens_per_sec": 13.61
+    },
+    {
+      "name": "qwen3:0.6b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 40960,
+      "max_vram_gib": 0.47,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "measured",
+        "thinking": "declared",
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 24.09,
+      "median_tokens_per_sec": 24.09
+    },
+    {
+      "name": "gemma4:e2b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 3.21,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "declared",
+        "vision": "declared",
+        "audio": "declared",
+        "thinking": "declared"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 6.93,
+      "median_tokens_per_sec": 6.93
+    },
+    {
+      "name": "phi3:3.8b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 2.39,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {},
+      "verified": true
+    }
+  ],
   "nodes": [
     {
       "did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
@@ -93,7 +165,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-05T11:52:52Z",
+        "generated_at": "2026-07-05T12:07:52Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -263,7 +335,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-        "generated_at": "2026-07-05T11:53:51Z",
+        "generated_at": "2026-07-05T12:08:51Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -385,6 +457,296 @@
               "hash": "eeZ65KCsAzkpoUO1OOU7P7j5OoHwyu+HljDkORbrXKE="
             },
             "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6MzgxLjY5MzE1NjQ4OTgwNDcsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNDg4NzQ5Njk2NzMwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsicGF5bG9hZF9tYiI6NjQsInJlYWRfbWJwcyI6MzM3NS44OTMxNDc5MTgwMjg3LCJ3cml0ZV9tYnBzIjozODEuNjkzMTU2NDg5ODA0N319"
+          }
+        }
+      },
+      "class": "community"
+    },
+    {
+      "did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+      "peer_id": "12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+      "addrs": [
+        "/ip4/127.0.0.1/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip4/192.168.0.4/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip6/::1/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv"
+      ],
+      "operator_ids": [
+        "epn.batch.v1",
+        "epn.filesystem.v1",
+        "epn.gpu.v1",
+        "epn.memory.v1",
+        "epn.object.v1",
+        "epn.ollama.v1",
+        "epn.relay.v1",
+        "epn.remote-inference.v1"
+      ],
+      "kyc_level": 1,
+      "kyc_claim": {
+        "did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "display_name": "",
+        "kyc_level": 1,
+        "kyc_expires_at": 1814753744,
+        "issuer_did": "did:epn:0024080112208090a912b07223ee70dcbde09a46c3f5e2493f0a13a9098003ddc0bab42de94c",
+        "signature": "jnwPv+Kp2DFazxYdsF9FOIpWYa3tJ7QOgwrm+3M6Cp+5HHnMpZX5dVa62JZ2Nf3M95srk4GBg8AVn/Qg1wzGAw=="
+      },
+      "connected_at": "2026-06-23T06:02:28.143475215Z",
+      "family": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
+      "family_att": {
+        "device_did": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
+        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "role": "primary",
+        "issued_at": 1783253395,
+        "expires_at": 1814789395,
+        "signature": "4r83Ewuf5PvhkIEEF1SjPK2YjU8IElA7OYiALvm3brG/Q8+KlSD1lcI8kG+h2w3+2zyvZCgPXAgsYkYhU5WTBQ=="
+      },
+      "price_per_unit": {
+        "egress_gb": 50000,
+        "gb_hour": 3,
+        "gb_month": 20,
+        "gpu_second": 100,
+        "relay_second": 1,
+        "vcpu_second": 10
+      },
+      "gpu_class": "intel",
+      "vram_gib": 1.9999961853027344,
+      "ram_pool_gib": 2.055908203125,
+      "ram_bw_class": "local-ddr",
+      "vcpu_seconds": 25200,
+      "arch": "x86_64",
+      "simd": "avx2",
+      "storage_block_gib": 5.254154205322266,
+      "storage_object_gib": 3.1524925231933594,
+      "storage_archival_gib": 2.1016616821289062,
+      "redundancy": "none",
+      "energy_kwh_rate": 0.07,
+      "energy_source": "unknown",
+      "carbon_intensity": 475,
+      "models": [
+        {
+          "name": "qwen3:0.6b",
+          "quant": "Q4_K_M",
+          "ctx": 40960,
+          "vram_needed_gib": 0.47,
+          "pulled": true,
+          "declared_caps": {
+            "tools": true,
+            "thinking": true
+          },
+          "measured_caps": {
+            "tools": true,
+            "structured_output": true
+          },
+          "bench_digest": "boWNaZpjybVbenE+M5Jt0Qekhm6abR/B08ijBK3cnRQ=",
+          "benched_at": "2026-07-05T03:41:51.5500626Z",
+          "tokens_per_sec": 24.094464931313023
+        },
+        {
+          "name": "tinyllama:1.1b",
+          "quant": "Q4_0",
+          "ctx": 2048,
+          "vram_needed_gib": 0.69,
+          "pulled": true,
+          "effective_ctx": 4096,
+          "declared_caps": {},
+          "measured_caps": {},
+          "bench_digest": "KOt8TRqP7TT4WezHyblgOFh4HkYpdT2j1l9hDXZtO6E=",
+          "benched_at": "2026-07-04T20:35:55.5918882Z",
+          "tokens_per_sec": 13.606402064141587
+        },
+        {
+          "name": "gemma4:e2b",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 3.21,
+          "pulled": true,
+          "declared_caps": {
+            "tools": true,
+            "vision": true,
+            "audio": true,
+            "thinking": true
+          },
+          "measured_caps": {},
+          "bench_digest": "cGDYzidC1/RFpibxp3PRETwP92StsygEkaO+WNoJrZw=",
+          "benched_at": "2026-07-04T20:35:55.5918882Z",
+          "tokens_per_sec": 6.932194165184495
+        },
+        {
+          "name": "phi3:3.8b",
+          "quant": "Q4_0",
+          "ctx": 131072,
+          "vram_needed_gib": 2.39,
+          "pulled": true,
+          "declared_caps": {},
+          "measured_caps": {},
+          "bench_digest": "aG9LQRA0cOvnVODACHfMDSRSN4oInAcbw0orBqCSy+Y=",
+          "benched_at": "2026-07-04T20:35:55.5918882Z"
+        }
+      ],
+      "proof_snapshot": {
+        "schema_version": "epn.proof.snapshot.v1",
+        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+        "generated_at": "2026-07-05T11:57:12Z",
+        "metrics": {
+          "disputes_resolved": 0,
+          "inferences_served": 144,
+          "local_inference_last_hash": "",
+          "local_inference_receipts": 0,
+          "models_tokens_per_sec": {
+            "gemma4:e2b": 6.932194165184495,
+            "qwen3:0.6b": 15.388779233150203
+          },
+          "proofs_issued": 0,
+          "receipts_verified": 0,
+          "since": "2026-06-23T08:27:24Z",
+          "tokens_served": 24267
+        },
+        "resources": {
+          "cpu": {
+            "resource_type": "cpu",
+            "status": "signed",
+            "metric": "cpu.throughput",
+            "unit": "hashes/s",
+            "result": {
+              "result": {
+                "metric": "cpu.throughput",
+                "value": 1794.4298738603723,
+                "unit": "hashes/s",
+                "ts": 1783244563733554400,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "duration_ms": 500,
+                  "payload": "sha256(1MB) single-threaded"
+                }
+              },
+              "signature": "yIPyaUuuh1TvfQWbcS0VD15rosx1Rq8vzOQH2YWcNd/xqLaq8eTxQaklmTwkhmwuDiScFclMZloVLFl3yDMuCg==",
+              "hash": "tUB2WtNgBlHgp4IXnpCS9/G+B2iuSzs5SWByctIuEMY="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoxNzk0LjQyOTg3Mzg2MDM3MjMsInVuaXQiOiJoYXNoZXMvcyIsInRzIjoxNzgzMjQ0NTYzNzMzNTU0NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImR1cmF0aW9uX21zIjo1MDAsInBheWxvYWQiOiJzaGEyNTYoMU1CKSBzaW5nbGUtdGhyZWFkZWQifX0="
+          },
+          "energy": {
+            "resource_type": "energy",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "energy.joules_per_token",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "gpu": {
+            "resource_type": "gpu",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "gpu.throughput",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "inference": {
+            "resource_type": "inference",
+            "status": "signed",
+            "metric": "inference.tokens_per_sec",
+            "unit": "tokens/s",
+            "models": {
+              "gemma4:e2b": {
+                "result": {
+                  "metric": "inference.tokens_per_sec",
+                  "value": 6.932194165184495,
+                  "unit": "tokens/s",
+                  "ts": 1783252632448248600,
+                  "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                  "extra": {
+                    "model": "gemma4:e2b",
+                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
+                    "source": "metrics.models_tokens_per_sec"
+                  }
+                },
+                "signature": "lenMISPELbIVbCKjtaAnQj3/k+2DGdnKjtxKS65q71gvF2xJ+NWevQYCl0NPuWcMIMmHwo7L/z8LJG9cUP1UBg==",
+                "hash": "ARUcKGFlOMbt28E5iscXnu9BU4TSqRSWolCrBvLZMxU="
+              },
+              "qwen3:0.6b": {
+                "result": {
+                  "metric": "inference.tokens_per_sec",
+                  "value": 15.388779233150203,
+                  "unit": "tokens/s",
+                  "ts": 1783252632448248600,
+                  "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                  "extra": {
+                    "model": "qwen3:0.6b",
+                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
+                    "source": "metrics.models_tokens_per_sec"
+                  }
+                },
+                "signature": "k/cuzbdcXOmUYeGwJ0h9I5s6kbNN99+0m0g89wAti6yEgECrzH3fKXoqbbQn/lPOroS4YdRPZj/4NuJsNO3nAA==",
+                "hash": "kmkS/Ej/hdDbOmJswsYajWGxiNz8bB3OoJqUwb+x7zs="
+              }
+            },
+            "model_signing_payloads": {
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni45MzIxOTQxNjUxODQ0OTUsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzMjUyNjMyNDQ4MjQ4NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01Iiwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMifX0=",
+              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTUuMzg4Nzc5MjMzMTUwMjAzLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4MzI1MjYzMjQ0ODI0ODUwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InF3ZW4zOjAuNmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIn19"
+            }
+          },
+          "mem": {
+            "resource_type": "mem",
+            "status": "signed",
+            "metric": "mem.bandwidth",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "mem.bandwidth",
+                "value": 5331.272754102184,
+                "unit": "MB/s",
+                "ts": 1783244564280091400,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "payload_mb": 64
+                }
+              },
+              "signature": "LJb3i0l7ens7VgmPPBJfZnWJJBnx64b4bU29BgCsYERHBFFg+h6zPNb6WYcgSn7msFF6UBxf/OTSX749re36Cw==",
+              "hash": "qNl0S/AoJFcRZxmiaDHnGxsRbaj2rN0xHRoRt9as8M0="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjUzMzEuMjcyNzU0MTAyMTg0LCJ1bml0IjoiTUIvcyIsInRzIjoxNzgzMjQ0NTY0MjgwMDkxNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7InBheWxvYWRfbWIiOjY0fX0="
+          },
+          "network": {
+            "resource_type": "network",
+            "status": "signed",
+            "metric": "tunnel.throughput",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "tunnel.throughput",
+                "value": 294.13927494668724,
+                "unit": "MB/s",
+                "ts": 1783244564627740400,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "direct_throughput_mbps": 551.2907093733203,
+                  "mode": "loopback",
+                  "rtt_ms": 0.095427
+                }
+              },
+              "signature": "ubau1cf/x3B8YzbKi5haA/VizMwLnkt2nNf2rDWNC23ijFaYaXNoRYw2z0a2k+5F6i6XMl6MTc9mG9LEJqILCA==",
+              "hash": "8Wd57BAZiOdYddpbstJxHIMBgMhHEm5ciNTK+2FY0MM="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjoyOTQuMTM5Mjc0OTQ2Njg3MjQsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNDQ1NjQ2Mjc3NDA0MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsiZGlyZWN0X3Rocm91Z2hwdXRfbWJwcyI6NTUxLjI5MDcwOTM3MzMyMDMsIm1vZGUiOiJsb29wYmFjayIsInJ0dF9tcyI6MC4wOTU0Mjd9fQ=="
+          },
+          "storage": {
+            "resource_type": "storage",
+            "status": "signed",
+            "metric": "storage.iops",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "storage.iops",
+                "value": 485.7323705712971,
+                "unit": "MB/s",
+                "ts": 1783244564489689900,
+                "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
+                "extra": {
+                  "payload_mb": 64,
+                  "read_mbps": 3259.635022741047,
+                  "write_mbps": 485.7323705712971
+                }
+              },
+              "signature": "4dR128mK8x+74SqmVJ0hvaUw00245tNxsEVEI5MJlt9IZCaXhcT2rDA7H40P8aWqLGzbExsOOtAI24E6+3NOAA==",
+              "hash": "qU2H9jzCo+Svww/1+vJbUVd5s+JWsTE8ZGhNyyu7+yU="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLmlvcHMiLCJ2YWx1ZSI6NDg1LjczMjM3MDU3MTI5NzEsInVuaXQiOiJNQi9zIiwidHMiOjE3ODMyNDQ1NjQ0ODk2ODk5MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsicGF5bG9hZF9tYiI6NjQsInJlYWRfbWJwcyI6MzI1OS42MzUwMjI3NDEwNDcsIndyaXRlX21icHMiOjQ4NS43MzIzNzA1NzEyOTcxfX0="
           }
         }
       },
