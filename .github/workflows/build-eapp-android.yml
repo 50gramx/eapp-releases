@@ -45,6 +45,7 @@ jobs:
       should_build: ${{ steps.compare.outputs.should_build }}
       eapp_sha: ${{ steps.eapp.outputs.sha }}
       contracts_sha: ${{ steps.contracts_head.outputs.sha }}
+      epnd_state: ${{ steps.epnd.outputs.state }}
       marker_path: ${{ steps.marker.outputs.path }}
     steps:
       - name: Resolve marker path
@@ -67,12 +68,24 @@ jobs:
           sha=$(gh api repos/50gramx/eapp-interaction-contracts/commits/main --jq .sha)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
+      # The APK BUNDLES the epnd daemon (jniLibs/<abi>/libepnd.so), so an epnd
+      # change must trigger a rebuild just like an eapp-live/contracts change —
+      # otherwise a build-epnd refresh dispatch is silently skipped here and the
+      # APK keeps shipping the stale daemon. Mirrors the desktop workflows: hash
+      # the current epnd-latest checksums.txt as the dependency's state.
+      - name: Get current epnd-latest state
+        id: epnd
+        run: |
+          state=$(curl -fsSL https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/checksums.txt | sha256sum | awk '{print $1}')
+          echo "state=$state" >> "$GITHUB_OUTPUT"
+
       - name: Compare against marker
         id: compare
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EAPP_SHA: ${{ steps.eapp.outputs.sha }}
           CONTRACTS_SHA: ${{ steps.contracts_head.outputs.sha }}
+          EPND_STATE: ${{ steps.epnd.outputs.state }}
           MARKER_PATH: ${{ steps.marker.outputs.path }}
         run: |
           gh api "repos/50gramx/eapp-releases/contents/$MARKER_PATH" --jq '.content' 2>/dev/null | base64 -d > /tmp/marker.json 2>/dev/null || echo '{}' > /tmp/marker.json
@@ -80,9 +93,9 @@ jobs:
             const fs = require("fs");
             let last = {};
             try { last = JSON.parse(fs.readFileSync("/tmp/marker.json", "utf8")); } catch {}
-            const unchanged = last.eapp_sha === process.env.EAPP_SHA && last.contracts_sha === process.env.CONTRACTS_SHA;
+            const unchanged = last.eapp_sha === process.env.EAPP_SHA && last.contracts_sha === process.env.CONTRACTS_SHA && last.epnd_state === process.env.EPND_STATE;
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `should_build=${unchanged ? "false" : "true"}\n`);
-            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA, contracts_sha: process.env.CONTRACTS_SHA } });
+            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA, contracts_sha: process.env.CONTRACTS_SHA, epnd_state: process.env.EPND_STATE } });
           '
 
   build_and_release:
@@ -306,6 +319,7 @@ jobs:
         env:
           EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
           CONTRACTS_SHA: ${{ needs.check.outputs.contracts_sha }}
+          EPND_STATE: ${{ needs.check.outputs.epnd_state }}
           MARKER_PATH: ${{ needs.check.outputs.marker_path }}
         run: |
           set -euo pipefail
@@ -315,6 +329,7 @@ jobs:
             fs.writeFileSync(".release-meta/" + process.env.MARKER_PATH, JSON.stringify({
               eapp_sha: process.env.EAPP_SHA,
               contracts_sha: process.env.CONTRACTS_SHA,
+              epnd_state: process.env.EPND_STATE,
               built_at: new Date().toISOString(),
             }, null, 2) + "\n");
           '
