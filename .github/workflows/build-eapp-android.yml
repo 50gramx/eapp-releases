@@ -1,0 +1,286 @@
+name: Build and Release Android App (free public CI)
+
+# Branded Android build — sibling of build-eapp-linux/macos/windows.yml.
+# Runs here so it's free, pulls eapp-live source via a read-only token, and
+# publishes TWO artifacts per run:
+#   * an APK -> attached to the eapp-releases GitHub release (direct download,
+#     shows up in the catalog automatically like every other platform), and
+#   * an AAB -> uploaded to Google Play (internal track) for the brand's
+#     contract-owned applicationId.
+#
+# Everything brand-specific (display name, applicationId, surface flags, …)
+# comes from eapp-interaction-contracts via resolve_contract_delivery.mjs —
+# nothing about the brand is hardcoded here.
+#
+# Change-detection guard mirrors the desktop workflows: the cheap `check` job
+# compares eapp-live's current main SHA against the last-built marker and skips
+# the expensive build when nothing changed.
+on:
+  workflow_dispatch:
+    inputs:
+      brand_id:
+        description: Brand id to build
+        required: true
+        type: string
+      release_channel:
+        description: Release channel
+        required: true
+        default: stable
+        type: choice
+        options: [nightly, weekly, bi-weekly, stable]
+      play_release_status:
+        description: Google Play release status (internal track)
+        required: true
+        default: draft
+        type: choice
+        options: [draft, completed]
+
+permissions:
+  contents: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      eapp_sha: ${{ steps.eapp.outputs.sha }}
+      marker_path: ${{ steps.marker.outputs.path }}
+    steps:
+      - name: Resolve marker path
+        id: marker
+        run: echo "path=data/last-built/${{ inputs.brand_id }}-android-${{ inputs.release_channel }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Get latest eapp-live main SHA
+        id: eapp
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
+      - name: Compare against marker
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EAPP_SHA: ${{ steps.eapp.outputs.sha }}
+          MARKER_PATH: ${{ steps.marker.outputs.path }}
+        run: |
+          gh api "repos/50gramx/eapp-releases/contents/$MARKER_PATH" --jq '.content' 2>/dev/null | base64 -d > /tmp/marker.json 2>/dev/null || echo '{}' > /tmp/marker.json
+          node -e '
+            const fs = require("fs");
+            let last = {};
+            try { last = JSON.parse(fs.readFileSync("/tmp/marker.json", "utf8")); } catch {}
+            const unchanged = last.eapp_sha === process.env.EAPP_SHA;
+            fs.appendFileSync(process.env.GITHUB_OUTPUT, `should_build=${unchanged ? "false" : "true"}\n`);
+            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA } });
+          '
+
+  build_and_release:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_REPO: 50gramx/eapp-releases
+      PLATFORM_ID: android
+
+    steps:
+      - name: Checkout eapp-live source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.eapp_sha }}
+
+      - name: Checkout Interaction Contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .ci/eapp-interaction-contracts
+
+      - name: Resolve Contracts Commit
+        id: contracts
+        run: echo "sha=$(git -C .ci/eapp-interaction-contracts rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Resolve Contract Delivery
+        id: brand
+        run: |
+          node tool/ci/resolve_contract_delivery.mjs \
+            --contracts-root ".ci/eapp-interaction-contracts" \
+            --brand-id "${{ inputs.brand_id }}" \
+            --platform "$PLATFORM_ID" \
+            --channel "${{ inputs.release_channel }}" \
+            --github-env "$GITHUB_ENV" \
+            --github-output "$GITHUB_OUTPUT" \
+            --output "brand-delivery.json"
+
+      - name: Setup Java (Zulu 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.3'
+          channel: stable
+          cache: true
+
+      # Must run before pub resolution, which would otherwise fail to clone the
+      # private git dependencies.
+      - name: Configure git for private dependencies
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Ensure Android project structure
+        run: flutter create --platforms=android . --no-overwrite
+
+      - name: Get Dependencies
+        run: flutter pub get
+
+      # Optional: without a keystore secret the release build falls back to
+      # debug signing (see android/app/build.gradle) — the APK is still a valid,
+      # directly-installable sideload artifact. Play upload is separately skipped
+      # when its own secret is absent, so neither missing secret fails the run.
+      - name: Decode Keystore (optional)
+        if: env.ANDROID_KEYSTORE_BASE64 != ''
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+
+      - name: Resolve App Version
+        id: version
+        run: |
+          VERSION=$(sed -nE 's/^version: ([^+]+)\+.*/\1/p' pubspec.yaml)
+          echo "version=${VERSION:-1.0.0}" >> "$GITHUB_OUTPUT"
+
+      # Build APK (direct-download artifact for the release/catalog) and AAB
+      # (Play upload) from the same brand defines. applicationId comes from the
+      # contract via ANDROID_APPLICATION_ID; signing from repo secrets.
+      - name: Build Android APK + AAB
+        env:
+          ANDROID_APPLICATION_ID: ${{ steps.brand.outputs.android_application_id }}
+          ANDROID_KEYALIAS: ${{ secrets.ANDROID_KEYALIAS }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          BRAND_DEFINES=(
+            --build-number=${{ github.run_number }}
+            --dart-define=BUILD_ID=${{ github.run_number }}
+            --dart-define=BRAND_ID=${{ steps.brand.outputs.brand_id }}
+            --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}"
+            --dart-define=BRAND_DISPLAY_NAME="${{ steps.brand.outputs.brand_display_name }}"
+            --dart-define=BRAND_PRODUCT_NAME="${{ steps.brand.outputs.brand_product_name }}"
+            --dart-define=BRAND_WINDOW_TITLE="${{ steps.brand.outputs.brand_window_title }}"
+            --dart-define=BRAND_LOGO="${{ steps.brand.outputs.brand_logo }}"
+            --dart-define=BRAND_SESSION_FILE="${{ steps.brand.outputs.brand_session_file }}"
+            --dart-define=BRAND_SINGLETON_NAME="${{ steps.brand.outputs.brand_singleton_name }}"
+            --dart-define=BRAND_ORGANISATION="${{ steps.brand.outputs.brand_organisation }}"
+            --dart-define=BRAND_COMMUNITY_CODE=${{ steps.brand.outputs.brand_community_code }}
+            --dart-define=BRAND_SHOW_APP_LIBRARY=${{ steps.brand.outputs.brand_show_app_library }}
+            --dart-define=BRAND_SHOW_PRIVATE_SPACE_TILE=${{ steps.brand.outputs.brand_show_private_space_tile }}
+            --dart-define=BRAND_SHOW_HISTORY=${{ steps.brand.outputs.brand_show_history }}
+            --dart-define=BRAND_SHOW_PANE_SWITCHER=${{ steps.brand.outputs.brand_show_pane_switcher }}
+            --dart-define=BRAND_SHOW_SPOTLIGHT=${{ steps.brand.outputs.brand_show_spotlight }}
+            --dart-define=BRAND_SHOW_OPEN_TABS_SUMMARY=${{ steps.brand.outputs.brand_show_open_tabs_summary }}
+            --dart-define=BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY=${{ steps.brand.outputs.brand_show_open_communities_summary }}
+            --dart-define=BRAND_SHOW_USER_DETAILS=${{ steps.brand.outputs.brand_show_user_details }}
+            --dart-define=BRAND_SHOW_OPEN_PAGES_TABS=${{ steps.brand.outputs.brand_show_open_pages_tabs }}
+            --dart-define=BRAND_CLEAR_SESSION_ON_START=${{ steps.brand.outputs.brand_clear_session_on_start }}
+            --dart-define=BRAND_UNBOUNDED_SOLUTION_NAV=${{ steps.brand.outputs.brand_unbounded_solution_nav }}
+            --dart-define=BRAND_SHOW_WALLPAPER_CREDIT=${{ steps.brand.outputs.brand_show_wallpaper_credit }}
+            --dart-define=BRAND_SHOW_AUTO_APP_SELECTOR=${{ steps.brand.outputs.brand_show_auto_app_selector }}
+            --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}"
+            --dart-define=BRAND_NAVIGATION_JSON_B64=${{ steps.brand.outputs.brand_navigation_json_b64 }}
+          )
+          flutter build apk --release "${BRAND_DEFINES[@]}"
+          flutter build appbundle --release "${BRAND_DEFINES[@]}"
+
+      - name: Stage APK artifact
+        run: cp build/app/outputs/flutter-apk/app-release.apk "${{ steps.brand.outputs.artifact_name }}"
+
+      - name: Write Release Metadata
+        run: |
+          node tool/ci/write_release_metadata.mjs \
+            --product "${{ steps.brand.outputs.product_id }}" \
+            --brand-id "${{ steps.brand.outputs.brand_id }}" \
+            --platform "$PLATFORM_ID" \
+            --channel "${{ inputs.release_channel }}" \
+            --version "${{ steps.version.outputs.version }}" \
+            --build-id "${{ github.run_number }}" \
+            --source-commit "${{ needs.check.outputs.eapp_sha }}" \
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" \
+            --release-repo "$RELEASE_REPO" \
+            --release-tag "${{ steps.brand.outputs.release_tag }}" \
+            --asset "${{ steps.brand.outputs.artifact_name }}" \
+            --output "release-metadata.json"
+          node tool/ci/write_dependency_manifest.mjs \
+            --contracts-commit "${{ steps.contracts.outputs.sha }}" \
+            --output "dependency-manifest.json"
+
+      - name: Publish release (self-repo, default token)
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            ${{ steps.brand.outputs.artifact_name }}
+            release-metadata.json
+            dependency-manifest.json
+            brand-delivery.json
+          tag_name: ${{ steps.brand.outputs.release_tag }}
+          name: ${{ steps.brand.outputs.display_name }} Android ${{ inputs.release_channel }}
+          body: |
+            ## ${{ steps.brand.outputs.display_name }} Android ${{ inputs.release_channel }}
+
+            **Application ID:** ${{ steps.brand.outputs.android_application_id }}
+            **Source commit:** ${{ needs.check.outputs.eapp_sha }}
+            **Contracts:** ${{ steps.contracts.outputs.sha }}
+            **Build ID:** ${{ github.run_number }}
+            **Channel:** ${{ inputs.release_channel }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Auto-publish the AAB to Google Play (internal track) for this brand's
+      # contract-owned package. Skipped when the service-account secret is
+      # absent, so brands without a Play listing still get the APK release.
+      - name: Upload to Google Play (Internal Track)
+        if: env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != ''
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: ${{ steps.brand.outputs.android_application_id }}
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: internal
+          status: ${{ inputs.play_release_status }}
+        env:
+          GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+
+      - name: Checkout eapp-releases (to write build marker)
+        uses: actions/checkout@v4
+        with:
+          path: .release-meta
+
+      - name: Write + commit build marker
+        env:
+          EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
+          MARKER_PATH: ${{ needs.check.outputs.marker_path }}
+        run: |
+          set -euo pipefail
+          mkdir -p ".release-meta/$(dirname "$MARKER_PATH")"
+          node -e '
+            const fs = require("fs");
+            fs.writeFileSync(".release-meta/" + process.env.MARKER_PATH, JSON.stringify({
+              eapp_sha: process.env.EAPP_SHA,
+              built_at: new Date().toISOString(),
+            }, null, 2) + "\n");
+          '
+          cd .release-meta
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add "$MARKER_PATH"
+          git commit -m "ci: mark ${{ inputs.brand_id }}/android/${{ inputs.release_channel }} built" || exit 0
+          for i in $(seq 1 6); do
+            git pull --rebase --autostash -q origin main || git rebase --abort || true
+            if git push -q origin HEAD:main; then echo "pushed"; exit 0; fi
+            echo "push raced (attempt $i) — retrying"; sleep $((RANDOM % 4 + 2))
+          done
+          echo "gave up after retries (not a failure)"; exit 0
