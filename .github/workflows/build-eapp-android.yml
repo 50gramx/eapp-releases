@@ -158,6 +158,38 @@ jobs:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
 
+      # Bundle the EP&N lite-node daemon INSIDE the APK. Android forbids
+      # downloading + exec'ing a binary at runtime (W^X/SELinux), so the daemon
+      # ships as a jniLibs `.so` — Android extracts it to nativeLibraryDir as an
+      # executable, and NodeController exec's it from there (see
+      # node_controller.dart Android branch). One .so per ABI, pulled from the
+      # rolling epnd-latest release (built by build-epnd.yml's NDK job). Best
+      # effort: if an ABI asset is missing the app still installs and simply
+      # reports the node as unavailable rather than failing the build.
+      - name: Bundle epnd lite daemon into jniLibs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          declare -A ABIS=(
+            [arm64-v8a]=epnd-android-arm64-v8a
+            [armeabi-v7a]=epnd-android-armeabi-v7a
+            [x86_64]=epnd-android-x86_64
+          )
+          for abi in "${!ABIS[@]}"; do
+            asset="${ABIS[$abi]}"
+            dest="android/app/src/main/jniLibs/$abi"
+            mkdir -p "$dest"
+            echo "→ fetching $asset → $dest/libepnd.so"
+            if gh release download epnd-latest --repo "$RELEASE_REPO" \
+                 --pattern "$asset" --output "$dest/libepnd.so" --clobber; then
+              chmod +x "$dest/libepnd.so"
+              ls -la "$dest/libepnd.so"
+            else
+              echo "::warning::epnd asset $asset not published yet — $abi APK ships without a node"
+            fi
+          done
+
       - name: Resolve App Version
         id: version
         run: |

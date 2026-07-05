@@ -96,6 +96,42 @@ jobs:
           build darwin  amd64 epnd-darwin-amd64
           build darwin  arm64 epnd-darwin-arm64
 
+      # Android runs the daemon in lite mode only (identity + wallet + p2p +
+      # concierge, no k3s — enforced daemon-side: config auto-sets Lite on
+      # GOOS=android). It ships INSIDE the APK as a jniLibs .so and is exec'd
+      # from nativeLibraryDir, so it must be a real Android PIE binary — that
+      # needs CGO + the NDK toolchain (a pure CGO_ENABLED=0 GOOS=android build
+      # fails linking libp2p's wlynxg/anet netlink helper).
+      - name: Setup Android NDK
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+          local-cache: true
+
+      - name: Build Android (NDK, CGO) — all shipped ABIs
+        env:
+          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
+        working-directory: epn-daemon
+        run: |
+          set -euo pipefail
+          TC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
+          API=21   # Android 5.0 floor — binary built at API 21 runs on 21+.
+          abuild() {
+            local abi="$1" goarch="$2" cc="$3" goarm="${4:-}"
+            echo "→ android/$abi ($goarch)"
+            CGO_ENABLED=1 GOOS=android GOARCH="$goarch" ${goarm:+GOARM=$goarm} \
+              CC="$TC/$cc" \
+              go build -trimpath \
+                -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=${{ needs.check.outputs.sha }}" \
+                -o "dist/epnd-android-$abi" ./cmd/epnd
+          }
+          abuild arm64-v8a   arm64 aarch64-linux-android${API}-clang
+          abuild armeabi-v7a arm   armv7a-linux-androideabi${API}-clang 7
+          abuild x86_64      amd64 x86_64-linux-android${API}-clang
+          ls -la dist/epnd-android-*
+
       - name: Stage installer + checksums
         run: |
           set -euo pipefail
@@ -120,6 +156,9 @@ jobs:
             epn-daemon/dist/epnd-linux-arm64
             epn-daemon/dist/epnd-darwin-amd64
             epn-daemon/dist/epnd-darwin-arm64
+            epn-daemon/dist/epnd-android-arm64-v8a
+            epn-daemon/dist/epnd-android-armeabi-v7a
+            epn-daemon/dist/epnd-android-x86_64
             epn-daemon/dist/install.sh
             epn-daemon/dist/report-bootstrap-status.sh
             epn-daemon/dist/epnd-autoupdate.sh
@@ -183,6 +222,7 @@ jobs:
               linux)   wf="build-eapp-linux.yml" ;;
               windows) wf="build-eapp-windows.yml" ;;
               macos)   wf="build-eapp-macos.yml" ;;
+              android) wf="build-eapp-android.yml" ;;
               *) echo "skip unknown platform: $platform"; continue ;;
             esac
             echo "→ $wf brand_id=$brand channel=$channel (refreshing bundled epnd)"
