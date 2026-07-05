@@ -26,6 +26,7 @@ jobs:
     outputs:
       should_build: ${{ steps.compare.outputs.should_build }}
       eapp_sha: ${{ steps.eapp.outputs.sha }}
+      contracts_sha: ${{ steps.contracts_head.outputs.sha }}
       epnd_state: ${{ steps.epnd.outputs.state }}
       marker_path: ${{ steps.marker.outputs.path }}
     steps:
@@ -41,6 +42,14 @@ jobs:
           sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
+      - name: Get latest interaction-contracts main SHA
+        id: contracts_head
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          sha=$(gh api repos/50gramx/eapp-interaction-contracts/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - name: Get current epnd-latest state
         id: epnd
         run: |
@@ -52,6 +61,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           EAPP_SHA: ${{ steps.eapp.outputs.sha }}
+          CONTRACTS_SHA: ${{ steps.contracts_head.outputs.sha }}
           EPND_STATE: ${{ steps.epnd.outputs.state }}
           MARKER_PATH: ${{ steps.marker.outputs.path }}
         run: |
@@ -60,9 +70,9 @@ jobs:
             const fs = require("fs");
             let last = {};
             try { last = JSON.parse(fs.readFileSync("/tmp/marker.json", "utf8")); } catch {}
-            const unchanged = last.eapp_sha === process.env.EAPP_SHA && last.epnd_state === process.env.EPND_STATE;
+            const unchanged = last.eapp_sha === process.env.EAPP_SHA && last.contracts_sha === process.env.CONTRACTS_SHA && last.epnd_state === process.env.EPND_STATE;
             fs.appendFileSync(process.env.GITHUB_OUTPUT, `should_build=${unchanged ? "false" : "true"}\n`);
-            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA, epnd_state: process.env.EPND_STATE } });
+            console.log(unchanged ? "unchanged since last build — skipping" : "changed — building", { last, now: { eapp_sha: process.env.EAPP_SHA, contracts_sha: process.env.CONTRACTS_SHA, epnd_state: process.env.EPND_STATE } });
           '
 
   build_and_release:
@@ -299,6 +309,7 @@ jobs:
         shell: bash
         env:
           EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
+          CONTRACTS_SHA: ${{ needs.check.outputs.contracts_sha }}
           EPND_STATE: ${{ needs.check.outputs.epnd_state }}
           MARKER_PATH: ${{ needs.check.outputs.marker_path }}
         run: |
@@ -308,6 +319,7 @@ jobs:
             const fs = require("fs");
             fs.writeFileSync(".release-meta/" + process.env.MARKER_PATH, JSON.stringify({
               eapp_sha: process.env.EAPP_SHA,
+              contracts_sha: process.env.CONTRACTS_SHA,
               epnd_state: process.env.EPND_STATE,
               built_at: new Date().toISOString(),
             }, null, 2) + "\n");
