@@ -160,6 +160,7 @@ jobs:
       - name: Build Android APK + AAB
         env:
           ANDROID_APPLICATION_ID: ${{ steps.brand.outputs.android_application_id }}
+          ANDROID_APP_LABEL: ${{ steps.brand.outputs.brand_display_name }}
           ANDROID_KEYALIAS: ${{ secrets.ANDROID_KEYALIAS }}
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
           ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
