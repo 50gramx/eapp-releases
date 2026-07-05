@@ -107,7 +107,11 @@ jobs:
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r26d
-          local-cache: true
+          # MUST be false: local-cache round-trips the NDK through tar, which
+          # breaks the `clang` symlink (clang → clang-17), so the per-ABI
+          # wrapper scripts fail with "clang: No such file or directory". A
+          # fresh download keeps symlinks intact.
+          local-cache: false
 
       - name: Build Android (NDK, CGO) — all shipped ABIs
         env:
