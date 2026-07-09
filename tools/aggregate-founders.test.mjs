@@ -12,6 +12,8 @@ import {
   buildProofOutputs,
   verifySignedResult,
   buildMeshView,
+  mergeCommunityLedger,
+  mergeBests,
   buildCommunities,
 } from './aggregate-founders.mjs';
 
@@ -391,4 +393,107 @@ test('buildCommunities groups nodes by community and counts evidence', () => {
   assert.equal(out.communities[0].id, 'IN_560045');
   // A node with no region contributes to no community.
   assert.ok(!out.communities.some((c) => c.nodes.some((n) => n.name === 'd')));
+});
+
+// ---------------------------------------------------------------------------
+// The ledger. These two tests exist because both behaviours were once wrong and
+// silently so — a region blinked out when one reporter lost sight of a peer, and
+// the network's best CPU fell by 5x when the machine that set it went to sleep.
+// ---------------------------------------------------------------------------
+
+test('mergeCommunityLedger keeps a community whose nodes are no longer visible', () => {
+  const previous = {
+    communities: [
+      {
+        id: 'IN_500050',
+        pincode: '500050',
+        city: 'Hyderabad',
+        node_count: 1,
+        online_count: 1,
+        verified_count: 1,
+        first_seen_at: '2026-07-01T00:00:00Z',
+        last_seen_at: '2026-07-09T00:00:00Z',
+        nodes: [{ node_did: 'did:a', confidence: 'verified', online: true, visible: true }],
+        bests: { cpu: { resource_type: 'cpu', value: 1659, status: 'signed' } },
+        rejected_results: [],
+      },
+    ],
+  };
+  // Today the reporter cannot see Hyderabad at all.
+  const current = { generated_at: '2026-07-10T00:00:00Z', community_count: 0, communities: [] };
+
+  const out = mergeCommunityLedger(previous, current);
+  assert.equal(out.community_count, 1, 'the region must not vanish');
+  const c = out.communities[0];
+  assert.equal(c.id, 'IN_500050');
+  assert.equal(c.online_count, 0, 'nobody is online');
+  assert.equal(c.nodes[0].visible, false, 'and the node says so');
+  assert.equal(c.bests.cpu.value, 1659, 'what was proved there stays proved');
+});
+
+test('mergeCommunityLedger keeps the high-water mark when today is slower', () => {
+  const previous = {
+    communities: [
+      {
+        id: 'IN_400001',
+        nodes: [{ node_did: 'did:a', confidence: 'claimed' }],
+        bests: { cpu: { resource_type: 'cpu', value: 1659, status: 'signed' } },
+        first_seen_at: '2026-07-01T00:00:00Z',
+      },
+    ],
+  };
+  const current = {
+    generated_at: '2026-07-10T00:00:00Z',
+    community_count: 1,
+    communities: [
+      {
+        id: 'IN_400001',
+        node_count: 1,
+        online_count: 1,
+        reporter_count: 1,
+        verified_count: 0,
+        nodes: [{ node_did: 'did:a', confidence: 'claimed', online: true }],
+        bests: { cpu: { resource_type: 'cpu', value: 330, status: 'signed' } },
+        rejected_results: [],
+      },
+    ],
+  };
+
+  const out = mergeCommunityLedger(previous, current);
+  assert.equal(out.communities[0].bests.cpu.value, 1659, 'a best is a high-water mark, not the latest');
+  assert.equal(out.communities[0].first_seen_at, '2026-07-01T00:00:00Z', 'first_seen_at is preserved');
+});
+
+test('mergeCommunityLedger takes a strictly greater verified result', () => {
+  const previous = { communities: [{ id: 'IN_1', nodes: [], bests: { cpu: { value: 100, status: 'signed' } } }] };
+  const current = {
+    generated_at: 'now',
+    communities: [
+      { id: 'IN_1', node_count: 0, online_count: 0, reporter_count: 0, verified_count: 0, nodes: [], bests: { cpu: { value: 900, status: 'signed' } }, rejected_results: [] },
+    ],
+  };
+  assert.equal(mergeCommunityLedger(previous, current).communities[0].bests.cpu.value, 900);
+});
+
+test('mergeBests never regresses a signed network best, and accepts a better one', () => {
+  const previous = { resources: { cpu: { status: 'signed', value: 1659 }, gpu: { status: 'signed', value: 5 } } };
+  const current = {
+    resources: {
+      cpu: { status: 'signed', value: 330 },
+      gpu: { status: 'not-benchmarked' },
+      mem: { status: 'signed', value: 2000 },
+    },
+  };
+  const out = mergeBests(previous, current);
+  assert.equal(out.resources.cpu.value, 1659, 'slower today does not overwrite the record');
+  assert.equal(out.resources.gpu.value, 5, 'a signed result outranks a marker even when absent today');
+  assert.equal(out.resources.mem.value, 2000, 'a resource proved for the first time appears');
+
+  const better = mergeBests(previous, { resources: { cpu: { status: 'signed', value: 9999 } } });
+  assert.equal(better.resources.cpu.value, 9999, 'a strictly greater result wins');
+});
+
+test('mergeBests on a first run passes the current bests through untouched', () => {
+  const current = { resources: { cpu: { status: 'signed', value: 1 } } };
+  assert.deepEqual(mergeBests(null, current), current);
 });

@@ -476,6 +476,41 @@ export function buildProofOutputs(nodes, generatedAt = new Date().toISOString(),
 // I/O (skipped entirely under test — see aggregate-founders.test.mjs).
 // ---------------------------------------------------------------------------
 
+/**
+ * The last published version of a derived-but-persisted file. Absent on the very
+ * first run; after that it is the prior state of the ledger. A parse failure
+ * returns null rather than throwing: a corrupt ledger must not stop the network
+ * from publishing today's truth, and the merge treats null as "no history".
+ */
+function readPublished(path) {
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Network-wide high-water marks. Same rule as a community's: replaced only by a
+ * strictly greater verified value, and carrying the ts + DID of the machine that
+ * proved it. Bounded by the number of resource types — seven — forever.
+ *
+ * rejected_results is NOT merged. It describes what happened in this run; an old
+ * rejection is not a standing accusation against a node.
+ */
+export function mergeBests(previous, current) {
+  if (!previous?.resources) return current;
+  const merged = { ...current.resources };
+  for (const [resourceType, held] of Object.entries(previous.resources)) {
+    if (held?.status !== 'signed' || typeof held.value !== 'number') continue;
+    const now = merged[resourceType];
+    const nowIsSigned = now?.status === 'signed' && typeof now.value === 'number';
+    if (!nowIsSigned || held.value > now.value) merged[resourceType] = held;
+  }
+  return { ...current, resources: merged };
+}
+
 function readHistory(name) {
   const path = `${NODES_DIR}/${name}.history.jsonl`;
   if (!existsSync(path)) return [];
@@ -601,6 +636,120 @@ export function buildAggregate(nodes, nodeHistories) {
  * belongs where it was produced. `verified` is the deduped set from
  * buildProofOutputs; pass it so a result is verified exactly once.
  */
+/**
+ * mergeCommunityLedger — the one file in this system that is NOT derivable from
+ * scratch, and the reason that is worth it.
+ *
+ * Everything else here is a snapshot: run the aggregator, get the current truth.
+ * That is wrong for two things.
+ *
+ * A region. `data/nodes/<name>.mesh.json` is regenerated wholesale from the
+ * reporter's live DHT view every cycle, and most nodes appear ONLY there. So the
+ * moment bootstrap-01 stops seeing a peer — a reboot, a network blip — that
+ * peer's community vanished from communities.json, its page 404'd, and the
+ * region blinked out of existence on the strength of one machine's connectivity.
+ * A region that a node once signed itself into HAPPENED. It can go quiet. It
+ * cannot un-happen.
+ *
+ * A best. `bestRecord` picked the highest value among results VISIBLE THIS RUN.
+ * When the Hyderabad node slept, the network's best CPU silently fell from 1659
+ * hashes/s to 330 and we published that as the best the network had ever proved.
+ * It was measured. It was signed. We threw it away because a machine went to
+ * sleep. That is the opposite of what this company sells.
+ *
+ * So: merge, never regenerate. A community and its high-water marks persist,
+ * carrying first_seen_at / last_seen_at so a reader can judge the age of the
+ * evidence for themselves.
+ *
+ * On size, which is the reason this is a merge and not an append: the ledger is
+ * keyed by community, by node within a community, and by resource within a
+ * community. It grows with the NETWORK, not with TIME. Ten thousand nodes is a
+ * big file; ten years of ten nodes is the same file it is today. Nothing here
+ * accumulates per-run. history.jsonl remains the append-only record; this is not
+ * that.
+ *
+ * A high-water mark is replaced only by a strictly greater VERIFIED value. It
+ * always carries the ts it was measured at and the DID that signed it, so an
+ * old record from a departed machine reads as exactly what it is.
+ */
+export function mergeCommunityLedger(previous, current) {
+  const prevById = new Map((previous?.communities || []).map((c) => [c.id, c]));
+  const now = current.generated_at;
+  const out = [];
+  const seenIds = new Set();
+
+  for (const cur of current.communities) {
+    seenIds.add(cur.id);
+    const prev = prevById.get(cur.id);
+    out.push(mergeOne(prev, cur, now));
+  }
+
+  // Communities nobody could see this run. They keep their evidence and their
+  // page; they simply stop claiming anyone is online.
+  for (const prev of prevById.values()) {
+    if (seenIds.has(prev.id)) continue;
+    out.push({
+      ...prev,
+      node_count: prev.nodes?.length || 0,
+      online_count: 0,
+      reporter_count: 0,
+      nodes: (prev.nodes || []).map((n) => ({ ...n, online: false, visible: false })),
+      rejected_results: prev.rejected_results || [],
+    });
+  }
+
+  out.sort((a, b) => b.node_count - a.node_count || a.id.localeCompare(b.id));
+  return { ...current, community_count: out.length, communities: out };
+}
+
+function mergeOne(prev, cur, now) {
+  if (!prev) {
+    return {
+      ...cur,
+      first_seen_at: now,
+      last_seen_at: now,
+      nodes: cur.nodes.map((n) => ({ ...n, first_seen_at: now, last_seen_at: now, visible: true })),
+      bests: Object.fromEntries(Object.entries(cur.bests).map(([k, b]) => [k, { ...b, first_proved_at: now }])),
+    };
+  }
+
+  const prevNodes = new Map((prev.nodes || []).map((n) => [n.node_did, n]));
+  const nodes = [];
+  const seenDids = new Set();
+  for (const n of cur.nodes) {
+    seenDids.add(n.node_did);
+    const p = prevNodes.get(n.node_did);
+    nodes.push({ ...n, first_seen_at: p?.first_seen_at || now, last_seen_at: now, visible: true });
+  }
+  for (const p of prevNodes.values()) {
+    if (seenDids.has(p.node_did)) continue;
+    // Known here, not visible now. Its last_seen_at is how a reader dates it.
+    nodes.push({ ...p, online: false, visible: false });
+  }
+
+  // High-water marks. Strictly greater, and only ever from a verified result.
+  const bests = { ...(prev.bests || {}) };
+  for (const [resourceType, candidate] of Object.entries(cur.bests)) {
+    const held = bests[resourceType];
+    if (!held || Number(candidate.value) > Number(held.value)) {
+      bests[resourceType] = { ...candidate, first_proved_at: held?.first_proved_at || now };
+    }
+  }
+
+  return {
+    ...cur,
+    first_seen_at: prev.first_seen_at || now,
+    last_seen_at: now,
+    node_count: nodes.length,
+    // online/verified/reporter counts describe RIGHT NOW, over visible nodes only.
+    online_count: cur.online_count,
+    reporter_count: cur.reporter_count,
+    verified_count: nodes.filter((n) => n.confidence === 'verified').length,
+    nodes,
+    bests,
+  };
+}
+
 export function buildCommunities(nodes, generatedAt = new Date().toISOString(), meshViews = [], verified = [], rejected = []) {
   // Union reporters with DHT-seen peers, keyed on the node DID so the same
   // machine seen twice (its own report + a reporter's mesh view) is one node.
@@ -907,10 +1056,21 @@ function main() {
   const proof = buildProofOutputs(nodes, out.generated_at, meshViews);
   writeFileSync('data/founders.json', JSON.stringify(out, null, 2) + '\n');
   writeFileSync('data/network.json', JSON.stringify(proof.network, null, 2) + '\n');
+  // Network-wide bests are MERGED with what was last published, not
+  // regenerated: a signed measurement that verified is not un-measured when the
+  // machine that made it goes to sleep.
+  proof.bests = mergeBests(readPublished('data/bests.json'), proof.bests);
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
   const mesh = buildMeshView(meshViews, out.generated_at);
   writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
-  const communities = buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected);
+  // Same for the community ledger. See mergeCommunityLedger: a region that a
+  // node signed itself into happened, and it cannot un-happen because one
+  // reporter stopped seeing it on the DHT.
+  const previousCommunities = readPublished('data/communities.json');
+  const communities = mergeCommunityLedger(
+    previousCommunities,
+    buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected)
+  );
   writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log(
