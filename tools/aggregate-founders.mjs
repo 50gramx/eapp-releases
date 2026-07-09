@@ -356,6 +356,9 @@ export function buildProofOutputs(nodes, generatedAt = new Date().toISOString(),
     } else {
       rejected.push({
         node_name: candidate.node_name,
+        // Without the DID a rejected result cannot be attributed to the region
+        // that produced it — and a region that hides its rejects proves nothing.
+        node_did: candidate.signed_result?.result?.node_did || null,
         resource_type: candidate.resource_type,
         model: candidate.model,
         reason: verification.reason,
@@ -462,6 +465,10 @@ export function buildProofOutputs(nodes, generatedAt = new Date().toISOString(),
       resources: bestResources,
       rejected_results: rejected,
     },
+    // Exposed so buildCommunities can attribute each verified result to the
+    // region that produced it, without verifying any signature twice.
+    verified: dedupeVerified(verified),
+    rejected,
   };
 }
 
@@ -579,16 +586,73 @@ export function buildAggregate(nodes, nodeHistories) {
  * Derives the regional/community view purely from each node's signed
  * proof_snapshot.region (community_id = IN_<pincode>, from the daemon's location
  * bench). No hardcoded region list: a community appears here the moment a node
- * reports it, and disappears when no node does. Each community carries how many
- * nodes serve it and their evidence tier, so the brand can show a region's real
- * local mesh (and distinguish verified placement from a coarse IP guess).
+ * reports it, and disappears when no node does.
+ *
+ * It reads reporters AND every peer seen on the DHT (mesh views). Reporters are
+ * the handful of machines running the status reporter; peers are everyone else.
+ * Reading only reporters made the map a map of our own boxes: a verified node in
+ * Hyderabad was signing its placement into bootstrap-01's mesh view and never
+ * appeared in a region, because it does not run our reporter. A community is a
+ * fact about the network, not about who we happen to poll.
+ *
+ * Each community also carries the best VERIFIED signed result per resource
+ * produced by a node in it — traceable to the producing DID, with the signature
+ * and payload hash — plus the results that failed verification there. Evidence
+ * belongs where it was produced. `verified` is the deduped set from
+ * buildProofOutputs; pass it so a result is verified exactly once.
  */
-export function buildCommunities(nodes, generatedAt = new Date().toISOString()) {
-  const byId = new Map();
-  for (const n of nodes) {
-    const region = n.proof_snapshot?.region;
-    const id = region?.community_id;
+export function buildCommunities(nodes, generatedAt = new Date().toISOString(), meshViews = [], verified = [], rejected = []) {
+  // Union reporters with DHT-seen peers, keyed on the node DID so the same
+  // machine seen twice (its own report + a reporter's mesh view) is one node.
+  const byDid = new Map();
+  const addNode = (entry, isReporter) => {
+    const ps = entry?.proof_snapshot;
+    const did = ps?.node_did;
+    const region = ps?.region;
+    if (!did || !region?.community_id) return;
+    const existing = byDid.get(did);
+    // A reporter's self-report wins over a second-hand DHT sighting: it is the
+    // node speaking for itself, and it knows whether it is online.
+    if (existing && !isReporter) return;
+    byDid.set(did, {
+      did,
+      name: entry.name || null,
+      online: isReporter ? entry.online === true : null,
+      reporter: isReporter,
+      region,
+    });
+  };
+  for (const n of nodes) addNode(n, true);
+  for (const view of meshViews) {
+    if (!view || !Array.isArray(view.nodes)) continue;
+    for (const n of view.nodes) addNode(n, false);
+  }
+
+  // Which community produced each verified result, and each rejected one.
+  const communityOfDid = new Map([...byDid.values()].map((n) => [n.did, n.region.community_id]));
+  const bestsByCommunity = new Map();
+  for (const item of verified) {
+    const r = item.signed_result.result;
+    const id = communityOfDid.get(r.node_did);
+    if (!id || item.resource_type === 'inference') continue;
+    if (!bestsByCommunity.has(id)) bestsByCommunity.set(id, new Map());
+    const top = bestsByCommunity.get(id).get(item.resource_type);
+    if (!top || Number(r.value) > Number(top.signed_result.result.value)) {
+      bestsByCommunity.get(id).set(item.resource_type, item);
+    }
+  }
+  const rejectedByCommunity = new Map();
+  for (const item of rejected) {
+    const id = item.node_did ? communityOfDid.get(item.node_did) : null;
     if (!id) continue;
+    if (!rejectedByCommunity.has(id)) rejectedByCommunity.set(id, []);
+    rejectedByCommunity.get(id).push(item);
+  }
+
+  const byId = new Map();
+  for (const n of byDid.values()) {
+    const region = n.region;
+    const id = region.community_id;
     const cur = byId.get(id) || {
       id,
       pincode: region.pincode || '',
@@ -598,31 +662,49 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString()) 
       node_count: 0,
       online_count: 0,
       verified_count: 0,
+      reporter_count: 0,
       nodes: [],
+      bests: {},
+      rejected_results: [],
     };
-    // Prefer non-empty place fields from any reporting node.
     cur.pincode = cur.pincode || region.pincode || '';
     cur.city = cur.city || region.city || '';
     cur.state = cur.state || region.region || '';
     cur.country = cur.country || region.country_code || '';
     cur.node_count += 1;
-    if (n.online) cur.online_count += 1;
+    // online is only known for reporters. A peer we saw on the DHT is not
+    // counted online, because nobody asked it.
+    if (n.online === true) cur.online_count += 1;
+    if (n.reporter) cur.reporter_count += 1;
     if (region.confidence === 'verified') cur.verified_count += 1;
     cur.nodes.push({
-      name: n.name || null,
-      node_did: n.proof_snapshot?.node_did || null,
+      name: n.name,
+      node_did: n.did,
       confidence: region.confidence || 'unknown',
-      online: n.online === true,
+      score: typeof region.score === 'number' ? region.score : null,
+      online: n.online,
+      reporter: n.reporter,
     });
     byId.set(id, cur);
   }
+
+  for (const [id, community] of byId) {
+    const bests = bestsByCommunity.get(id);
+    if (bests) {
+      for (const [resourceType, item] of bests) {
+        community.bests[resourceType] = bestRecord(item, item.verification);
+      }
+    }
+    community.rejected_results = rejectedByCommunity.get(id) || [];
+  }
+
   const communities = [...byId.values()].sort(
     (a, b) => b.node_count - a.node_count || a.id.localeCompare(b.id)
   );
   return {
     generated_at: generatedAt,
     label:
-      'communities derived from signed node proof_snapshot.region (community_id = IN_<pincode>); no hardcoded region list',
+      'communities derived from signed node proof_snapshot.region (community_id = IN_<pincode>); reporters and DHT-seen peers alike; bests are the highest verified signed result produced in that community',
     community_count: communities.length,
     communities,
   };
@@ -828,7 +910,7 @@ function main() {
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
   const mesh = buildMeshView(meshViews, out.generated_at);
   writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
-  const communities = buildCommunities(out.nodes, out.generated_at);
+  const communities = buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected);
   writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log(
