@@ -32,11 +32,16 @@ jobs:
             git fetch -q origin main
             git reset -q --hard origin/main
             node tools/aggregate-founders.mjs
-            if git diff --quiet -- data/founders.json data/network.json data/bests.json data/mesh.json; then
+            # Stage first, then ask whether anything changed. data/communities.json
+            # did not exist in the tree, and `git diff` on an untracked path reports
+            # no difference — so the old guard exited "no change" and the file the
+            # aggregator had just written was thrown away on every run, for as long
+            # as buildCommunities() has existed. --cached sees adds as well as edits.
+            git add data/founders.json data/network.json data/bests.json data/mesh.json data/communities.json
+            if git diff --cached --quiet; then
               echo "no change"; exit 0
             fi
-            git add data/founders.json data/network.json data/bests.json data/mesh.json
-            git commit -q -m "ci: aggregate founder nodes + network/bests proof"
+            git commit -q -m "ci: aggregate founder nodes + network/bests/communities proof"
             if git push -q origin HEAD:main; then
               echo "pushed"; exit 0
             fi
