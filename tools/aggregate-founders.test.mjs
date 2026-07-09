@@ -12,6 +12,7 @@ import {
   buildProofOutputs,
   verifySignedResult,
   buildMeshView,
+  buildCommunities,
 } from './aggregate-founders.mjs';
 
 let passed = 0;
@@ -368,3 +369,26 @@ test('buildMeshView preserves class field and defaults community nodes (WP-5)', 
 });
 
 console.log(`\n${passed} test(s) passed`);
+
+// buildCommunities: derives communities purely from node proof_snapshot.region,
+// grouping by community_id with node/online/verified counts. No hardcoded list.
+test('buildCommunities groups nodes by community and counts evidence', () => {
+  const nodes = [
+    { name: 'a', online: true, proof_snapshot: { node_did: 'did:epn:a', region: { community_id: 'IN_560045', pincode: '560045', city: 'Bengaluru', region: 'Karnataka', country_code: 'IN', confidence: 'verified' } } },
+    { name: 'b', online: false, proof_snapshot: { node_did: 'did:epn:b', region: { community_id: 'IN_560045', pincode: '560045', city: 'Bengaluru', region: 'Karnataka', country_code: 'IN', confidence: 'claimed' } } },
+    { name: 'c', online: true, proof_snapshot: { node_did: 'did:epn:c', region: { community_id: 'IN_110001', pincode: '110001', city: 'New Delhi', region: 'Delhi', country_code: 'IN', confidence: 'verified' } } },
+    { name: 'd', online: true, proof_snapshot: {} }, // no region → excluded
+  ];
+  const out = buildCommunities(nodes, '2026-07-09T00:00:00Z');
+  assert.equal(out.community_count, 2);
+  const blr = out.communities.find((c) => c.id === 'IN_560045');
+  assert.equal(blr.node_count, 2);
+  assert.equal(blr.online_count, 1);
+  assert.equal(blr.verified_count, 1);
+  assert.equal(blr.city, 'Bengaluru');
+  assert.equal(blr.pincode, '560045');
+  // Most-populated community sorts first.
+  assert.equal(out.communities[0].id, 'IN_560045');
+  // A node with no region contributes to no community.
+  assert.ok(!out.communities.some((c) => c.nodes.some((n) => n.name === 'd')));
+});

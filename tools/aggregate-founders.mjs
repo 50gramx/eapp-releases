@@ -575,6 +575,59 @@ export function buildAggregate(nodes, nodeHistories) {
   };
 }
 
+/**
+ * Derives the regional/community view purely from each node's signed
+ * proof_snapshot.region (community_id = IN_<pincode>, from the daemon's location
+ * bench). No hardcoded region list: a community appears here the moment a node
+ * reports it, and disappears when no node does. Each community carries how many
+ * nodes serve it and their evidence tier, so the brand can show a region's real
+ * local mesh (and distinguish verified placement from a coarse IP guess).
+ */
+export function buildCommunities(nodes, generatedAt = new Date().toISOString()) {
+  const byId = new Map();
+  for (const n of nodes) {
+    const region = n.proof_snapshot?.region;
+    const id = region?.community_id;
+    if (!id) continue;
+    const cur = byId.get(id) || {
+      id,
+      pincode: region.pincode || '',
+      city: region.city || '',
+      state: region.region || '',
+      country: region.country_code || '',
+      node_count: 0,
+      online_count: 0,
+      verified_count: 0,
+      nodes: [],
+    };
+    // Prefer non-empty place fields from any reporting node.
+    cur.pincode = cur.pincode || region.pincode || '';
+    cur.city = cur.city || region.city || '';
+    cur.state = cur.state || region.region || '';
+    cur.country = cur.country || region.country_code || '';
+    cur.node_count += 1;
+    if (n.online) cur.online_count += 1;
+    if (region.confidence === 'verified') cur.verified_count += 1;
+    cur.nodes.push({
+      name: n.name || null,
+      node_did: n.proof_snapshot?.node_did || null,
+      confidence: region.confidence || 'unknown',
+      online: n.online === true,
+    });
+    byId.set(id, cur);
+  }
+  const communities = [...byId.values()].sort(
+    (a, b) => b.node_count - a.node_count || a.id.localeCompare(b.id)
+  );
+  return {
+    generated_at: generatedAt,
+    label:
+      'communities derived from signed node proof_snapshot.region (community_id = IN_<pincode>); no hardcoded region list',
+    community_count: communities.length,
+    communities,
+  };
+}
+
 function meshNum(v) {
   return typeof v === 'number' && isFinite(v) ? v : 0;
 }
@@ -775,7 +828,9 @@ function main() {
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
   const mesh = buildMeshView(meshViews, out.generated_at);
   writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
-  console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length);
+  const communities = buildCommunities(out.nodes, out.generated_at);
+  writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
+  console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log(
     'nodes:', out.node_count,
     'founders:', out.founder_count,
