@@ -637,6 +637,136 @@ export function buildAggregate(nodes, nodeHistories) {
  * buildProofOutputs; pass it so a result is verified exactly once.
  */
 /**
+ * buildModels — the model matrix, from signatures rather than model cards.
+ *
+ * Two independent signed sources per model, answering different questions:
+ *
+ *   proof_snapshot.model_probes[model]   what the model CAN do on that hardware.
+ *     Its payload carries effective_ctx — the context length the node PROVED by
+ *     needle-in-haystack recall, not the one the card advertises — and one flag
+ *     per capability, each measured by actually running it.
+ *
+ *   resources.inference.models[model]    how FAST it ran there, in tokens/s.
+ *
+ * Every signature is verified here, against the DID that produced it, before any
+ * number leaves this function. A probe that fails verification is reported in
+ * rejected_results and contributes nothing: it does not get to be a model card
+ * with a signature-shaped hole in it.
+ *
+ * declared_ctx is deliberately NOT published. The DHT model ad carries a
+ * bench_digest with no signature beside it, so a declared context taken from it
+ * would be an unverifiable number sitting next to verified ones — exactly the
+ * confusion this file exists to prevent. What a model claims about itself is its
+ * author's assertion. We publish what a machine proved.
+ */
+export function buildModels(nodes, generatedAt = new Date().toISOString(), meshViews = []) {
+  const entries = [
+    ...nodes.map((n) => ({ name: n.name, proof_snapshot: proofSnapshotOf(n) })),
+    ...meshViews
+      .flatMap((v) => (Array.isArray(v?.nodes) ? v.nodes : []))
+      .map((n) => ({ name: n.name || null, proof_snapshot: n.proof_snapshot })),
+  ];
+
+  const byModel = new Map();
+  const rejected = [];
+
+  const upsert = (model, nodeDid) => {
+    if (!byModel.has(model)) {
+      byModel.set(model, { name: model, providers: new Set(), capabilities: {}, effective_ctx: null, throughput: [] });
+    }
+    const m = byModel.get(model);
+    if (nodeDid) m.providers.add(nodeDid);
+    return m;
+  };
+
+  for (const { name, proof_snapshot: snap } of entries) {
+    if (!snap) continue;
+
+    const payloads = snap.model_probe_signing_payloads || {};
+    for (const [model, signed] of Object.entries(snap.model_probes || {})) {
+      const v = verifySignedResult(signed, payloads[model] || '');
+      if (!v.ok) {
+        rejected.push({
+          node_name: name || null,
+          node_did: signed?.result?.node_did || null,
+          model,
+          kind: 'probe',
+          reason: v.reason,
+        });
+        continue;
+      }
+      const extra = signed.result.extra || {};
+      const m = upsert(model, signed.result.node_did);
+
+      const ctx = Number(extra.effective_ctx) || 0;
+      if (ctx > 0 && (!m.effective_ctx || ctx > m.effective_ctx.value)) {
+        m.effective_ctx = {
+          value: ctx,
+          node_did: signed.result.node_did,
+          ts: signed.result.ts,
+          payload_sha256: v.payload_sha256,
+          probe_version: extra.probe_version ?? null,
+        };
+      }
+
+      for (const cap of ['tools', 'vision', 'audio', 'thinking', 'structured_out']) {
+        // `false` is a measurement too: the node ran the probe and the model
+        // could not do it. Only a capability nobody probed is absent.
+        if (typeof extra[cap] === 'boolean') {
+          const key = cap === 'structured_out' ? 'structured_output' : cap;
+          if (extra[cap] || m.capabilities[key] === undefined) m.capabilities[key] = extra[cap];
+        }
+      }
+    }
+
+    const inference = snap.resources?.inference;
+    const infPayloads = inference?.model_signing_payloads || {};
+    for (const [model, signed] of Object.entries(inference?.models || {})) {
+      const v = verifySignedResult(signed, infPayloads[model] || '');
+      if (!v.ok) {
+        rejected.push({
+          node_name: name || null,
+          node_did: signed?.result?.node_did || null,
+          model,
+          kind: 'throughput',
+          reason: v.reason,
+        });
+        continue;
+      }
+      const m = upsert(model, signed.result.node_did);
+      m.throughput.push({
+        tokens_per_sec: signed.result.value,
+        node_did: signed.result.node_did,
+        ts: signed.result.ts,
+        payload_sha256: v.payload_sha256,
+      });
+    }
+  }
+
+  const models = [...byModel.values()]
+    .map((m) => ({
+      name: m.name,
+      provider_count: m.providers.size,
+      effective_ctx: m.effective_ctx,
+      capabilities: m.capabilities,
+      best_throughput: m.throughput.reduce((top, t) => (!top || t.tokens_per_sec > top.tokens_per_sec ? t : top), null),
+      sample_count: m.throughput.length,
+    }))
+    // A model nobody probed and nobody timed is a name. It does not appear.
+    .filter((m) => m.effective_ctx || m.best_throughput)
+    .sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
+
+  return {
+    generated_at: generatedAt,
+    trust_model:
+      'every field verified against the signature of the node that produced it; effective_ctx is the context length a node PROVED by recall, never the length a model card advertises',
+    model_count: models.length,
+    models,
+    rejected_results: rejected,
+  };
+}
+
+/**
  * mergeCommunityLedger — the one file in this system that is NOT derivable from
  * scratch, and the reason that is worth it.
  *
@@ -1072,6 +1202,10 @@ function main() {
     buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected)
   );
   writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
+
+  // The model matrix: what a model PROVED on real hardware, signature by signature.
+  const models = buildModels(out.nodes, out.generated_at, meshViews);
+  writeFileSync('data/models.json', JSON.stringify(models, null, 2) + '\n');
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log(
     'nodes:', out.node_count,

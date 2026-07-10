@@ -15,6 +15,7 @@ import {
   mergeCommunityLedger,
   mergeBests,
   buildCommunities,
+  buildModels,
 } from './aggregate-founders.mjs';
 
 let passed = 0;
@@ -496,4 +497,90 @@ test('mergeBests never regresses a signed network best, and accepts a better one
 test('mergeBests on a first run passes the current bests through untouched', () => {
   const current = { resources: { cpu: { status: 'signed', value: 1 } } };
   assert.deepEqual(mergeBests(null, current), current);
+});
+
+// ---------------------------------------------------------------------------
+// The model matrix. Every number on /inference comes from here, and the whole
+// argument of that page is "a model card claims 131072 and this machine proved
+// 4096". An unverified probe would make that claim worthless.
+// ---------------------------------------------------------------------------
+
+test('buildModels publishes only what a signature covers', () => {
+  const id = testIdentity();
+  const probe = signedResult(id, 'model.probe', 1.0, 'pass', {
+    model: 'gemma4:e2b',
+    effective_ctx: 4096,
+    probe_version: 2,
+    tools: true,
+    vision: true,
+    audio: false,
+  });
+  const tps = signedResult(id, 'inference.tokens_per_sec', 8.53, 'tokens/s', { model: 'gemma4:e2b' });
+
+  const node = {
+    name: 'n1',
+    proof_snapshot: {
+      node_did: id.did,
+      model_probes: { 'gemma4:e2b': probe.envelope },
+      model_probe_signing_payloads: { 'gemma4:e2b': probe.payloadB64 },
+      resources: {
+        inference: {
+          models: { 'gemma4:e2b': tps.envelope },
+          model_signing_payloads: { 'gemma4:e2b': tps.payloadB64 },
+        },
+      },
+    },
+  };
+
+  const out = buildModels([node], 'now');
+  assert.equal(out.model_count, 1);
+  const m = out.models[0];
+  assert.equal(m.name, 'gemma4:e2b');
+  assert.equal(m.effective_ctx.value, 4096, 'the context a node PROVED');
+  assert.equal(m.effective_ctx.node_did, id.did, 'traceable to the machine that proved it');
+  assert.equal(m.capabilities.tools, true);
+  assert.equal(m.capabilities.audio, false, 'a failed probe is a measurement, not an absence');
+  assert.equal(m.best_throughput.tokens_per_sec, 8.53);
+  assert.equal(out.rejected_results.length, 0);
+});
+
+test('buildModels rejects a tampered probe instead of publishing it', () => {
+  const id = testIdentity();
+  const probe = signedResult(id, 'model.probe', 1.0, 'pass', { model: 'liar:1b', effective_ctx: 4096 });
+  // The signature is over effective_ctx=4096. Claim 131072 instead.
+  probe.envelope.result.extra.effective_ctx = 131072;
+
+  const node = {
+    name: 'n1',
+    proof_snapshot: {
+      node_did: id.did,
+      model_probes: { 'liar:1b': probe.envelope },
+      model_probe_signing_payloads: { 'liar:1b': probe.payloadB64 },
+    },
+  };
+
+  const out = buildModels([node], 'now');
+  assert.equal(out.model_count, 0, 'a model whose probe does not verify must not appear');
+  assert.equal(out.rejected_results.length, 1);
+  assert.equal(out.rejected_results[0].model, 'liar:1b');
+});
+
+test('buildModels keeps the highest PROVED context across nodes', () => {
+  const a = testIdentity();
+  const b = testIdentity();
+  const mk = (id, ctx) => {
+    const p = signedResult(id, 'model.probe', 1.0, 'pass', { model: 'm', effective_ctx: ctx });
+    return {
+      name: null,
+      proof_snapshot: {
+        node_did: id.did,
+        model_probes: { m: p.envelope },
+        model_probe_signing_payloads: { m: p.payloadB64 },
+      },
+    };
+  };
+  const out = buildModels([mk(a, 4096), mk(b, 32768)], 'now');
+  assert.equal(out.models[0].effective_ctx.value, 32768);
+  assert.equal(out.models[0].effective_ctx.node_did, b.did, 'attributed to the node that proved the larger one');
+  assert.equal(out.models[0].provider_count, 2);
 });
