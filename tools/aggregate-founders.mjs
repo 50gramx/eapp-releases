@@ -659,6 +659,18 @@ export function buildAggregate(nodes, nodeHistories) {
  * confusion this file exists to prevent. What a model claims about itself is its
  * author's assertion. We publish what a machine proved.
  */
+/** A URL-safe slug for one model. `qwen3:0.6b` -> `qwen3-0.6b`. */
+export function modelSlug(name) {
+  return name.replace(/[:/]/g, '-').replace(/[^a-zA-Z0-9._-]/g, '').toLowerCase();
+}
+
+function nodeEntry(m, nodeDid) {
+  if (!m.nodes.has(nodeDid)) {
+    m.nodes.set(nodeDid, { node_did: nodeDid, capabilities: {} });
+  }
+  return m.nodes.get(nodeDid);
+}
+
 export function buildModels(nodes, generatedAt = new Date().toISOString(), meshViews = []) {
   const entries = [
     ...nodes.map((n) => ({ name: n.name, proof_snapshot: proofSnapshotOf(n) })),
@@ -672,7 +684,17 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
 
   const upsert = (model, nodeDid) => {
     if (!byModel.has(model)) {
-      byModel.set(model, { name: model, providers: new Set(), capabilities: {}, effective_ctx: null, throughput: [] });
+      byModel.set(model, {
+        name: model,
+        providers: new Set(),
+        capabilities: {},
+        effective_ctx: null,
+        throughput: [],
+        // One entry per node that measured this model. A model matrix that averages
+        // across machines hides the only thing a reader is choosing between.
+        nodes: new Map(),
+        declared: null,
+      });
     }
     const m = byModel.get(model);
     if (nodeDid) m.providers.add(nodeDid);
@@ -698,6 +720,35 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       const extra = signed.result.extra || {};
       const m = upsert(model, signed.result.node_did);
 
+      // What the runtime DECLARED, as attested by a node's signature. Not the same
+      // kind of fact as a measurement, and kept in its own field so it can never be
+      // mistaken for one.
+      if (!m.declared && (extra.declared_ctx || extra.declared_quantization)) {
+        m.declared = {
+          ctx: Number(extra.declared_ctx) || null,
+          quantization: extra.declared_quantization ?? null,
+          parameter_size: extra.declared_parameter_size ?? null,
+          parameter_count: Number(extra.declared_parameter_count) || null,
+          family: extra.declared_family ?? null,
+          format: extra.declared_format ?? null,
+          capabilities: extra.declared_capabilities ?? null,
+          source: extra.declared_source ?? null,
+          attested_by: signed.result.node_did,
+        };
+      }
+
+      const node = nodeEntry(m, signed.result.node_did);
+      node.effective_ctx = Number(extra.effective_ctx) || 0;
+      node.runtime = extra.runtime ?? null;
+      node.runtime_version = extra.runtime_version ?? null;
+      node.probe_version = extra.probe_version ?? null;
+      node.probe_ctx_ladder = extra.probe_ctx_ladder ?? null;
+      node.probed_at = signed.result.ts;
+      node.probe_payload_sha256 = v.payload_sha256;
+      for (const cap of ['tools', 'tools_loop_terminated', 'structured_out', 'thinking', 'vision', 'audio']) {
+        if (typeof extra[cap] === 'boolean') node.capabilities[cap === 'structured_out' ? 'structured_output' : cap] = extra[cap];
+      }
+
       const ctx = Number(extra.effective_ctx) || 0;
       if (ctx > 0 && (!m.effective_ctx || ctx > m.effective_ctx.value)) {
         m.effective_ctx = {
@@ -709,12 +760,21 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         };
       }
 
-      for (const cap of ['tools', 'vision', 'audio', 'thinking', 'structured_out']) {
+      for (const cap of ['tools', 'tools_loop_terminated', 'vision', 'audio', 'thinking', 'structured_out']) {
         // `false` is a measurement too: the node ran the probe and the model
         // could not do it. Only a capability nobody probed is absent.
+        //
+        // The network-level flag is the OPTIMISTIC one — some node proved it — and
+        // the per-node table below is where a reader sees which. That is safe for a
+        // capability and dangerous for tools_loop_terminated, so that one is
+        // pessimistic: if any node saw the loop hang, the matrix says so.
         if (typeof extra[cap] === 'boolean') {
           const key = cap === 'structured_out' ? 'structured_output' : cap;
-          if (extra[cap] || m.capabilities[key] === undefined) m.capabilities[key] = extra[cap];
+          if (key === 'tools_loop_terminated') {
+            m.capabilities[key] = m.capabilities[key] === undefined ? extra[cap] : m.capabilities[key] && extra[cap];
+          } else if (extra[cap] || m.capabilities[key] === undefined) {
+            m.capabilities[key] = extra[cap];
+          }
         }
       }
     }
@@ -734,23 +794,34 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         continue;
       }
       const m = upsert(model, signed.result.node_did);
+      const extra = signed.result.extra || {};
       m.throughput.push({
         tokens_per_sec: signed.result.value,
         node_did: signed.result.node_did,
         ts: signed.result.ts,
         payload_sha256: v.payload_sha256,
       });
+      const node = nodeEntry(m, signed.result.node_did);
+      node.tokens_per_sec = signed.result.value;
+      node.sample_count = Number(extra.sample_count) || null;
+      node.total_tokens = Number(extra.total_tokens) || null;
+      node.total_seconds = Number(extra.total_seconds) || null;
+      node.measured_at = signed.result.ts;
+      node.throughput_payload_sha256 = v.payload_sha256;
     }
   }
 
   const models = [...byModel.values()]
     .map((m) => ({
       name: m.name,
+      slug: modelSlug(m.name),
       provider_count: m.providers.size,
       effective_ctx: m.effective_ctx,
+      declared: m.declared,
       capabilities: m.capabilities,
       best_throughput: m.throughput.reduce((top, t) => (!top || t.tokens_per_sec > top.tokens_per_sec ? t : top), null),
       sample_count: m.throughput.length,
+      nodes: [...m.nodes.values()].sort((a, b) => (b.tokens_per_sec || 0) - (a.tokens_per_sec || 0)),
     }))
     // A model nobody probed and nobody timed is a name. It does not appear.
     .filter((m) => m.effective_ctx || m.best_throughput)

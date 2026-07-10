@@ -584,3 +584,43 @@ test('buildModels keeps the highest PROVED context across nodes', () => {
   assert.equal(out.models[0].effective_ctx.node_did, b.did, 'attributed to the node that proved the larger one');
   assert.equal(out.models[0].provider_count, 2);
 });
+
+test('buildModels keeps a per-node row, and is pessimistic about a hanging tool loop', () => {
+  const good = testIdentity();
+  const bad = testIdentity();
+  const probe = (id, terminated, ctx) => {
+    const p = signedResult(id, 'model.probe', 1.0, 'pass', {
+      model: 'm',
+      effective_ctx: ctx,
+      tools: true,
+      tools_loop_terminated: terminated,
+      declared_ctx: 40960,
+      declared_quantization: 'Q4_K_M',
+      runtime_version: '0.31.2',
+    });
+    return {
+      name: null,
+      proof_snapshot: { node_did: id.did, model_probes: { m: p.envelope }, model_probe_signing_payloads: { m: p.payloadB64 } },
+    };
+  };
+
+  const out = buildModels([probe(good, true, 8192), probe(bad, false, 4096)], 'now');
+  const m = out.models[0];
+
+  // Optimistic for a capability: some node proved tools work.
+  assert.equal(m.capabilities.tools, true);
+  // Pessimistic for termination: one node watched the loop hang, so the matrix says so.
+  assert.equal(m.capabilities.tools_loop_terminated, false, 'a hang seen anywhere must not be averaged away');
+
+  assert.equal(m.effective_ctx.value, 8192, 'the largest context any node proved');
+  assert.equal(m.nodes.length, 2, 'one row per node');
+  assert.equal(m.declared.ctx, 40960);
+  assert.equal(m.declared.quantization, 'Q4_K_M');
+  assert.equal(m.declared.attested_by, good.did, 'a declaration is attested by the node that read it');
+  assert.equal(m.slug, 'm');
+
+  const hung = m.nodes.find((n) => n.node_did === bad.did);
+  assert.equal(hung.effective_ctx, 4096, 'each node keeps its own measurement');
+  assert.equal(hung.capabilities.tools_loop_terminated, false);
+  assert.equal(hung.runtime_version, '0.31.2');
+});
