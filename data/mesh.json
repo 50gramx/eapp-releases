@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-11T08:23:14.315Z",
+  "generated_at": "2026-07-11T08:38:21.244Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
   "node_count": 2,
@@ -44,6 +44,28 @@
   },
   "models": [
     {
+      "name": "gemma4:e2b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 8192,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 3.21,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "measured",
+        "vision": "measured",
+        "audio": "declared",
+        "thinking": "declared",
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 11.99,
+      "median_tokens_per_sec": 11.99
+    },
+    {
       "name": "tinyllama:1.1b",
       "providers": 1,
       "provider_count": 1,
@@ -58,6 +80,24 @@
       "verified": true,
       "best_tokens_per_sec": 34.01,
       "median_tokens_per_sec": 34.01
+    },
+    {
+      "name": "phi3:3.8b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 4096,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 2.39,
+      "quants": [
+        "Q4_0"
+      ],
+      "caps": {
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 9.8,
+      "median_tokens_per_sec": 9.8
     },
     {
       "name": "qwen3:0.6b",
@@ -78,43 +118,6 @@
       "verified": true,
       "best_tokens_per_sec": 39.39,
       "median_tokens_per_sec": 39.39
-    },
-    {
-      "name": "gemma4:e2b",
-      "providers": 1,
-      "provider_count": 1,
-      "total_free_slots": 0,
-      "best_effective_ctx": 0,
-      "best_declared_ctx": 131072,
-      "max_vram_gib": 3.21,
-      "quants": [
-        "Q4_K_M"
-      ],
-      "caps": {
-        "tools": "declared",
-        "vision": "declared",
-        "audio": "declared",
-        "thinking": "declared"
-      },
-      "verified": false,
-      "best_tokens_per_sec": 6.91,
-      "median_tokens_per_sec": 6.91
-    },
-    {
-      "name": "phi3:3.8b",
-      "providers": 1,
-      "provider_count": 1,
-      "total_free_slots": 0,
-      "best_effective_ctx": 0,
-      "best_declared_ctx": 131072,
-      "max_vram_gib": 2.39,
-      "quants": [
-        "Q4_0"
-      ],
-      "caps": {},
-      "verified": false,
-      "best_tokens_per_sec": 7.79,
-      "median_tokens_per_sec": 7.79
     }
   ],
   "nodes": [
@@ -176,7 +179,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-11T08:18:29Z",
+        "generated_at": "2026-07-11T08:33:29Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 0,
@@ -456,15 +459,22 @@
           "ctx": 131072,
           "vram_needed_gib": 3.21,
           "pulled": true,
+          "effective_ctx": 8192,
           "declared_caps": {
             "tools": true,
             "vision": true,
             "audio": true,
             "thinking": true
           },
-          "measured_caps": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "tokens_per_sec": 6.912715490857871
+          "measured_caps": {
+            "tools": true,
+            "vision": true,
+            "structured_output": true
+          },
+          "bench_digest": "32NqG92T4wP00X5UNKJKNZ/6g3zkI77nweA3zPGmlkI=",
+          "benched_at": "2026-07-11T08:16:10.2116434Z",
+          "tokens_per_sec": 11.98866433525407,
+          "probe_version": 3
         },
         {
           "name": "phi3:3.8b",
@@ -472,16 +482,21 @@
           "ctx": 131072,
           "vram_needed_gib": 2.39,
           "pulled": true,
+          "effective_ctx": 4096,
           "declared_caps": {},
-          "measured_caps": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "tokens_per_sec": 7.78906069697669
+          "measured_caps": {
+            "structured_output": true
+          },
+          "bench_digest": "+89tNrv+b0nx/Ox6QDLgk3TBtoLBGF92KwWPkgenkOk=",
+          "benched_at": "2026-07-11T08:19:33.3136249Z",
+          "tokens_per_sec": 9.804438224073081,
+          "probe_version": 3
         }
       ],
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "generated_at": "2026-07-11T08:18:42Z",
+        "generated_at": "2026-07-11T08:33:42Z",
         "metrics": {
           "disputes_resolved": 0,
           "inferences_served": 202,
@@ -489,14 +504,14 @@
           "local_inference_receipts": 0,
           "models_bench_detail": {
             "gemma4:e2b": {
-              "sample_count": 147,
-              "total_seconds": 3435.408274998001,
-              "total_tokens": 23748
+              "sample_count": 148,
+              "total_seconds": 3474.7102749980013,
+              "total_tokens": 24030
             },
             "phi3:3.8b": {
-              "sample_count": 1,
-              "total_seconds": 17.332,
-              "total_tokens": 135
+              "sample_count": 2,
+              "total_seconds": 38.185,
+              "total_tokens": 295
             },
             "qwen3:0.6b": {
               "sample_count": 58,
@@ -510,8 +525,8 @@
             }
           },
           "models_tokens_per_sec": {
-            "gemma4:e2b": 6.912715490857871,
-            "phi3:3.8b": 7.78906069697669,
+            "gemma4:e2b": 6.91568450264931,
+            "phi3:3.8b": 7.725546680633756,
             "qwen3:0.6b": 18.41796056075495,
             "tinyllama:1.1b": 29.913964262078096
           },
@@ -573,49 +588,49 @@
               "gemma4:e2b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
-                  "value": 6.912715490857871,
+                  "value": 6.91568450264931,
                   "unit": "tokens/s",
-                  "ts": 1783757922205127700,
+                  "ts": 1783758822205099800,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "gemma4:e2b",
                     "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
                     "runtime": "ollama",
-                    "sample_count": 147,
+                    "sample_count": 148,
                     "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 3435.408274998001,
-                    "total_tokens": 23748
+                    "total_seconds": 3474.7102749980013,
+                    "total_tokens": 24030
                   }
                 },
-                "signature": "cgTWwzzY6iIZEliXFKdpg+eukUL0rQi08uItk9cjuJUnkeTtNWLOPcsq4sRxhztkTixhWk7VsXYv7JQF4eGVDg==",
-                "hash": "Z8+76O6bJ4BiG9zn/rcJ6JpEtZP18rrHmYxboHa29ao="
+                "signature": "YKtQf6argGpycXUXxU7dXZsaJMqUFy1AzKGxk794qBS/1vZ01m2eS2z4ojnJ2GESYJbizRRVZskYUimzejYDAw==",
+                "hash": "r8ygoNdNQahdvXJhI1c5Y/DQAjDNWwK7BBhnoLKHt1c="
               },
               "phi3:3.8b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
-                  "value": 7.78906069697669,
+                  "value": 7.725546680633756,
                   "unit": "tokens/s",
-                  "ts": 1783757922205127700,
+                  "ts": 1783758822205099800,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "phi3:3.8b",
                     "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
                     "runtime": "ollama",
-                    "sample_count": 1,
+                    "sample_count": 2,
                     "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 17.332,
-                    "total_tokens": 135
+                    "total_seconds": 38.185,
+                    "total_tokens": 295
                   }
                 },
-                "signature": "uBkCK2/uL6MXPYJjBOIz6TMyCNTbMAii2vwoy0YMAzHdDIAk3EkEK+kGlxcRdrIofD3dY6ZH+Y6H7pbnGoLmCA==",
-                "hash": "ne9dvdPbZhI3x5bYlneBZZMqqwYRi4t+fkbW4b18wHc="
+                "signature": "qQ5UfHgCoQQybXpCMDh/BXJ77Vp00pZ7TxTKkoO7vt1Ii0izdr3mosyPVRiZMs+79bFiDirUtgBhXMGF856jDQ==",
+                "hash": "pzMKImrVuspWukPwEGx7204xMAZZPViXZQGxRc/nYqs="
               },
               "qwen3:0.6b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 18.41796056075495,
                   "unit": "tokens/s",
-                  "ts": 1783757922205127700,
+                  "ts": 1783758822205099800,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "qwen3:0.6b",
@@ -627,15 +642,15 @@
                     "total_tokens": 10730
                   }
                 },
-                "signature": "ZFsS3iq1oZUbFgGXyx3h4aWrCFYaupeemvuu1PZ56HrciJKV06pKyVbTmTGvEDwWfNDMCoqbc1xHcaiE51CjDg==",
-                "hash": "RQA5d8FEFqeIvwYxs3/7KOZBLle68mvkGPKOtcytnHE="
+                "signature": "ioej9wly6pDWxsSdDKYb5IstHWALxPevme4AQ65i8lagKH+PCE9bvnTbcNqH/olCgsCR578o7isahFjV/ju0CA==",
+                "hash": "ulSoky6MNe0wqFyqVndiP7TUS5bTcEnoVHTx7MGOFdc="
               },
               "tinyllama:1.1b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 29.913964262078096,
                   "unit": "tokens/s",
-                  "ts": 1783757922205127700,
+                  "ts": 1783758822205099800,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "tinyllama:1.1b",
@@ -647,15 +662,15 @@
                     "total_tokens": 226
                   }
                 },
-                "signature": "6yciBJgzq+1r4ZU0gXcEU/qwWdd99fwhasNznRkIEQDVivLTg4Ppl4qFdcYDV4srhtAW7U+LCT2iaXh8AT+VDg==",
-                "hash": "uqOM0xPVXISTFJfdZcUrnl1jSCh6fnIlj+vDKJ/Kf2E="
+                "signature": "OrHqA2H9B+J5v+SqkDjA9Yi2yNpzbI+tZ3Ajr6PHYZufjWsmLqfesUqehcYBNZPzL3XiK0cXGje33CQhkxGADw==",
+                "hash": "EJgVE6H480M1jD4n7dFxOAkm3CmxcBD869FMcesz1JE="
               }
             },
             "model_signing_payloads": {
-              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni45MTI3MTU0OTA4NTc4NzEsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzNzU3OTIyMjA1MTI3NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MTQ3LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM0MzUuNDA4Mjc0OTk4MDAxLCJ0b3RhbF90b2tlbnMiOjIzNzQ4fX0=",
-              "phi3:3.8b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43ODkwNjA2OTY5NzY2OSwidW5pdCI6InRva2Vucy9zIiwidHMiOjE3ODM3NTc5MjIyMDUxMjc3MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsibW9kZWwiOiJwaGkzOjMuOGIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjEsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MTcuMzMyLCJ0b3RhbF90b2tlbnMiOjEzNX19",
-              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTguNDE3OTYwNTYwNzU0OTUsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzNzU3OTIyMjA1MTI3NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NTgsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NTgyLjU4MzUwMzk5ODk5OTcsInRvdGFsX3Rva2VucyI6MTA3MzB9fQ==",
-              "tinyllama:1.1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjkuOTEzOTY0MjYyMDc4MDk2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4Mzc1NzkyMjIwNTEyNzcwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InRpbnlsbGFtYToxLjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjcuNTU1LCJ0b3RhbF90b2tlbnMiOjIyNn19"
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni45MTU2ODQ1MDI2NDkzMSwidW5pdCI6InRva2Vucy9zIiwidHMiOjE3ODM3NTg4MjIyMDUwOTk3MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsibW9kZWwiOiJnZW1tYTQ6ZTJiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxNDgsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzQ3NC43MTAyNzQ5OTgwMDEzLCJ0b3RhbF90b2tlbnMiOjI0MDMwfX0=",
+              "phi3:3.8b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MjU1NDY2ODA2MzM3NTYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzNzU4ODIyMjA1MDk5NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicGhpMzozLjhiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM4LjE4NSwidG90YWxfdG9rZW5zIjoyOTV9fQ==",
+              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTguNDE3OTYwNTYwNzU0OTUsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzgzNzU4ODIyMjA1MDk5NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NTgsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NTgyLjU4MzUwMzk5ODk5OTcsInRvdGFsX3Rva2VucyI6MTA3MzB9fQ==",
+              "tinyllama:1.1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjkuOTEzOTY0MjYyMDc4MDk2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4Mzc1ODgyMjIwNTA5OTcwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InRpbnlsbGFtYToxLjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjcuNTU1LCJ0b3RhbF90b2tlbnMiOjIyNn19"
             }
           },
           "mem": {
@@ -757,7 +772,7 @@
               "metric": "model.probe",
               "value": 1,
               "unit": "pass",
-              "ts": 1783652830319880700,
+              "ts": 1783757934009444000,
               "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
               "extra": {
                 "audio": false,
@@ -769,7 +784,7 @@
                 "declared_parameter_size": "5.1B",
                 "declared_quantization": "Q4_K_M",
                 "declared_source": "ollama /api/show; the node attests that the runtime reported these, not that they are true",
-                "effective_ctx": 4096,
+                "effective_ctx": 8192,
                 "model": "gemma4:e2b",
                 "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
                 "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
@@ -783,15 +798,15 @@
                 "vision": true
               }
             },
-            "signature": "b81DKOzzf2G3p+eMPBzboOQ172YaVXvWRdqvM5ZLe+AkJVqR5lLXp3hB8L4fiGwnAQw6+yYW9hfNz0iS4ashBQ==",
-            "hash": "mKT/aosTVPpxIV2GRi2HMF4mgKZFKCApqSZ9RJx8fxM="
+            "signature": "Y+sw5EOv+foOqCZFCXefNHGJCuJdBjuFN+L2B5pe9xV1omcfSeV5NcdXdGjfeQXXLV83CzJGhyCdTdApq0WJDA==",
+            "hash": "32NqG92T4wP00X5UNKJKNZ/6g3zkI77nweA3zPGmlkI="
           },
           "phi3:3.8b": {
             "result": {
               "metric": "model.probe",
               "value": 1,
               "unit": "pass",
-              "ts": 1783652990387539200,
+              "ts": 1783758050484967400,
               "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
               "extra": {
                 "audio": false,
@@ -817,8 +832,8 @@
                 "vision": false
               }
             },
-            "signature": "Ae4coZRdwsfVRwwcdKdqe2sVnaV4c9rLLyUFI/73jlmtAK5TeqLUw8m099e6Xe6VzxYJm1zacfr9z6uqar/xDg==",
-            "hash": "diqEur8K7yGr6lqoe2MzKOVIZCuc7jidborot2eMX1o="
+            "signature": "KlwML7LGsGTdeW6JejdN4iMXe8YoFTVocARuwIvPAQWLmKvWeRpFXIsYeUyWNskr8nliax7d9+R0tXXJZwLRBg==",
+            "hash": "+89tNrv+b0nx/Ox6QDLgk3TBtoLBGF92KwWPkgenkOk="
           },
           "qwen3:0.6b": {
             "result": {
@@ -890,8 +905,8 @@
           }
         },
         "model_probe_signing_payloads": {
-          "gemma4:e2b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzgzNjUyODMwMzE5ODgwODAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiYXVkaW8sY29tcGxldGlvbix0aGlua2luZyx0b29scyx2aXNpb24iLCJkZWNsYXJlZF9jdHgiOjEzMTA3MiwiZGVjbGFyZWRfZmFtaWx5IjoiZ2VtbWE0IiwiZGVjbGFyZWRfZm9ybWF0IjoiZ2d1ZiIsImRlY2xhcmVkX3BhcmFtZXRlcl9jb3VudCI6NTEyMzE3OTIzNSwiZGVjbGFyZWRfcGFyYW1ldGVyX3NpemUiOiI1LjFCIiwiZGVjbGFyZWRfcXVhbnRpemF0aW9uIjoiUTRfS19NIiwiZGVjbGFyZWRfc291cmNlIjoib2xsYW1hIC9hcGkvc2hvdzsgdGhlIG5vZGUgYXR0ZXN0cyB0aGF0IHRoZSBydW50aW1lIHJlcG9ydGVkIHRoZXNlLCBub3QgdGhhdCB0aGV5IGFyZSB0cnVlIiwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJnZW1tYTQ6ZTJiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjMsInJ1bnRpbWUiOiJvbGxhbWEiLCJydW50aW1lX3ZlcnNpb24iOiIwLjMxLjIiLCJzdHJ1Y3R1cmVkX291dCI6dHJ1ZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6dHJ1ZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjp0cnVlLCJ2aXNpb24iOnRydWV9fQ==",
-          "phi3:3.8b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzgzNjUyOTkwMzg3NTM5MjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiY29tcGxldGlvbiIsImRlY2xhcmVkX2N0eCI6MTMxMDcyLCJkZWNsYXJlZF9mYW1pbHkiOiJwaGkzIiwiZGVjbGFyZWRfZm9ybWF0IjoiZ2d1ZiIsImRlY2xhcmVkX3BhcmFtZXRlcl9jb3VudCI6MzgyMTA3OTY0OCwiZGVjbGFyZWRfcGFyYW1ldGVyX3NpemUiOiIzLjhCIiwiZGVjbGFyZWRfcXVhbnRpemF0aW9uIjoiUTRfMCIsImRlY2xhcmVkX3NvdXJjZSI6Im9sbGFtYSAvYXBpL3Nob3c7IHRoZSBub2RlIGF0dGVzdHMgdGhhdCB0aGUgcnVudGltZSByZXBvcnRlZCB0aGVzZSwgbm90IHRoYXQgdGhleSBhcmUgdHJ1ZSIsImVmZmVjdGl2ZV9jdHgiOjQwOTYsIm1vZGVsIjoicGhpMzozLjhiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjMsInJ1bnRpbWUiOiJvbGxhbWEiLCJydW50aW1lX3ZlcnNpb24iOiIwLjMxLjIiLCJzdHJ1Y3R1cmVkX291dCI6dHJ1ZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6ZmFsc2UsInRvb2xzX2xvb3BfdGVybWluYXRlZCI6ZmFsc2UsInZpc2lvbiI6ZmFsc2V9fQ==",
+          "gemma4:e2b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzgzNzU3OTM0MDA5NDQ0MjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiYXVkaW8sY29tcGxldGlvbix0aGlua2luZyx0b29scyx2aXNpb24iLCJkZWNsYXJlZF9jdHgiOjEzMTA3MiwiZGVjbGFyZWRfZmFtaWx5IjoiZ2VtbWE0IiwiZGVjbGFyZWRfZm9ybWF0IjoiZ2d1ZiIsImRlY2xhcmVkX3BhcmFtZXRlcl9jb3VudCI6NTEyMzE3OTIzNSwiZGVjbGFyZWRfcGFyYW1ldGVyX3NpemUiOiI1LjFCIiwiZGVjbGFyZWRfcXVhbnRpemF0aW9uIjoiUTRfS19NIiwiZGVjbGFyZWRfc291cmNlIjoib2xsYW1hIC9hcGkvc2hvdzsgdGhlIG5vZGUgYXR0ZXN0cyB0aGF0IHRoZSBydW50aW1lIHJlcG9ydGVkIHRoZXNlLCBub3QgdGhhdCB0aGV5IGFyZSB0cnVlIiwiZWZmZWN0aXZlX2N0eCI6ODE5MiwibW9kZWwiOiJnZW1tYTQ6ZTJiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjMsInJ1bnRpbWUiOiJvbGxhbWEiLCJydW50aW1lX3ZlcnNpb24iOiIwLjMxLjIiLCJzdHJ1Y3R1cmVkX291dCI6dHJ1ZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6dHJ1ZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjp0cnVlLCJ2aXNpb24iOnRydWV9fQ==",
+          "phi3:3.8b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzgzNzU4MDUwNDg0OTY3MzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiY29tcGxldGlvbiIsImRlY2xhcmVkX2N0eCI6MTMxMDcyLCJkZWNsYXJlZF9mYW1pbHkiOiJwaGkzIiwiZGVjbGFyZWRfZm9ybWF0IjoiZ2d1ZiIsImRlY2xhcmVkX3BhcmFtZXRlcl9jb3VudCI6MzgyMTA3OTY0OCwiZGVjbGFyZWRfcGFyYW1ldGVyX3NpemUiOiIzLjhCIiwiZGVjbGFyZWRfcXVhbnRpemF0aW9uIjoiUTRfMCIsImRlY2xhcmVkX3NvdXJjZSI6Im9sbGFtYSAvYXBpL3Nob3c7IHRoZSBub2RlIGF0dGVzdHMgdGhhdCB0aGUgcnVudGltZSByZXBvcnRlZCB0aGVzZSwgbm90IHRoYXQgdGhleSBhcmUgdHJ1ZSIsImVmZmVjdGl2ZV9jdHgiOjQwOTYsIm1vZGVsIjoicGhpMzozLjhiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjMsInJ1bnRpbWUiOiJvbGxhbWEiLCJydW50aW1lX3ZlcnNpb24iOiIwLjMxLjIiLCJzdHJ1Y3R1cmVkX291dCI6dHJ1ZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6ZmFsc2UsInRvb2xzX2xvb3BfdGVybWluYXRlZCI6ZmFsc2UsInZpc2lvbiI6ZmFsc2V9fQ==",
           "qwen3:0.6b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzgzNzU3NzM0OTE5MjcwOTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiY29tcGxldGlvbix0aGlua2luZyx0b29scyIsImRlY2xhcmVkX2N0eCI6NDA5NjAsImRlY2xhcmVkX2ZhbWlseSI6InF3ZW4zIiwiZGVjbGFyZWRfZm9ybWF0IjoiZ2d1ZiIsImRlY2xhcmVkX3BhcmFtZXRlcl9jb3VudCI6NzUxNjMyMzg0LCJkZWNsYXJlZF9wYXJhbWV0ZXJfc2l6ZSI6Ijc1MS42M00iLCJkZWNsYXJlZF9xdWFudGl6YXRpb24iOiJRNF9LX00iLCJkZWNsYXJlZF9zb3VyY2UiOiJvbGxhbWEgL2FwaS9zaG93OyB0aGUgbm9kZSBhdHRlc3RzIHRoYXQgdGhlIHJ1bnRpbWUgcmVwb3J0ZWQgdGhlc2UsIG5vdCB0aGF0IHRoZXkgYXJlIHRydWUiLCJlZmZlY3RpdmVfY3R4IjowLCJtb2RlbCI6InF3ZW4zOjAuNmIiLCJwcm9iZV9jdHhfbGFkZGVyIjoiMTMxMDcyLDY1NTM2LDMyNzY4LDE2Mzg0LDgxOTIsNDA5NiIsInByb2JlX21ldGhvZCI6Im5lZWRsZS1pbi1oYXlzdGFjayByZWNhbGw6IGEgdW5pcXVlIHRva2VuIGlzIGVtYmVkZGVkIG5lYXIgdGhlIHN0YXJ0IG9mIGEgcGFkZGVkIHByb21wdCBhbmQgdGhlIG1vZGVsIGlzIGFza2VkIHRvIHJldHVybiBpdC4gVGhlIGxhcmdlc3Qgc2l6ZSBpdCByZWNhbGxzIGlzIGVmZmVjdGl2ZV9jdHguIiwicHJvYmVfdmVyc2lvbiI6MywicnVudGltZSI6Im9sbGFtYSIsInJ1bnRpbWVfdmVyc2lvbiI6IjAuMzEuMiIsInN0cnVjdHVyZWRfb3V0Ijp0cnVlLCJ0aGlua2luZyI6ZmFsc2UsInRvb2xzIjp0cnVlLCJ0b29sc19sb29wX3Rlcm1pbmF0ZWQiOmZhbHNlLCJ2aXNpb24iOmZhbHNlfX0=",
           "tinyllama:1.1b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzgzNzU3NzY2MTA3MTQ3NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiY29tcGxldGlvbiIsImRlY2xhcmVkX2N0eCI6MjA0OCwiZGVjbGFyZWRfZmFtaWx5IjoibGxhbWEiLCJkZWNsYXJlZF9mb3JtYXQiOiJnZ3VmIiwiZGVjbGFyZWRfcGFyYW1ldGVyX2NvdW50IjoxMTAwMDQ4Mzg0LCJkZWNsYXJlZF9wYXJhbWV0ZXJfc2l6ZSI6IjFCIiwiZGVjbGFyZWRfcXVhbnRpemF0aW9uIjoiUTRfMCIsImRlY2xhcmVkX3NvdXJjZSI6Im9sbGFtYSAvYXBpL3Nob3c7IHRoZSBub2RlIGF0dGVzdHMgdGhhdCB0aGUgcnVudGltZSByZXBvcnRlZCB0aGVzZSwgbm90IHRoYXQgdGhleSBhcmUgdHJ1ZSIsImVmZmVjdGl2ZV9jdHgiOjQwOTYsIm1vZGVsIjoidGlueWxsYW1hOjEuMWIiLCJwcm9iZV9jdHhfbGFkZGVyIjoiMTMxMDcyLDY1NTM2LDMyNzY4LDE2Mzg0LDgxOTIsNDA5NiIsInByb2JlX21ldGhvZCI6Im5lZWRsZS1pbi1oYXlzdGFjayByZWNhbGw6IGEgdW5pcXVlIHRva2VuIGlzIGVtYmVkZGVkIG5lYXIgdGhlIHN0YXJ0IG9mIGEgcGFkZGVkIHByb21wdCBhbmQgdGhlIG1vZGVsIGlzIGFza2VkIHRvIHJldHVybiBpdC4gVGhlIGxhcmdlc3Qgc2l6ZSBpdCByZWNhbGxzIGlzIGVmZmVjdGl2ZV9jdHguIiwicHJvYmVfdmVyc2lvbiI6MywicnVudGltZSI6Im9sbGFtYSIsInJ1bnRpbWVfdmVyc2lvbiI6IjAuMzEuMiIsInN0cnVjdHVyZWRfb3V0IjpmYWxzZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6ZmFsc2UsInRvb2xzX2xvb3BfdGVybWluYXRlZCI6ZmFsc2UsInZpc2lvbiI6ZmFsc2V9fQ=="
         }
