@@ -83,6 +83,15 @@ try {
   $taskName = "GramNode"
   $serviceRegistered = $false
 
+  # A hidden (S4U) task has no console to show output in — without redirecting
+  # somewhere, `serve`'s logs (engine spin-up, k3s provisioning failures, probe
+  # results) are simply gone, and there is no way to tell a running-but-silent
+  # node from one whose engine never came up.
+  $logDir = Join-Path $dest 'logs'
+  New-Item -ItemType Directory -Force -Path $logDir | Out-Null
+  $logPath = Join-Path $logDir 'epnd.log'
+  $wrappedArg = "/c `"`"$exePath`" serve >> `"$logPath`" 2>&1`""
+
   # Clean up the old pre-rebrand task name if present, so upgrading doesn't
   # leave two overlapping schedules.
   Get-ScheduledTask -TaskName 'EPNDaemon' -ErrorAction SilentlyContinue |
@@ -95,7 +104,7 @@ try {
     }
 
     $startupTrigger = New-ScheduledTaskTrigger -AtStartup
-    $taskAction = New-ScheduledTaskAction -Execute $exePath -Argument "serve"
+    $taskAction = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument $wrappedArg
     $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
     $taskPrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
     $task = New-ScheduledTask -Action $taskAction -Trigger $startupTrigger -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node — auto-starts on boot and auto-restarts on failure, runs hidden"
@@ -103,6 +112,7 @@ try {
     Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
 
     Write-Host "Gram node registered in Task Scheduler (runs hidden, no console window)"
+    Write-Host "logs: $logPath"
     $serviceRegistered = $true
   } catch {
     Write-Warning "Task Scheduler registration failed (Access Denied is common without elevation): $($_.Exception.Message)"
@@ -110,7 +120,7 @@ try {
 
     try {
       $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
-      Set-ItemProperty -Path $runKey -Name 'GramNode' -Value "`"$exePath`" serve" -Force -ErrorAction Stop
+      Set-ItemProperty -Path $runKey -Name 'GramNode' -Value "cmd.exe $wrappedArg" -Force -ErrorAction Stop
       Write-Host "added login-startup entry (HKCU Run key)"
       $serviceRegistered = $true
     } catch {
@@ -119,10 +129,10 @@ try {
     }
 
     # Start it now regardless, so this session has a running node — hidden,
-    # same as the Task Scheduler path.
+    # same as the Task Scheduler path, logs to the same file.
     try {
-      Start-Process -FilePath $exePath -ArgumentList 'serve' -WindowStyle Hidden
-      Write-Host "started Gram node for this session"
+      Start-Process -FilePath $exePath -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput $logPath -RedirectStandardError "$logPath.err"
+      Write-Host "started Gram node for this session — logs: $logPath"
     } catch {
       Write-Warning "could not start Gram node: $($_.Exception.Message)"
     }
@@ -222,6 +232,7 @@ try {
     Write-Host "  • auto-restarts on crash"
     Write-Host "  • auto-updates every 15 minutes"
     Write-Host "  • no visible window — it runs hidden, closing a terminal does not stop it"
+    Write-Host "  • logs: $logPath"
   } else {
     Write-Host "✓ Gram node is installed and running for this session"
     Write-Host "  • re-run from an Administrator PowerShell for full auto-start/auto-update"
