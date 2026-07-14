@@ -155,12 +155,17 @@ jobs:
       - name: Stage installer + checksums
         run: |
           set -euo pipefail
-          cp epn-daemon/scripts/install.sh epn-daemon/dist/install.sh
-          # Ship the status reporter script alongside the binary so founder nodes'
-          # epnd-autoupdate can keep it in sync (the binary swap alone never
-          # updates scripts).
+          # Source of truth for install/update scripts is THIS repo's scripts/
+          # dir (public, reviewable) — not epn-daemon's private copies, which
+          # drift silently since nothing ever diffs them against what's on the
+          # public site's "run a node" command.
+          cp scripts/install.sh epn-daemon/dist/install.sh
+          cp scripts/install.ps1 epn-daemon/dist/install.ps1
+          cp scripts/epnd-autoupdate.sh epn-daemon/dist/epnd-autoupdate.sh
+          cp scripts/epnd-autoupdate.ps1 epn-daemon/dist/epnd-autoupdate.ps1
+          # Status reporter stays sourced from epn-daemon — it's founder-node-only
+          # (needs a provisioned root PAT) and hasn't diverged from this repo.
           cp epn-daemon/scripts/report-bootstrap-status.sh epn-daemon/dist/report-bootstrap-status.sh
-          cp epn-daemon/scripts/epnd-autoupdate.sh epn-daemon/dist/epnd-autoupdate.sh
           cd epn-daemon/dist
           sha256sum epnd-* > checksums.txt
 
@@ -180,8 +185,10 @@ jobs:
             epn-daemon/dist/epnd-android-armeabi-v7a
             epn-daemon/dist/epnd-android-x86_64
             epn-daemon/dist/install.sh
+            epn-daemon/dist/install.ps1
             epn-daemon/dist/report-bootstrap-status.sh
             epn-daemon/dist/epnd-autoupdate.sh
+            epn-daemon/dist/epnd-autoupdate.ps1
             epn-daemon/dist/checksums.txt
 
       - name: Update built-marker
