@@ -51,6 +51,16 @@ try {
     Write-Warning "no checksums.txt found — skipping verification"
   }
 
+  # Re-running this installer (upgrade, or just retrying) is common, and a
+  # previously-installed node is very likely still running in the background
+  # (that is the whole point of registering it as a service) — the binary is
+  # locked while its process is alive, so Copy-Item fails with "being used by
+  # another process" unless the running instance is stopped first.
+  Stop-ScheduledTask -TaskName 'GramNode' -ErrorAction SilentlyContinue
+  Stop-ScheduledTask -TaskName 'EPNDaemon' -ErrorAction SilentlyContinue
+  Get-Process -Name 'epnd' -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  Start-Sleep -Milliseconds 500
+
   Copy-Item (Join-Path $tmp 'epnd.exe') (Join-Path $dest 'epnd.exe') -Force
   Write-Host "installed Gram node -> $dest\epnd.exe"
 
