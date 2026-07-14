@@ -95,10 +95,49 @@ StandardError=journal
 WantedBy=multi-user.target
 "
   echo "$service_content" | $SUDO tee "$service_file" > /dev/null
+
+  # Install the auto-update script
+  echo "installing auto-update script…" >&2
+  curl -fsSL "${BASE}/epnd-autoupdate.sh" -o "$tmp/epnd-autoupdate.sh" 2>/dev/null || true
+  if [ -s "$tmp/epnd-autoupdate.sh" ]; then
+    chmod +x "$tmp/epnd-autoupdate.sh"
+    $SUDO mv "$tmp/epnd-autoupdate.sh" "$dest/epnd-autoupdate.sh"
+  fi
+
+  # systemd timer files for 15-minute auto-update cycle
+  autoupdate_service="/etc/systemd/system/epnd-autoupdate.service"
+  autoupdate_timer="/etc/systemd/system/epnd-autoupdate.timer"
+
+  service_update="[Unit]
+Description=EP&N Auto-Update
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=$dest/epnd-autoupdate.sh
+"
+  echo "$service_update" | $SUDO tee "$autoupdate_service" > /dev/null
+
+  timer_content="[Unit]
+Description=EP&N Auto-Update Timer
+Requires=epnd-autoupdate.service
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=15min
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+"
+  echo "$timer_content" | $SUDO tee "$autoupdate_timer" > /dev/null
+
   $SUDO systemctl daemon-reload
   $SUDO systemctl enable epnd
   $SUDO systemctl start epnd
-  echo "epnd service registered and started" >&2
+  $SUDO systemctl enable epnd-autoupdate.timer
+  $SUDO systemctl start epnd-autoupdate.timer
+  echo "epnd service and auto-update timer registered" >&2
 
 elif [ "$os" = "darwin" ]; then
   # launchd plist for macOS — substitute the path BEFORE writing
@@ -132,11 +171,46 @@ elif [ "$os" = "darwin" ]; then
 EOF
   launchctl unload "$plist_file" 2>/dev/null || true
   launchctl load "$plist_file" 2>&1 || { echo "launchctl load failed — you may need to run: launchctl bootstrap gui/$(id -u) $plist_file" >&2; exit 1; }
-  echo "epnd service registered via launchd" >&2
+
+  # Install auto-update script for macOS
+  echo "installing auto-update script…" >&2
+  curl -fsSL "${BASE}/epnd-autoupdate.sh" -o "$tmp/epnd-autoupdate.sh" 2>/dev/null || true
+  if [ -s "$tmp/epnd-autoupdate.sh" ]; then
+    chmod +x "$tmp/epnd-autoupdate.sh"
+    cp "$tmp/epnd-autoupdate.sh" "$HOME/Library/LaunchAgents/com.50gramx.epnd-autoupdate.sh"
+  fi
+
+  # launchd timer plist (runs every 15 minutes — 900 seconds)
+  autoupdate_plist="$HOME/Library/LaunchAgents/com.50gramx.epnd-autoupdate.plist"
+  cat > "$autoupdate_plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.50gramx.epnd-autoupdate</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>$HOME/Library/LaunchAgents/com.50gramx.epnd-autoupdate.sh</string>
+    </array>
+    <key>StartInterval</key>
+    <integer>900</integer>
+    <key>StandardOutPath</key>
+    <string>/tmp/epnd-autoupdate.log</string>
+    <key>StandardErrorPath</key>
+    <string>/tmp/epnd-autoupdate.err</string>
+</dict>
+</plist>
+EOF
+  launchctl unload "$autoupdate_plist" 2>/dev/null || true
+  launchctl load "$autoupdate_plist" 2>/dev/null || echo "note: launchctl load autoupdate failed — you may need to manually load $autoupdate_plist" >&2
+
+  echo "epnd service and auto-update timer registered via launchd" >&2
 fi
 
 echo "" >&2
 echo "✓ epnd is installed and running as a system service" >&2
 echo "  • auto-starts on boot" >&2
 echo "  • auto-restarts on crash" >&2
+echo "  • auto-updates every 15 minutes" >&2
 echo "  • run: epnd status" >&2
