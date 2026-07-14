@@ -63,35 +63,62 @@ try {
   & (Join-Path $dest 'epnd.exe') version 2>$null
 
   # ── register as a system service (Task Scheduler) ───────────────────────────
+  # Register-ScheduledTask can throw Access Denied in a plain (non-elevated)
+  # PowerShell — common on managed/locked-down machines, and sometimes even on
+  # a personal one depending on local policy. Elevation is NOT required to run
+  # `epnd` at all, only to make it auto-start via Task Scheduler, so a failure
+  # here must not abort an otherwise-successful install: fall back to a
+  # per-user Run-key entry (starts epnd at login, no elevation needed) and
+  # start it immediately for this session.
   Write-Host ""
   Write-Host "registering epnd as a system service…"
 
   $exePath = Join-Path $dest 'epnd.exe'
   $taskName = "EPNDaemon"
+  $serviceRegistered = $false
 
-  # Remove old task if it exists
-  $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
-  if ($existingTask) {
-    Unregister-ScheduledTask -TaskName $taskName -Confirm:$false
+  try {
+    $existingTask = Get-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    if ($existingTask) {
+      Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
+    }
+
+    $startupTrigger = New-ScheduledTaskTrigger -AtStartup
+    $taskAction = New-ScheduledTaskAction -Execute $exePath -Argument "serve"
+    $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
+    $task = New-ScheduledTask -Action $taskAction -Trigger $startupTrigger -Settings $taskSettings -Description "EP&N Daemon - auto-starts on boot and auto-restarts on failure"
+    Register-ScheduledTask -TaskName $taskName -InputObject $task -Force -ErrorAction Stop | Out-Null
+    Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
+
+    Write-Host "epnd service registered in Task Scheduler"
+    $serviceRegistered = $true
+  } catch {
+    Write-Warning "Task Scheduler registration failed (Access Denied is common without elevation): $($_.Exception.Message)"
+    Write-Host "falling back to a per-user startup entry (starts at login, no elevation needed)…"
+
+    try {
+      $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
+      Set-ItemProperty -Path $runKey -Name 'EPNDaemon' -Value "`"$exePath`" serve" -Force -ErrorAction Stop
+      Write-Host "added login-startup entry (HKCU Run key)"
+      $serviceRegistered = $true
+    } catch {
+      Write-Warning "could not add login-startup entry either: $($_.Exception.Message)"
+      Write-Host "you can still run epnd manually: $exePath serve"
+    }
+
+    # Start it now regardless, so this session has a running node.
+    try {
+      Start-Process -FilePath $exePath -ArgumentList 'serve' -WindowStyle Hidden
+      Write-Host "started epnd for this session"
+    } catch {
+      Write-Warning "could not start epnd: $($_.Exception.Message)"
+    }
+
+    Write-Host ""
+    Write-Host "note: for full auto-start on boot (not just login) and auto-restart on"
+    Write-Host "crash, re-run this installer from an Administrator PowerShell:"
+    Write-Host "  irm https://raw.githubusercontent.com/50gramx/eapp-releases/main/scripts/install.ps1 | iex"
   }
-
-  # Create task trigger (at startup)
-  $startupTrigger = New-ScheduledTaskTrigger -AtStartup
-
-  # Create task action (run the daemon)
-  $taskAction = New-ScheduledTaskAction -Execute $exePath -Argument "serve"
-
-  # Create task settings (auto-restart on failure)
-  $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
-
-  # Create and register the task
-  $task = New-ScheduledTask -Action $taskAction -Trigger $startupTrigger -Settings $taskSettings -Description "EP&N Daemon - auto-starts on boot and auto-restarts on failure"
-  Register-ScheduledTask -TaskName $taskName -InputObject $task -Force | Out-Null
-
-  # Start the service immediately
-  Start-ScheduledTask -TaskName $taskName
-
-  Write-Host "epnd service registered in Task Scheduler"
 
   # ── install and register auto-update script ────────────────────────────────
   Write-Host "installing auto-update script…"
@@ -142,29 +169,39 @@ try {
     Write-Warning "could not install auto-update script: $_"
   }
 
-  # Register auto-update task (runs every 15 minutes)
+  # Register auto-update task (runs every 15 minutes) — same elevation caveat
+  # as the main service task, so this is independently best-effort too.
   $updateTaskName = "EPNDaemonAutoUpdate"
-  $existingUpdateTask = Get-ScheduledTask -TaskName $updateTaskName -ErrorAction SilentlyContinue
-  if ($existingUpdateTask) {
-    Unregister-ScheduledTask -TaskName $updateTaskName -Confirm:$false
+  $autoUpdateRegistered = $false
+  try {
+    $existingUpdateTask = Get-ScheduledTask -TaskName $updateTaskName -ErrorAction SilentlyContinue
+    if ($existingUpdateTask) {
+      Unregister-ScheduledTask -TaskName $updateTaskName -Confirm:$false -ErrorAction Stop
+    }
+
+    $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(30) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 36500)
+    $updateAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
+    $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable
+    $updateTask = New-ScheduledTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Description "EP&N Auto-Update - checks for updates every 15 minutes"
+    Register-ScheduledTask -TaskName $updateTaskName -InputObject $updateTask -Force -ErrorAction Stop | Out-Null
+    Start-ScheduledTask -TaskName $updateTaskName -ErrorAction SilentlyContinue
+
+    Write-Host "auto-update task registered in Task Scheduler"
+    $autoUpdateRegistered = $true
+  } catch {
+    Write-Warning "auto-update task registration failed (needs the same elevation as the service task): $($_.Exception.Message)"
   }
 
-  $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(30) -RepetitionInterval (New-TimeSpan -Minutes 15) -RepetitionDuration (New-TimeSpan -Days 36500)
-  $updateAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$scriptPath`""
-  $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable
-
-  $updateTask = New-ScheduledTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Description "EP&N Auto-Update - checks for updates every 15 minutes"
-  Register-ScheduledTask -TaskName $updateTaskName -InputObject $updateTask -Force | Out-Null
-
-  Start-ScheduledTask -TaskName $updateTaskName -ErrorAction SilentlyContinue
-
-  Write-Host "auto-update task registered in Task Scheduler"
-
   Write-Host ""
-  Write-Host "✓ epnd is installed and running as a system service"
-  Write-Host "  • auto-starts on boot"
-  Write-Host "  • auto-restarts on crash"
-  Write-Host "  • auto-updates every 15 minutes"
+  if ($serviceRegistered -and $autoUpdateRegistered) {
+    Write-Host "✓ epnd is installed and running as a system service"
+    Write-Host "  • auto-starts on boot"
+    Write-Host "  • auto-restarts on crash"
+    Write-Host "  • auto-updates every 15 minutes"
+  } else {
+    Write-Host "✓ epnd is installed and running for this session"
+    Write-Host "  • re-run from an Administrator PowerShell for full auto-start/auto-update"
+  }
   Write-Host "  • it is already running — do NOT run 'epnd serve' yourself"
   Write-Host "  • run: epnd node list"
 } finally {
