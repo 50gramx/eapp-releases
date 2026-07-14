@@ -213,4 +213,5 @@ echo "✓ epnd is installed and running as a system service" >&2
 echo "  • auto-starts on boot" >&2
 echo "  • auto-restarts on crash" >&2
 echo "  • auto-updates every 15 minutes" >&2
-echo "  • run: epnd status" >&2
+echo "  • it is already running — do NOT run 'epnd serve' yourself" >&2
+echo "  • run: epnd node list" >&2

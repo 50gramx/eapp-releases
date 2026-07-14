@@ -165,7 +165,8 @@ try {
   Write-Host "  • auto-starts on boot"
   Write-Host "  • auto-restarts on crash"
   Write-Host "  • auto-updates every 15 minutes"
-  Write-Host "  • run: epnd status"
+  Write-Host "  • it is already running — do NOT run 'epnd serve' yourself"
+  Write-Host "  • run: epnd node list"
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
