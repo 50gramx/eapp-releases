@@ -101,10 +101,10 @@ WantedBy=multi-user.target
   echo "epnd service registered and started" >&2
 
 elif [ "$os" = "darwin" ]; then
-  # launchd plist for macOS
+  # launchd plist for macOS — substitute the path BEFORE writing
   plist_file="$HOME/Library/LaunchAgents/com.50gramx.epnd.plist"
   mkdir -p "$HOME/Library/LaunchAgents"
-  cat > "$plist_file" << 'PLIST'
+  cat > "$plist_file" << EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -113,23 +113,25 @@ elif [ "$os" = "darwin" ]; then
     <string>com.50gramx.epnd</string>
     <key>ProgramArguments</key>
     <array>
-        <string>EPND_PATH_PLACEHOLDER</string>
+        <string>$dest/epnd</string>
         <string>serve</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
-    <true/>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
     <key>StandardOutPath</key>
     <string>/tmp/epnd.log</string>
     <key>StandardErrorPath</key>
     <string>/tmp/epnd.err</string>
 </dict>
 </plist>
-PLIST
-  # Replace the placeholder with the actual path
-  sed -i '' "s|EPND_PATH_PLACEHOLDER|$dest/epnd|g" "$plist_file"
-  launchctl load "$plist_file" 2>/dev/null || launchctl unload "$plist_file" 2>/dev/null; launchctl load "$plist_file"
+EOF
+  launchctl unload "$plist_file" 2>/dev/null || true
+  launchctl load "$plist_file" 2>&1 || { echo "launchctl load failed — you may need to run: launchctl bootstrap gui/$(id -u) $plist_file" >&2; exit 1; }
   echo "epnd service registered via launchd" >&2
 fi
 
