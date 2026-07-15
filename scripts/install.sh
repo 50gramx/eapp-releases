@@ -134,9 +134,16 @@ WantedBy=timers.target
 
   $SUDO systemctl daemon-reload
   $SUDO systemctl enable epnd
-  $SUDO systemctl start epnd
+  # Kill any epnd NOT managed by systemd (a manual `epnd serve` or a stale
+  # process) so it releases the single-instance lock; otherwise `restart` starts
+  # a new daemon that exits immediately on the held lock, leaving the node on the
+  # OLD build. Then restart (not start — start is a no-op if already running, so a
+  # re-run would never pick up the new binary).
+  $SUDO pkill -x epnd 2>/dev/null || true
+  sleep 1
+  $SUDO systemctl restart epnd
   $SUDO systemctl enable epnd-autoupdate.timer
-  $SUDO systemctl start epnd-autoupdate.timer
+  $SUDO systemctl restart epnd-autoupdate.timer
   echo "epnd service and auto-update timer registered" >&2
 
 elif [ "$os" = "darwin" ]; then
@@ -170,6 +177,13 @@ elif [ "$os" = "darwin" ]; then
 </plist>
 EOF
   launchctl unload "$plist_file" 2>/dev/null || true
+  # Kill any epnd NOT managed by launchd (a manual `epnd serve` or a stale
+  # process). unload only stops the launchd-managed daemon; a lingering process
+  # keeps the single-instance lock, so the freshly-loaded daemon exits at once and
+  # the node stays on the OLD build — exactly the "re-ran the installer but still
+  # old" symptom.
+  pkill -x epnd 2>/dev/null || true
+  sleep 1
   launchctl load "$plist_file" 2>&1 || { echo "launchctl load failed — you may need to run: launchctl bootstrap gui/$(id -u) $plist_file" >&2; exit 1; }
 
   # Install auto-update script for macOS
