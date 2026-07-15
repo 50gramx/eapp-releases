@@ -183,15 +183,24 @@ elif [ "$os" = "darwin" ]; then
 </dict>
 </plist>
 EOF
-  launchctl unload "$plist_file" 2>/dev/null || true
+  # Reload the agent. On modern macOS (Ventura+), `launchctl unload`/`load`
+  # SILENTLY NO-OPS for an already-registered label — so a re-run swaps the binary
+  # but the OLD argument list (e.g. `serve` without `--bootstrap`) stays active and
+  # the node never provisions a cluster. Use bootout+bootstrap (the current API),
+  # which actually re-reads the plist; fall back to unload/load on older systems.
+  gui="gui/$(id -u)"
+  launchctl bootout "$gui/com.50gramx.epnd" 2>/dev/null || launchctl unload "$plist_file" 2>/dev/null || true
   # Kill any epnd NOT managed by launchd (a manual `epnd serve` or a stale
-  # process). unload only stops the launchd-managed daemon; a lingering process
+  # process). bootout only stops the launchd-managed daemon; a lingering process
   # keeps the single-instance lock, so the freshly-loaded daemon exits at once and
   # the node stays on the OLD build — exactly the "re-ran the installer but still
   # old" symptom.
   pkill -x epnd 2>/dev/null || true
   sleep 1
-  launchctl load "$plist_file" 2>&1 || { echo "launchctl load failed — you may need to run: launchctl bootstrap gui/$(id -u) $plist_file" >&2; exit 1; }
+  if ! launchctl bootstrap "$gui" "$plist_file" 2>/dev/null; then
+    launchctl load "$plist_file" 2>&1 || { echo "launchctl bootstrap/load failed — run: launchctl bootstrap $gui $plist_file" >&2; exit 1; }
+  fi
+  launchctl enable "$gui/com.50gramx.epnd" 2>/dev/null || true
 
   # Install auto-update script for macOS
   echo "installing auto-update script…" >&2
