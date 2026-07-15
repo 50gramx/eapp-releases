@@ -84,7 +84,12 @@ Wants=network-online.target
 
 [Service]
 Type=simple
-ExecStart=$dest/epnd serve
+# --bootstrap so the daemon PROVISIONS the cluster (VM + k3s + inference pods) on
+# first start, not just checks for one. EnsureCluster is idempotent (no-op once
+# k3s is up) and non-fatal (a machine that can't run k3s degrades to
+# remote-inference and reports which step failed via telemetry). Without this a
+# fresh node never gets a cluster and can never host its own inference.
+ExecStart=$dest/epnd serve --bootstrap
 Restart=always
 RestartSec=10
 User=$(whoami)
@@ -161,6 +166,8 @@ elif [ "$os" = "darwin" ]; then
     <array>
         <string>$dest/epnd</string>
         <string>serve</string>
+        <!-- provision the cluster on first start; idempotent + non-fatal -->
+        <string>--bootstrap</string>
     </array>
     <key>RunAtLoad</key>
     <true/>

@@ -100,7 +100,10 @@ try {
   $logDir = Join-Path $dest 'logs'
   New-Item -ItemType Directory -Force -Path $logDir | Out-Null
   $logPath = Join-Path $logDir 'epnd.log'
-  $wrappedArg = "/c `"`"$exePath`" serve >> `"$logPath`" 2>&1`""
+  # --bootstrap so the daemon PROVISIONS the cluster (WSL VM + k3s + inference
+  # pods) on first start, not just checks for one. Idempotent (no-op once k3s is
+  # up) and non-fatal. Without it a fresh node never gets a cluster.
+  $wrappedArg = "/c `"`"$exePath`" serve --bootstrap >> `"$logPath`" 2>&1`""
 
   # Clean up the old pre-rebrand task name if present, so upgrading doesn't
   # leave two overlapping schedules.
