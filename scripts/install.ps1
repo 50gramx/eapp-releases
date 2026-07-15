@@ -177,6 +177,24 @@ try {
   } catch {
     exit 0
   }
+  # Self-update THIS updater script: it replaces epnd.exe but never itself, so a
+  # bug in it would strand every node on an old build with no remote fix. Pull the
+  # published, checksum-verified copy over ourselves (effective next run) — this is
+  # what lets the binary-lock fix reach nodes without a manual reinstall.
+  if (`$PSCommandPath) {
+    `$selfLine = Select-String -Path (Join-Path `$tmp 'checksums.txt') -Pattern "[ *]epnd-autoupdate.ps1`$" | Select-Object -First 1
+    if (`$selfLine) {
+      `$selfWant = ((`$selfLine.Line -split '\s+')[0]).ToLower()
+      `$selfHave = (Get-FileHash -Path `$PSCommandPath -Algorithm SHA256 -ErrorAction SilentlyContinue).Hash.ToLower()
+      if (`$selfHave -ne `$selfWant) {
+        try {
+          Invoke-WebRequest -Uri "`$base/epnd-autoupdate.ps1" -OutFile (Join-Path `$tmp 'self.ps1') -UseBasicParsing -ErrorAction Stop
+          `$selfGot = (Get-FileHash -Path (Join-Path `$tmp 'self.ps1') -Algorithm SHA256).Hash.ToLower()
+          if (`$selfGot -eq `$selfWant) { Copy-Item (Join-Path `$tmp 'self.ps1') `$PSCommandPath -Force -ErrorAction Stop }
+        } catch { }
+      }
+    }
+  }
   `$line = Select-String -Path (Join-Path `$tmp 'checksums.txt') -Pattern "[ *]`$asset`$" | Select-Object -First 1
   if (-not `$line) { exit 0 }
   `$want = (`$line.Line -split '\s+')[0]
@@ -190,8 +208,24 @@ try {
   `$got = (Get-FileHash -Path (Join-Path `$tmp 'epnd.exe') -Algorithm SHA256 -ErrorAction Stop).Hash.ToLower()
   if (`$got -ne `$want.ToLower()) { exit 1 }
   Stop-ScheduledTask -TaskName 'GramNode' -ErrorAction SilentlyContinue
-  Start-Sleep -Milliseconds 500
+  # Stop-ScheduledTask does NOT reliably kill epnd.exe: the GramNode task launches
+  # it via a cmd.exe wrapper, so epnd.exe is a GRANDCHILD that gets orphaned and
+  # keeps the binary file-locked. That made Copy-Item fail every cycle, so the node
+  # silently stayed on the old build. Kill the actual running binary at `$bin
+  # (path-matched; fall back to any epnd.exe if the path can't be read).
+  `$procs = Get-CimInstance Win32_Process -Filter "Name='epnd.exe'" -ErrorAction SilentlyContinue
+  `$targets = `$procs | Where-Object { `$_.ExecutablePath -eq `$bin }
+  if (-not `$targets) { `$targets = `$procs }
+  `$targets | ForEach-Object { Stop-Process -Id `$_.ProcessId -Force -ErrorAction SilentlyContinue }
+  Start-Sleep -Milliseconds 700
+  # Rename-then-replace: Windows can MOVE a running/locked exe aside even when it
+  # cannot be overwritten in place, so the swap succeeds even if a handle lingers
+  # (AV scan, slow exit). The old copy is removed after.
+  `$old = "`$bin.old"
+  Remove-Item `$old -Force -ErrorAction SilentlyContinue
+  if (Test-Path `$bin) { Move-Item -Path `$bin -Destination `$old -Force -ErrorAction SilentlyContinue }
   Copy-Item (Join-Path `$tmp 'epnd.exe') `$bin -Force -ErrorAction Stop
+  Remove-Item `$old -Force -ErrorAction SilentlyContinue
   Start-ScheduledTask -TaskName 'GramNode' -ErrorAction SilentlyContinue
 } finally {
   Remove-Item -Recurse -Force `$tmp -ErrorAction SilentlyContinue
