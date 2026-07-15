@@ -11,6 +11,12 @@ BIN="${EPND_BIN:-/usr/local/bin/epnd}"
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 arch="$(uname -m)"
+# Apple Silicon under a Rosetta shell reports x86_64 — trust the hardware flag,
+# not uname, or a node that got the amd64 build will keep pulling amd64 forever
+# (its amd64 checksum matches the amd64 target) and never cross back to arm64.
+if [ "$os" = "darwin" ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
+  arch="arm64"
+fi
 case "$arch" in
   x86_64|amd64) arch="amd64" ;;
   aarch64|arm64) arch="arm64" ;;

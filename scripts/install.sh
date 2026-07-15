@@ -21,6 +21,15 @@ case "$os" in
   linux|darwin) ;;
   *) echo "unsupported OS: $os (use the Windows binary instead)" >&2; exit 1 ;;
 esac
+# On an Apple Silicon Mac, `uname -m` reports x86_64 whenever the SHELL itself is
+# running under Rosetta 2 (an Intel Terminal, an Intel-installed curl, an Intel
+# CI runner). That would fetch the amd64 binary, which then runs under Rosetta —
+# it comes up with a DIFFERENT node identity and cannot manage the arm64 k3s VM,
+# so the gram is cluster-blind and never probes. Trust the HARDWARE, not the
+# emulated uname: hw.optional.arm64=1 means this is Apple Silicon, period.
+if [ "$os" = "darwin" ] && [ "$(sysctl -n hw.optional.arm64 2>/dev/null)" = "1" ]; then
+  arch="arm64"
+fi
 case "$arch" in
   x86_64|amd64) arch="amd64" ;;
   aarch64|arm64) arch="arm64" ;;
