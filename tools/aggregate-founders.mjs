@@ -511,6 +511,87 @@ export function mergeBests(previous, current) {
   return { ...current, resources: merged };
 }
 
+/**
+ * mergeModels — the model matrix, persisted the same way communities and bests are.
+ *
+ * buildModels() is a snapshot: a model only appears while a node that probed it is
+ * VISIBLE this run (its proof snapshot in data/nodes/ or a reporter's mesh view). But
+ * a signed probe HAPPENED — the node measured a real context length, on real hardware,
+ * and signed it. When that node sleeps its probe should not un-happen, exactly as a best
+ * or a region does not un-happen (see mergeCommunityLedger). Without this merge, a model
+ * page 404s the moment its prober goes quiet, and /inference/models/[slug] can build
+ * nothing — the intermittent empty matrix.
+ *
+ * The merge keeps signed evidence and carries its ts/DID, so a reader judges its age.
+ * Keyed by model, and by node within a model, it grows with the NETWORK, not with time.
+ * rejected_results is NOT merged: it describes THIS run, not a standing accusation.
+ */
+function pickGreaterProof(prev, cur, field) {
+  const pv = prev && typeof prev[field] === 'number' ? prev[field] : null;
+  const cv = cur && typeof cur[field] === 'number' ? cur[field] : null;
+  if (pv === null) return cur || null;
+  if (cv === null) return prev || null;
+  return cv >= pv ? cur : prev; // tie → the fresher (current) proof
+}
+
+function mergeModelCaps(prev = {}, cur = {}) {
+  const out = { ...prev };
+  for (const [cap, val] of Object.entries(cur)) {
+    if (typeof val !== 'boolean') continue;
+    if (cap === 'tools_loop_terminated') {
+      // Pessimistic: if ANY run saw the loop hang, the matrix says so.
+      out[cap] = out[cap] === undefined ? val : out[cap] && val;
+    } else {
+      // Optimistic: some node proved it. `false` from both stays false.
+      out[cap] = out[cap] === true || val === true;
+    }
+  }
+  return out;
+}
+
+function mergeOneModel(prev, cur) {
+  if (!prev) return cur;
+
+  // A node's proof snapshot is atomic, so a node that reported THIS run replaces its
+  // prior entry; a node absent this run keeps its last one, whose probed_at/measured_at
+  // shows its age.
+  const byNode = new Map((prev.nodes || []).map((n) => [n.node_did, n]));
+  for (const n of cur.nodes || []) byNode.set(n.node_did, n);
+  const nodes = [...byNode.values()].sort((a, b) => (b.tokens_per_sec || 0) - (a.tokens_per_sec || 0));
+
+  return {
+    ...cur,
+    provider_count: nodes.length,
+    // Strictly greater PROVED value wins, carrying the DID + ts that proved it.
+    effective_ctx: pickGreaterProof(prev.effective_ctx, cur.effective_ctx, 'value'),
+    best_throughput: pickGreaterProof(prev.best_throughput, cur.best_throughput, 'tokens_per_sec'),
+    declared: cur.declared || prev.declared || null,
+    capabilities: mergeModelCaps(prev.capabilities, cur.capabilities),
+    sample_count: nodes.filter((n) => typeof n.tokens_per_sec === 'number').length,
+    nodes,
+  };
+}
+
+export function mergeModels(previous, current) {
+  if (!previous?.models?.length) return current;
+  const prevBySlug = new Map(previous.models.map((m) => [m.slug, m]));
+
+  const out = [];
+  const seen = new Set();
+  for (const cur of current.models) {
+    seen.add(cur.slug);
+    out.push(mergeOneModel(prevBySlug.get(cur.slug), cur));
+  }
+  // Models nobody probed this run keep their signed evidence and their page.
+  for (const prev of previous.models) {
+    if (seen.has(prev.slug)) continue;
+    out.push(prev);
+  }
+
+  out.sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
+  return { ...current, model_count: out.length, models: out };
+}
+
 function readHistory(name) {
   const path = `${NODES_DIR}/${name}.history.jsonl`;
   if (!existsSync(path)) return [];
@@ -1275,7 +1356,10 @@ function main() {
   writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
 
   // The model matrix: what a model PROVED on real hardware, signature by signature.
-  const models = buildModels(out.nodes, out.generated_at, meshViews);
+  // Merge, never regenerate — a signed probe does not un-happen when its prober sleeps
+  // (see mergeModels / mergeCommunityLedger). This is what stops the model matrix from
+  // blinking empty and 404-ing /inference/models/[slug].
+  const models = mergeModels(readPublished('data/models.json'), buildModels(out.nodes, out.generated_at, meshViews));
   writeFileSync('data/models.json', JSON.stringify(models, null, 2) + '\n');
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log(
