@@ -1,4 +1,4 @@
-name: Deploy brand site (eapp-nextjs)
+name: Deploy site to Firebase Hosting
 
 # The brand site is a static export: every number on /, /regions and /region/<pincode>
 # is fetched at BUILD time and baked into HTML. So a deploy is not only how code
@@ -12,6 +12,11 @@ name: Deploy brand site (eapp-nextjs)
 #
 # The site's own firebase-hosting-merge.yml is now manual-only (no auto triggers),
 # to consolidate CI in the data source (eapp-releases) instead of the consumer.
+#
+# Sitemap generation: Automatic during build via src/app/sitemap.ts
+#   - Fetches active regions from mesh API for dynamic /region/[pincode] URLs
+#   - Fetches models from inference API for dynamic /inference/models/[slug] URLs
+#   - Includes all static pages, excludes /demo/* dynamic routes
 on:
   workflow_run:
     workflows: ['Aggregate founder nodes']
@@ -43,13 +48,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build static export
+      - name: Build static export (includes sitemap with real data)
+        env:
+          NEXT_PUBLIC_SITE_URL: https://50gramx.com
         run: npm run build
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
-          repoToken: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CLOUD_50GRAMX }}
           channelId: live
           projectId: cloud-50gramx
+          expires: 7d
