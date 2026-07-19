@@ -4,6 +4,10 @@ name: Build epnd
 # repo is untouched — we just poll its latest `main` SHA (via CI_READ_TOKEN,
 # read-only) and only rebuild when it moves.
 # A marker commit SHA is kept in `epnd-last-built.txt` on this repo's main.
+#
+# Automatic behavior: Publishes new epnd when epn-daemon main moves.
+# Manual option: Can cascade to rebuild all brand/platform combos (for critical updates).
+# Routine rebuilds: Handled by build-cadence.yml on nightly/weekly/bi-weekly/stable schedule.
 on:
   schedule:
     # Offset off the :00/:15/:30/:45 marks — those are the most congested
@@ -13,10 +17,16 @@ on:
     # still gives a ~15-min cadence without competing for that exact slot.
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+    inputs:
+      cascade_app_builds:
+        description: Rebuild all brand/platform combos with new epnd (for critical updates)
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
-  actions: write   # to dispatch app rebuilds after a successful epnd publish
+  actions: write   # to dispatch app rebuilds when manually requested
 
 jobs:
   check:
@@ -219,14 +229,18 @@ jobs:
           done
           echo "gave up after retries — next run will catch up (not a failure)"; exit 0
 
-      - name: Refresh bundled-epnd app builds for every already-released brand
-        # epnd just changed — rebuild every brand/platform/channel combo that
-        # has shipped before (per data/catalog.json), so the *initial* epnd
-        # bundled into each app installer stays current too. (Already-installed
-        # apps don't need this — they self-update epnd at runtime via
-        # DaemonUpdater — this is purely about new installs getting the latest
-        # daemon out of the box.) Runs only after the publish step above
-        # succeeds, so there's no race against an incomplete epnd-latest.
+      - name: Refresh bundled-epnd app builds (manual cascade for critical updates)
+        if: github.event_name == 'workflow_dispatch' && inputs.cascade_app_builds == 'true'
+        # When manually triggered with cascade_app_builds=true: rebuild every
+        # brand/platform/channel combo that has shipped before (per data/catalog.json),
+        # so the *initial* epnd bundled into each app installer is current.
+        # (Already-installed apps don't need this — they self-update epnd at runtime
+        # via DaemonUpdater — this is purely about new installs getting the latest
+        # daemon out of the box.) Used for critical epnd updates only.
+        #
+        # For routine updates: build-cadence.yml handles all rebuilds on nightly/weekly/
+        # bi-weekly/stable schedule. Change-detection skips rebuilds when epnd state
+        # hasn't changed, so no wasted builds.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -243,6 +257,8 @@ jobs:
             fs.writeFileSync("/tmp/combos.json", JSON.stringify(combos));
           '
           node -e 'process.stdout.write(JSON.parse(require("fs").readFileSync("/tmp/combos.json")).map(c=>`${c.brandId} ${c.platform} ${c.channel}`).join("\n"))' > /tmp/combos.txt
+          combos_count=$(wc -l < /tmp/combos.txt)
+          echo "Cascading to $combos_count brand/platform/channel combos..."
           while read -r brand platform channel; do
             [ -z "$brand" ] && continue
             case "$platform" in
@@ -252,6 +268,6 @@ jobs:
               android) wf="build-eapp-android.yml" ;;
               *) echo "skip unknown platform: $platform"; continue ;;
             esac
-            echo "→ $wf brand_id=$brand channel=$channel (refreshing bundled epnd)"
+            echo "→ $wf brand_id=$brand channel=$channel"
             gh workflow run "$wf" -f brand_id="$brand" -f release_channel="$channel"
           done < /tmp/combos.txt
