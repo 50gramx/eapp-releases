@@ -1,12 +1,12 @@
 {
-  "generated_at": "2026-07-16T15:37:33.844Z",
+  "generated_at": "2026-07-19T00:55:42.380Z",
   "trust_model": "every field verified against the signature of the node that produced it; effective_ctx is the context length a node PROVED by recall, never the length a model card advertises",
   "model_count": 7,
   "models": [
     {
       "name": "gemma4:e2b",
       "slug": "gemma4-e2b",
-      "provider_count": 2,
+      "provider_count": 3,
       "effective_ctx": {
         "value": 8192,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
@@ -14,27 +14,61 @@
         "payload_sha256": "6mt6Cl4gYzT72jx2AGq8nz8tjFDgVHEhmOAgLdLt4JM=",
         "probe_version": 4
       },
-      "declared": null,
+      "declared": {
+        "ctx": 131072,
+        "quantization": "Q4_K_M",
+        "parameter_size": "5.1B",
+        "parameter_count": 5123179235,
+        "family": "gemma4",
+        "format": "gguf",
+        "capabilities": "audio,completion,thinking,tools,vision",
+        "source": "ollama /api/show; the node attests that the runtime reported these, not that they are true",
+        "attested_by": "did:epn:002408011220ad2ba1fabbc8e5f23892c0134225790dd035d652ce541dc16e0b098c56afbb8a"
+      },
       "capabilities": {
         "tools": true,
         "tools_loop_terminated": false,
-        "vision": false,
+        "vision": true,
         "audio": false,
         "thinking": false,
         "structured_output": true
       },
       "best_throughput": {
-        "tokens_per_sec": 7.941648879652805,
-        "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784208658391715300,
-        "payload_sha256": "NQFmjdcgNPGxD3t//KlOoJJkQBWY1HkSLmT8sN40iyc="
+        "tokens_per_sec": 45.05324811832894,
+        "node_did": "did:epn:002408011220ad2ba1fabbc8e5f23892c0134225790dd035d652ce541dc16e0b098c56afbb8a",
+        "ts": 1784266880495462000,
+        "payload_sha256": "OzbgMLLVOxkwQVsbYsnFlLATWGbTvXcUiJ43xIjJuEA="
       },
-      "sample_count": 2,
+      "sample_count": 3,
       "nodes": [
+        {
+          "node_did": "did:epn:002408011220ad2ba1fabbc8e5f23892c0134225790dd035d652ce541dc16e0b098c56afbb8a",
+          "capabilities": {
+            "tools": true,
+            "tools_loop_terminated": true,
+            "structured_output": true,
+            "thinking": false,
+            "vision": true,
+            "audio": false
+          },
+          "effective_ctx": 4096,
+          "runtime": "ollama",
+          "runtime_version": "0.31.2",
+          "probe_version": 3,
+          "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
+          "probed_at": 1783914362407539000,
+          "probe_payload_sha256": "lA8ICCs2hd6ASljxuBiW5r6j9o/60E+9nMaDW9RIW3k=",
+          "tokens_per_sec": 45.05324811832894,
+          "sample_count": 104,
+          "total_tokens": 16260,
+          "total_seconds": 360.90627599800007,
+          "measured_at": 1784266880495462000,
+          "throughput_payload_sha256": "OzbgMLLVOxkwQVsbYsnFlLATWGbTvXcUiJ43xIjJuEA="
+        },
         {
           "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
           "capabilities": {
-            "tools": false,
+            "tools": true,
             "tools_loop_terminated": false,
             "structured_output": false,
             "thinking": false,
@@ -46,21 +80,21 @@
           "runtime_version": null,
           "probe_version": 4,
           "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
-          "probed_at": 1784208561675753700,
-          "probe_payload_sha256": "pXfMPO0MA8MhlMkvllDYtNvFD6lQY1bkXUajl7pixlI=",
-          "tokens_per_sec": 7.808066174617099,
-          "sample_count": 325,
-          "total_tokens": 72817,
-          "total_seconds": 9325.868706994006,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "at4ONgBNGXUgYr7rV3M6fv6Y2JleAt1i6Q201gW0hZg="
+          "probed_at": 1784301661425641700,
+          "probe_payload_sha256": "SSJ0THs9kVOyMtiQrom5oyCIgLCHDJEqpwfyItv3/Z0=",
+          "tokens_per_sec": 7.679551904564448,
+          "sample_count": 437,
+          "total_tokens": 105253,
+          "total_seconds": 13705.617372993001,
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "ZVYjgeU0qhTxkF5m3awPxgqlIPrxbvtsxVizy75mdxs="
         },
         {
           "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
           "capabilities": {
             "tools": true,
-            "tools_loop_terminated": false,
-            "structured_output": false,
+            "tools_loop_terminated": true,
+            "structured_output": true,
             "thinking": false,
             "vision": false,
             "audio": false
@@ -70,14 +104,14 @@
           "runtime_version": null,
           "probe_version": 4,
           "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
-          "probed_at": 1784198618063330000,
-          "probe_payload_sha256": "gsxMOx8eKgQBzwqVv2NDgAqzI/OQreDpjeJSeAqx9is=",
-          "tokens_per_sec": 3.7458249843733715,
-          "sample_count": 2,
-          "total_tokens": 507,
-          "total_seconds": 135.35069099999998,
-          "measured_at": 1784216021265608000,
-          "throughput_payload_sha256": "90QDDzVeYL2xvI8LLhOH1BXsZWKwhRSkCEaD3BqPXH0="
+          "probed_at": 1784296297947087000,
+          "probe_payload_sha256": "L1666wNNgLshpoB0XwCXVw91/WQth2YuiZ3xMdZkDvg=",
+          "tokens_per_sec": 4.236022935244285,
+          "sample_count": 11,
+          "total_tokens": 1376,
+          "total_seconds": 324.83299099999994,
+          "measured_at": 1784422289701151000,
+          "throughput_payload_sha256": "5+rVp2UIGp2IrU3PiGpAdPbRL2+ilBFXF/kz+C24jUU="
         }
       ]
     },
@@ -98,8 +132,8 @@
       "best_throughput": {
         "tokens_per_sec": 8.928833401968776,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784216158455855000,
-        "payload_sha256": "qdz6x6tEiKG1Eg37yaJFrzJbYHzl4oWzLayNy+6xPdc="
+        "ts": 1784405871661976000,
+        "payload_sha256": "9lvBNNTA3NtgKRwt9Rv5SRrg9Bd1r1RdtbIOmm/WBoc="
       },
       "sample_count": 1,
       "nodes": [
@@ -124,8 +158,8 @@
           "sample_count": 36,
           "total_tokens": 7826,
           "total_seconds": 876.4862829980001,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "qdz6x6tEiKG1Eg37yaJFrzJbYHzl4oWzLayNy+6xPdc="
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "9lvBNNTA3NtgKRwt9Rv5SRrg9Bd1r1RdtbIOmm/WBoc="
         }
       ]
     },
@@ -146,8 +180,8 @@
       "best_throughput": {
         "tokens_per_sec": 1.9937339789233837,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784216158455855000,
-        "payload_sha256": "HyDkiTO3CeeUA7QxqPLWHyGHkfq4Ox6UYZyGuE3QLig="
+        "ts": 1784405871661976000,
+        "payload_sha256": "Lhi/2zG45Lr6ThBP8GeRIPlpSUNM7Ci4Hs3qh5LrR+M="
       },
       "sample_count": 1,
       "nodes": [
@@ -172,8 +206,8 @@
           "sample_count": 1,
           "total_tokens": 84,
           "total_seconds": 42.132,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "HyDkiTO3CeeUA7QxqPLWHyGHkfq4Ox6UYZyGuE3QLig="
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "Lhi/2zG45Lr6ThBP8GeRIPlpSUNM7Ci4Hs3qh5LrR+M="
         }
       ]
     },
@@ -187,8 +221,8 @@
       "best_throughput": {
         "tokens_per_sec": 16.89770033938807,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784216158455855000,
-        "payload_sha256": "0BHX+PQC8+NcLOdcYFrBzj45/D7b/HsVMVXQRAwnC68="
+        "ts": 1784405871661976000,
+        "payload_sha256": "0Wj7a+XZ4rkU5x5wA7KJNpKHyHl9rNKbsv2KI814buQ="
       },
       "sample_count": 1,
       "nodes": [
@@ -199,8 +233,8 @@
           "sample_count": 6,
           "total_tokens": 5313,
           "total_seconds": 314.42148299999997,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "0BHX+PQC8+NcLOdcYFrBzj45/D7b/HsVMVXQRAwnC68="
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "0Wj7a+XZ4rkU5x5wA7KJNpKHyHl9rNKbsv2KI814buQ="
         }
       ]
     },
@@ -214,8 +248,8 @@
       "best_throughput": {
         "tokens_per_sec": 7.725546680633756,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784216158455855000,
-        "payload_sha256": "Rs0eABApZmHmZko/ij6SyXD2IljlrGmMdH5ptnVpzIA="
+        "ts": 1784405871661976000,
+        "payload_sha256": "097njnOQCCnXxuDfQqH3/awGavCzEGsP2L95p69mPL4="
       },
       "sample_count": 1,
       "nodes": [
@@ -226,8 +260,8 @@
           "sample_count": 2,
           "total_tokens": 295,
           "total_seconds": 38.185,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "Rs0eABApZmHmZko/ij6SyXD2IljlrGmMdH5ptnVpzIA="
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "097njnOQCCnXxuDfQqH3/awGavCzEGsP2L95p69mPL4="
         }
       ]
     },
@@ -241,8 +275,8 @@
       "best_throughput": {
         "tokens_per_sec": 18.17466780256037,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784216158455855000,
-        "payload_sha256": "+olYbMe65gc1edptv6iWjfp/G+QELDykpV82Yzlg+/w="
+        "ts": 1784405871661976000,
+        "payload_sha256": "Hs9PErGS+bgNoQYE1Ah2LsHVDAfbWO2UxLbxOrF3tVU="
       },
       "sample_count": 1,
       "nodes": [
@@ -253,8 +287,8 @@
           "sample_count": 59,
           "total_tokens": 10899,
           "total_seconds": 599.6808369979997,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "+olYbMe65gc1edptv6iWjfp/G+QELDykpV82Yzlg+/w="
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "Hs9PErGS+bgNoQYE1Ah2LsHVDAfbWO2UxLbxOrF3tVU="
         }
       ]
     },
@@ -268,8 +302,8 @@
       "best_throughput": {
         "tokens_per_sec": 29.913964262078096,
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "ts": 1784216158455855000,
-        "payload_sha256": "6nunv0J61dEfLZdqWLFxUeNuAdLYpH6sC/1FHz6TOJc="
+        "ts": 1784405871661976000,
+        "payload_sha256": "hW4QcoCAK9I+1XlcPFp/z5PTdHVldwTkzJrWAUNTmPs="
       },
       "sample_count": 1,
       "nodes": [
@@ -280,8 +314,8 @@
           "sample_count": 2,
           "total_tokens": 226,
           "total_seconds": 7.555,
-          "measured_at": 1784216158455855000,
-          "throughput_payload_sha256": "6nunv0J61dEfLZdqWLFxUeNuAdLYpH6sC/1FHz6TOJc="
+          "measured_at": 1784405871661976000,
+          "throughput_payload_sha256": "hW4QcoCAK9I+1XlcPFp/z5PTdHVldwTkzJrWAUNTmPs="
         }
       ]
     }
