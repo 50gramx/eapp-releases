@@ -1,0 +1,55 @@
+name: Deploy brand site (eapp-nextjs)
+
+# The brand site is a static export: every number on /, /regions and /region/<pincode>
+# is fetched at BUILD time and baked into HTML. So a deploy is not only how code
+# ships — it is the only way the network's state reaches a reader.
+#
+# This workflow runs from eapp-releases, which is the source of network truth:
+#   - When aggregate-founders publishes new signed data (communities.json, models.json),
+#     we rebuild the site to reflect those new regions and model measurements.
+#   - When eapp-nextjs code changes, a manual trigger here rebuilds the site.
+#   - Nightly schedule as backstop, in case a dispatch is lost.
+#
+# The site's own firebase-hosting-merge.yml is now manual-only (no auto triggers),
+# to consolidate CI in the data source (eapp-releases) instead of the consumer.
+on:
+  workflow_run:
+    workflows: ['Aggregate founder nodes']
+    types: [completed]
+  workflow_dispatch:
+  schedule:
+    - cron: '17 1 * * *'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout eapp-nextjs repo
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-nextjs-implementation-firebase
+          token: ${{ secrets.SITE_DISPATCH_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static export
+        run: npm run build
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CLOUD_50GRAMX }}
+          channelId: live
+          projectId: cloud-50gramx
