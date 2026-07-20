@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-07-20T14:03:28.833Z",
+  "generated_at": "2026-07-20T14:18:09.659Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
-  "node_count": 2,
+  "node_count": 3,
   "totals": {
     "vram_gib": 0,
-    "ram_pool_gib": 4.789,
-    "vcpu_seconds": 36000,
-    "storage_block_gib": 10.371,
-    "storage_object_gib": 6.223,
-    "egress_gbps": 2
+    "ram_pool_gib": 6.286,
+    "vcpu_seconds": 46800,
+    "storage_block_gib": 16.841,
+    "storage_object_gib": 10.104,
+    "egress_gbps": 3
   },
   "activity": {
-    "inferences_served": 0,
-    "tokens_served": 0,
-    "receipts_verified": 0,
+    "inferences_served": 11,
+    "tokens_served": 1376,
+    "receipts_verified": 53,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 0,
+    "displaced_cloud_usd": 0.01,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
     "vram_gib": 0,
-    "vcpu_seconds": 36000,
-    "est_tflops": 15.5,
-    "est_pflops": 0.0155
+    "vcpu_seconds": 46800,
+    "est_tflops": 30.65,
+    "est_pflops": 0.0307
   },
   "top500": {
     "as_of": "TOP500 November 2024 (HPL/LINPACK Rmax)",
     "source": "https://top500.org/lists/top500/2024/11/",
-    "est_network_tflops": 15.5,
-    "est_network_pflops": 0.0155,
-    "pct_of_rank_1": 0.0009,
-    "pct_of_list_sum": 0.0001,
+    "est_network_tflops": 30.65,
+    "est_network_pflops": 0.0307,
+    "pct_of_rank_1": 0.0018,
+    "pct_of_list_sum": 0.0003,
     "would_enter_top500": false,
     "rank_1": {
       "name": "El Capitan",
@@ -42,7 +42,30 @@
     "list_sum_pflops": 11720,
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
-  "models": [],
+  "models": [
+    {
+      "name": "gemma4:e2b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 4096,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 3.21,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "measured",
+        "vision": "declared",
+        "audio": "declared",
+        "thinking": "declared",
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 4.24,
+      "median_tokens_per_sec": 4.24
+    }
+  ],
   "nodes": [
     {
       "did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
@@ -111,7 +134,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-20T13:57:59Z",
+        "generated_at": "2026-07-20T14:12:59Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -373,7 +396,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:00240801122044a8ce99546492e0f211d488c9e6c9102c4c3c6bd1326d0e54fe6a8fc91936d6",
-        "generated_at": "2026-07-20T13:58:19Z",
+        "generated_at": "2026-07-20T14:13:34Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -536,6 +559,357 @@
             },
             "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLnRocm91Z2hwdXQiLCJ2YWx1ZSI6MTcwMS4yMTcxMDEyMTkwOTUsInVuaXQiOiJNQi9zIiwidHMiOjE3ODQ1MzcyOTI1OTYwMTcwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA0NGE4Y2U5OTU0NjQ5MmUwZjIxMWQ0ODhjOWU2YzkxMDJjNGMzYzZiZDEzMjZkMGU1NGZlNmE4ZmM5MTkzNmQ2IiwiZXh0cmEiOnsiZnNfZnJlZV9nYiI6MzAuNzU1MTk1NjE3Njc1NzgsImZzX3RvdGFsX2diIjoyMjguMjczODY0NzQ2MDkzNzUsImZzX3VzZWRfcGN0Ijo4Ni41MjcwNjIyODQ2NDQ2MywiZnN5bmNfbGF0ZW5jeV9tcyI6MjguMDMzMjkyLCJpb3BzX2NhdmVhdCI6IjQgS2lCIHJhbmRvbSByZWFkcyBhZ2FpbnN0IGEgZmlsZSBqdXN0IHdyaXR0ZW4sIHNvIHRoZSBwYWdlIGNhY2hlIGlzIHdhcm07IHRoaXMgbWVhc3VyZXMgdGhlIGZpbGVzeXN0ZW0gcGF0aCwgbm90IGEgY29sZCBkZXZpY2UiLCJwYXlsb2FkX21iIjo2NCwicmFuZG9tX3JlYWRfNGtfaW9wcyI6MTc4MTIzMS42NjAxOTA2MzcsInJlYWRfbWJwcyI6MTQxNTQuMjAzNDExMzg0MTg0LCJ3cml0ZV9tYnBzIjoxNzAxLjIxNzEwMTIxOTA5NX19"
           }
+        }
+      },
+      "class": "community"
+    },
+    {
+      "did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+      "peer_id": "12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+      "addrs": [
+        "/ip4/127.0.0.1/tcp/53590/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip4/127.0.0.1/udp/53590/quic-v1/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip4/192.168.0.11/tcp/53590/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip4/192.168.0.11/udp/53590/quic-v1/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip6/::1/tcp/53590/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip6/::1/udp/53590/quic-v1/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip6/2406:b400:1a:5836:891:4b12:b8fe:a279/tcp/53590/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip6/2406:b400:1a:5836:891:4b12:b8fe:a279/udp/53590/quic-v1/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip6/2406:b400:1a:5836:40db:380d:47fc:d2ad/tcp/53590/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD",
+        "/ip6/2406:b400:1a:5836:40db:380d:47fc:d2ad/udp/53590/quic-v1/p2p/12D3KooWJhx29vDTUowk1zNebUu2TXq3XjXuMpqETBme5DCt1gJD"
+      ],
+      "operator_ids": [
+        "epn.batch.v1",
+        "epn.brand.v1",
+        "epn.cluster.v1",
+        "epn.filesystem.v1",
+        "epn.gpu.v1",
+        "epn.llamacpp.v1",
+        "epn.memory.v1",
+        "epn.object.v1",
+        "epn.ollama-host-engine.v1",
+        "epn.ollama-pod.v1",
+        "epn.ollama.v1",
+        "epn.orchestrator.v1",
+        "epn.relay.v1",
+        "epn.remote-inference.v1",
+        "epn.research.v1",
+        "epn.vllm.v1"
+      ],
+      "kyc_level": 1,
+      "kyc_claim": {
+        "did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+        "display_name": "",
+        "kyc_level": 1,
+        "kyc_expires_at": 1815674194,
+        "issuer_did": "did:epn:0024080112208090a912b07223ee70dcbde09a46c3f5e2493f0a13a9098003ddc0bab42de94c",
+        "signature": "plkoLbX5omRFbroEQHz+Bkc9/sJShqxNdQ3E61l5cvKyZ/kaCIqNJ+zzWXLXsqcOQRhGitw/m9/VXEFGfcRkDQ=="
+      },
+      "connected_at": "2026-07-05T04:48:34.15857369Z",
+      "family": "did:epn:device:00240801122036e6fd5f917d6c94d6858a318513060b9ce690936c8506a162a2f8cd05c78fa0",
+      "family_att": {
+        "device_did": "did:epn:device:00240801122036e6fd5f917d6c94d6858a318513060b9ce690936c8506a162a2f8cd05c78fa0",
+        "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+        "role": "primary",
+        "issued_at": 1784556543,
+        "expires_at": 1816092543,
+        "signature": "7nmjQynzwv3RmS8ksZ44u7CD0zcH5ImJXISXpyNPFAHEBYFb7/v8F0xLqtB4qdbM0zll5Q4ZTeAt4NobSGlBDg=="
+      },
+      "price_per_unit": {
+        "egress_gb": 50000,
+        "gb_hour": 3,
+        "gb_month": 20,
+        "gpu_second": 100,
+        "relay_second": 1,
+        "vcpu_second": 10
+      },
+      "gpu_class": "apple",
+      "ram_pool_gib": 1.4973640441894531,
+      "ram_bw_class": "local-ddr",
+      "vcpu_seconds": 10800,
+      "arch": "x86_64",
+      "simd": "avx2",
+      "storage_block_gib": 6.469490051269531,
+      "storage_object_gib": 3.8816940307617185,
+      "storage_archival_gib": 2.5877960205078128,
+      "redundancy": "none",
+      "egress_gbps": 1,
+      "region": {
+        "community_id": "IN_500038",
+        "country_code": "IN",
+        "region": "Telangana",
+        "city": "Hyderabad",
+        "pincode": "500038",
+        "confidence": "verified",
+        "score": 0.9
+      },
+      "energy_kwh_rate": 0.05,
+      "energy_source": "unknown",
+      "carbon_intensity": 475,
+      "models": [
+        {
+          "name": "gemma4:e2b",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 3.21,
+          "pulled": true,
+          "effective_ctx": 4096,
+          "declared_caps": {
+            "tools": true,
+            "vision": true,
+            "audio": true,
+            "thinking": true
+          },
+          "measured_caps": {
+            "tools": true,
+            "structured_output": true
+          },
+          "bench_digest": "L1666wNNgLshpoB0XwCXVw91/WQth2YuiZ3xMdZkDvg=",
+          "benched_at": "2026-07-17T13:41:37.776088Z",
+          "tokens_per_sec": 4.236022935244285,
+          "probe_version": 4,
+          "engine": "ollama-host",
+          "warm": true
+        }
+      ],
+      "proof_snapshot": {
+        "schema_version": "epn.proof.snapshot.v1",
+        "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+        "generated_at": "2026-07-20T14:14:25Z",
+        "metrics": {
+          "agent_work": {
+            "turns": 6,
+            "tool_calls": 2,
+            "prompt_tokens": 4914,
+            "output_tokens": 1081,
+            "vcpu_seconds": 4057.0536703439993,
+            "gpu_seconds": 1352.3512234480002,
+            "energy_kwh": 0.03944357735056667,
+            "energy_joules": 141996.87846204,
+            "carbon_grams": 18.73569924151917,
+            "measured_energy_turns": 0
+          },
+          "disputes_resolved": 0,
+          "inference_engine": "ollama-host",
+          "inferences_served": 11,
+          "models_bench_detail": {
+            "gemma4:e2b": {
+              "sample_count": 11,
+              "total_seconds": 324.83299099999994,
+              "total_tokens": 1376
+            }
+          },
+          "models_tokens_per_sec": {
+            "gemma4:e2b": 4.236022935244285
+          },
+          "proofs_issued": 0,
+          "receipts_verified": 53,
+          "since": "2026-07-05T04:48:31Z",
+          "tokens_served": 1376
+        },
+        "resources": {
+          "cpu": {
+            "resource_type": "cpu",
+            "status": "signed",
+            "metric": "cpu.throughput",
+            "unit": "hashes/s",
+            "result": {
+              "result": {
+                "metric": "cpu.throughput",
+                "value": 218.0777545052247,
+                "unit": "hashes/s",
+                "ts": 1784556622293305000,
+                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+                "extra": {
+                  "arch": "amd64",
+                  "cache_l1_data_kb": 32,
+                  "cache_l1_instruction_kb": 32,
+                  "cache_l2_unified_kb": 256,
+                  "cache_l3_unified_kb": 3072,
+                  "cores_logical": 4,
+                  "cores_physical": 2,
+                  "cpu_model": "Intel(R) Core(TM) i5-5350U CPU @ 1.80GHz",
+                  "cpu_sockets": 1,
+                  "duration_ms": 504,
+                  "multicore_hashes_per_sec": 509.97433399985863,
+                  "os": "darwin",
+                  "payload": "sha256(1MB) single-threaded",
+                  "scaling_efficiency": 0.5846244326443216,
+                  "sustained_ratio": 1.1619001259819741,
+                  "threads_per_core": 2
+                }
+              },
+              "signature": "1HqzfNoiW8dX2uNeRvloTcU2CO9+MoLstvkfmQjcZq0x7703vHLsFYQ0J281DbiMVRuVM21KkpT3JmofzxXLDQ==",
+              "hash": "K9uRi0wguph44Ruk4cJyJIi2NuNunCV2TtLleTE2bfA="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoyMTguMDc3NzU0NTA1MjI0NywidW5pdCI6Imhhc2hlcy9zIiwidHMiOjE3ODQ1NTY2MjIyOTMzMDUwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsiYXJjaCI6ImFtZDY0IiwiY2FjaGVfbDFfZGF0YV9rYiI6MzIsImNhY2hlX2wxX2luc3RydWN0aW9uX2tiIjozMiwiY2FjaGVfbDJfdW5pZmllZF9rYiI6MjU2LCJjYWNoZV9sM191bmlmaWVkX2tiIjozMDcyLCJjb3Jlc19sb2dpY2FsIjo0LCJjb3Jlc19waHlzaWNhbCI6MiwiY3B1X21vZGVsIjoiSW50ZWwoUikgQ29yZShUTSkgaTUtNTM1MFUgQ1BVIEAgMS44MEdIeiIsImNwdV9zb2NrZXRzIjoxLCJkdXJhdGlvbl9tcyI6NTA0LCJtdWx0aWNvcmVfaGFzaGVzX3Blcl9zZWMiOjUwOS45NzQzMzM5OTk4NTg2Mywib3MiOiJkYXJ3aW4iLCJwYXlsb2FkIjoic2hhMjU2KDFNQikgc2luZ2xlLXRocmVhZGVkIiwic2NhbGluZ19lZmZpY2llbmN5IjowLjU4NDYyNDQzMjY0NDMyMTYsInN1c3RhaW5lZF9yYXRpbyI6MS4xNjE5MDAxMjU5ODE5NzQxLCJ0aHJlYWRzX3Blcl9jb3JlIjoyfX0="
+          },
+          "energy": {
+            "resource_type": "energy",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "energy.joules_per_token",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "gpu": {
+            "resource_type": "gpu",
+            "status": "configured_not_yet_benchmarked",
+            "label": "configured, not-yet-benchmarked",
+            "metric": "gpu.throughput",
+            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
+          },
+          "inference": {
+            "resource_type": "inference",
+            "status": "signed",
+            "metric": "inference.tokens_per_sec",
+            "unit": "tokens/s",
+            "models": {
+              "gemma4:e2b": {
+                "result": {
+                  "metric": "inference.tokens_per_sec",
+                  "value": 4.236022935244285,
+                  "unit": "tokens/s",
+                  "ts": 1784556865692082000,
+                  "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+                  "extra": {
+                    "model": "gemma4:e2b",
+                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
+                    "runtime": "ollama-host",
+                    "sample_count": 11,
+                    "source": "metrics.models_tokens_per_sec",
+                    "total_seconds": 324.83299099999994,
+                    "total_tokens": 1376
+                  }
+                },
+                "signature": "Z4pqJJ0xPC0CWrXpZ+fH+Mb3BFQMurEsAY4F2s4oanKs5GxW3B1jkbKO/Qo/RABtCLk4KDnYBClRDKka0nazCg==",
+                "hash": "TgfOQdeBSizmg52nyUgPAXAtUSLoKF2yt+Z4ytLxE2s="
+              }
+            },
+            "model_signing_payloads": {
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NC4yMzYwMjI5MzUyNDQyODUsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0NTU2ODY1NjkyMDgyMDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoxMSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjozMjQuODMyOTkwOTk5OTk5OTQsInRvdGFsX3Rva2VucyI6MTM3Nn19"
+            }
+          },
+          "mem": {
+            "resource_type": "mem",
+            "status": "signed",
+            "metric": "mem.bandwidth",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "mem.bandwidth",
+                "value": 5723.541350667481,
+                "unit": "MB/s",
+                "ts": 1784556622970742000,
+                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+                "extra": {
+                  "method": "sequential memcpy for bandwidth; dependent pointer chase over a buffer larger than cache for latency",
+                  "payload_mb": 64,
+                  "random_access_ns": 68.66916561126709,
+                  "total_mb": 8192
+                }
+              },
+              "signature": "Rqwq37uo1+n8Gwfe9RAxOu4R0iDxngEY/hSObRyWHZirFBHAGIz7Ivs3arSqUBoMysFWsPsTT++itMlOII16Ag==",
+              "hash": "OfiJV2pHFKtsNzn1YCzlGmueJ484lpAiU2HGvUHwrtk="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjU3MjMuNTQxMzUwNjY3NDgxLCJ1bml0IjoiTUIvcyIsInRzIjoxNzg0NTU2NjIyOTcwNzQyMDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7Im1ldGhvZCI6InNlcXVlbnRpYWwgbWVtY3B5IGZvciBiYW5kd2lkdGg7IGRlcGVuZGVudCBwb2ludGVyIGNoYXNlIG92ZXIgYSBidWZmZXIgbGFyZ2VyIHRoYW4gY2FjaGUgZm9yIGxhdGVuY3kiLCJwYXlsb2FkX21iIjo2NCwicmFuZG9tX2FjY2Vzc19ucyI6NjguNjY5MTY1NjExMjY3MDksInRvdGFsX21iIjo4MTkyfX0="
+          },
+          "network": {
+            "resource_type": "network",
+            "status": "signed",
+            "metric": "tunnel.throughput",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "tunnel.throughput",
+                "value": 314.8736925509504,
+                "unit": "MB/s",
+                "ts": 1784556624097657000,
+                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+                "extra": {
+                  "direct_rtt_ms": 0.053408495,
+                  "direct_throughput_mbps": 1247.8291671956943,
+                  "interface": "en0",
+                  "mode": "loopback",
+                  "mtu_bytes": 1500,
+                  "payload_mb": 8,
+                  "rtt_ms": 0.272952645,
+                  "setup_ms": 0.20987,
+                  "tunnel_overhead_pct": 74.76628204976319
+                }
+              },
+              "signature": "+B1NXo2zq+PXTy7/hPY7AqKVKm01z/Vv+tiVqPliZWLfZEtjQlK5guviyyJinTNCGOzTFGoehv5C/yfsNFUSBQ==",
+              "hash": "DXYU+NncMbnvXf4UDOXKim8mC15ylNAVrPCLFkgsPQQ="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjozMTQuODczNjkyNTUwOTUwNCwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4NDU1NjYyNDA5NzY1NzAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDg0MTQ2NGE0YTZkNDVhOGJkNzI5ZTAzMmI0YzFiMDNkOWFkNjlhNThjNzZlMGE1YzUxYmQwMjRiZmRkNjg2NzIiLCJleHRyYSI6eyJkaXJlY3RfcnR0X21zIjowLjA1MzQwODQ5NSwiZGlyZWN0X3Rocm91Z2hwdXRfbWJwcyI6MTI0Ny44MjkxNjcxOTU2OTQzLCJpbnRlcmZhY2UiOiJlbjAiLCJtb2RlIjoibG9vcGJhY2siLCJtdHVfYnl0ZXMiOjE1MDAsInBheWxvYWRfbWIiOjgsInJ0dF9tcyI6MC4yNzI5NTI2NDUsInNldHVwX21zIjowLjIwOTg3LCJ0dW5uZWxfb3ZlcmhlYWRfcGN0Ijo3NC43NjYyODIwNDk3NjMxOX19"
+          },
+          "storage": {
+            "resource_type": "storage",
+            "status": "signed",
+            "metric": "storage.throughput",
+            "unit": "MB/s",
+            "result": {
+              "result": {
+                "metric": "storage.throughput",
+                "value": 144.36176299908314,
+                "unit": "MB/s",
+                "ts": 1784556623747974000,
+                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+                "extra": {
+                  "fs_free_gb": 18.875839233398438,
+                  "fs_total_gb": 233.5667953491211,
+                  "fs_used_pct": 91.9184406305768,
+                  "fsync_latency_ms": 49.417612,
+                  "iops_caveat": "4 KiB random reads against a file just written, so the page cache is warm; this measures the filesystem path, not a cold device",
+                  "payload_mb": 64,
+                  "random_read_4k_iops": 437999.5422904783,
+                  "read_mbps": 2607.3871760143193,
+                  "write_mbps": 144.36176299908314
+                }
+              },
+              "signature": "y/+IoD0Rn1CI7gVe496AfbCFopSMbqwOPlfyzFJySEv/1y80lmslInq2SpjUn3BYiMu/HUs/g4ImPhhB8PHJDw==",
+              "hash": "Vm+2OpqWN7mq68Mg2rTAXZVKF2IXciYtBwZDQUnXGH0="
+            },
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLnRocm91Z2hwdXQiLCJ2YWx1ZSI6MTQ0LjM2MTc2Mjk5OTA4MzE0LCJ1bml0IjoiTUIvcyIsInRzIjoxNzg0NTU2NjIzNzQ3OTc0MDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7ImZzX2ZyZWVfZ2IiOjE4Ljg3NTgzOTIzMzM5ODQzOCwiZnNfdG90YWxfZ2IiOjIzMy41NjY3OTUzNDkxMjExLCJmc191c2VkX3BjdCI6OTEuOTE4NDQwNjMwNTc2OCwiZnN5bmNfbGF0ZW5jeV9tcyI6NDkuNDE3NjEyLCJpb3BzX2NhdmVhdCI6IjQgS2lCIHJhbmRvbSByZWFkcyBhZ2FpbnN0IGEgZmlsZSBqdXN0IHdyaXR0ZW4sIHNvIHRoZSBwYWdlIGNhY2hlIGlzIHdhcm07IHRoaXMgbWVhc3VyZXMgdGhlIGZpbGVzeXN0ZW0gcGF0aCwgbm90IGEgY29sZCBkZXZpY2UiLCJwYXlsb2FkX21iIjo2NCwicmFuZG9tX3JlYWRfNGtfaW9wcyI6NDM3OTk5LjU0MjI5MDQ3ODMsInJlYWRfbWJwcyI6MjYwNy4zODcxNzYwMTQzMTkzLCJ3cml0ZV9tYnBzIjoxNDQuMzYxNzYyOTk5MDgzMTR9fQ=="
+          }
+        },
+        "region": {
+          "community_id": "IN_500038",
+          "country_code": "IN",
+          "region": "Telangana",
+          "city": "Hyderabad",
+          "pincode": "500038",
+          "confidence": "verified",
+          "score": 0.9
+        },
+        "model_probes": {
+          "gemma4:e2b": {
+            "result": {
+              "metric": "model.probe",
+              "value": 1,
+              "unit": "pass",
+              "ts": 1784296297947087000,
+              "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
+              "extra": {
+                "audio": false,
+                "effective_ctx": 4096,
+                "model": "gemma4:e2b",
+                "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
+                "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
+                "probe_version": 4,
+                "runtime": "ollama-host",
+                "structured_out": true,
+                "thinking": false,
+                "tools": true,
+                "tools_loop_terminated": true,
+                "vision": false
+              }
+            },
+            "signature": "Uh/QNNzSMPGyvd1xQqc5wvV2HhIkLTD2GvG+LLe4hzGgJtC37VpKeuUIFqYuKk96sfci9hnYeH+PQL9AYenBDA==",
+            "hash": "L1666wNNgLshpoB0XwCXVw91/WQth2YuiZ3xMdZkDvg="
+          }
+        },
+        "model_probe_signing_payloads": {
+          "gemma4:e2b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg0Mjk2Mjk3OTQ3MDg3MDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJnZW1tYTQ6ZTJiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjQsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInN0cnVjdHVyZWRfb3V0Ijp0cnVlLCJ0aGlua2luZyI6ZmFsc2UsInRvb2xzIjp0cnVlLCJ0b29sc19sb29wX3Rlcm1pbmF0ZWQiOnRydWUsInZpc2lvbiI6ZmFsc2V9fQ=="
         }
       },
       "class": "community"
