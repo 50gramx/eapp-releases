@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-07-23T12:10:39.840Z",
+  "generated_at": "2026-07-23T12:25:31.106Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
   "node_count": 2,
@@ -12,8 +12,8 @@
     "egress_gbps": 2
   },
   "activity": {
-    "inferences_served": 561,
-    "tokens_served": 138111,
+    "inferences_served": 564,
+    "tokens_served": 138410,
     "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
@@ -42,7 +42,30 @@
     "list_sum_pflops": 11720,
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
-  "models": [],
+  "models": [
+    {
+      "name": "gemma4:e2b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 4096,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 3.21,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "measured",
+        "vision": "measured",
+        "audio": "declared",
+        "thinking": "declared",
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 11.38,
+      "median_tokens_per_sec": 11.38
+    }
+  ],
   "nodes": [
     {
       "did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
@@ -111,7 +134,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-07-23T12:05:47Z",
+        "generated_at": "2026-07-23T12:20:47Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -398,31 +421,58 @@
       "energy_kwh_rate": 0.07,
       "energy_source": "unknown",
       "carbon_intensity": 475,
+      "models": [
+        {
+          "name": "gemma4:e2b",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 3.21,
+          "pulled": true,
+          "effective_ctx": 4096,
+          "declared_caps": {
+            "tools": true,
+            "vision": true,
+            "audio": true,
+            "thinking": true
+          },
+          "measured_caps": {
+            "tools": true,
+            "vision": true,
+            "structured_output": true
+          },
+          "bench_digest": "qP3mchjLe8MmsxxgPYawC9sm+7KmmIvg0YOWe0QEKWE=",
+          "benched_at": "2026-07-23T12:09:51.6934013Z",
+          "tokens_per_sec": 11.378827384402921,
+          "probe_version": 4,
+          "engine": "ollama",
+          "warm": true
+        }
+      ],
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "generated_at": "2026-07-23T12:08:13Z",
+        "generated_at": "2026-07-23T12:23:13Z",
         "metrics": {
           "agent_work": {
-            "turns": 106,
-            "tool_calls": 42,
-            "prompt_tokens": 134029,
-            "output_tokens": 33370,
-            "vcpu_seconds": 171498.2033044,
+            "turns": 107,
+            "tool_calls": 43,
+            "prompt_tokens": 134145,
+            "output_tokens": 33607,
+            "vcpu_seconds": 171713.5468895,
             "gpu_seconds": 0,
-            "energy_kwh": 0.23819194903388902,
-            "energy_joules": 857491.0165220002,
-            "carbon_grams": 113.14117579109723,
+            "energy_kwh": 0.2384910373465279,
+            "energy_joules": 858567.7344475002,
+            "carbon_grams": 113.2832427396007,
             "measured_energy_turns": 0
           },
           "disputes_resolved": 0,
           "inference_engine": "ollama",
-          "inferences_served": 561,
+          "inferences_served": 564,
           "models_bench_detail": {
             "gemma4:e2b": {
-              "sample_count": 469,
-              "total_seconds": 15528.121623992003,
-              "total_tokens": 117271
+              "sample_count": 473,
+              "total_seconds": 15591.781142992004,
+              "total_tokens": 117823
             },
             "gemma4:e2b-it-qat": {
               "sample_count": 36,
@@ -456,7 +506,7 @@
             }
           },
           "models_tokens_per_sec": {
-            "gemma4:e2b": 7.552169080052048,
+            "gemma4:e2b": 7.556737676051693,
             "gemma4:e2b-it-qat": 8.928833401968776,
             "google/gemma-4-E2B-it-qat-q4_0-gguf": 1.9937339789233837,
             "lfm2.5-thinking:1.2b": 16.89770033938807,
@@ -467,7 +517,7 @@
           "proofs_issued": 0,
           "receipts_verified": 0,
           "since": "2026-06-23T08:27:24Z",
-          "tokens_served": 138111
+          "tokens_served": 138410
         },
         "resources": {
           "cpu": {
@@ -478,26 +528,26 @@
             "result": {
               "result": {
                 "metric": "cpu.throughput",
-                "value": 1819.9194680641092,
+                "value": 1874.0124224247763,
                 "unit": "hashes/s",
-                "ts": 1784807500816016100,
+                "ts": 1784808540641941500,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
                   "arch": "amd64",
                   "cores_logical": 8,
                   "cpu_model": "Intel64 Family 6 Model 151 Stepping 5, GenuineIntel",
                   "duration_ms": 500,
-                  "multicore_hashes_per_sec": 9505.215280038188,
+                  "multicore_hashes_per_sec": 9219.32119409541,
                   "os": "windows",
                   "payload": "sha256(1MB) single-threaded",
-                  "scaling_efficiency": 0.6528596077213452,
-                  "sustained_ratio": 1.0360429137724363
+                  "scaling_efficiency": 0.6149453095784826,
+                  "sustained_ratio": 0.989814461059929
                 }
               },
-              "signature": "eAHJlVhx+7tzmx4Fo5AZHTaxiUosZPFqUSnA44IqYxM2Wi70euobc3mE9d4d2VM0YcsrltKblLx4qGvKNyaXBg==",
-              "hash": "jSIcNDtIQQpehNwypdYI+r9pz4HuKcSeW+fh0C459vE="
+              "signature": "zrsPrg3IVjeVVTv9Pii7k4Hte/yOhajmw8nS0J+kM/364Tk/TGyzlrH9FL6Qp91GifbVLAbwVCso8ca/DcC+DA==",
+              "hash": "t3rP6ScyZkXXTqoqWirVrwwYPrlxsclWiq/IG3PxnSc="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoxODE5LjkxOTQ2ODA2NDEwOTIsInVuaXQiOiJoYXNoZXMvcyIsInRzIjoxNzg0ODA3NTAwODE2MDE2MjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImFyY2giOiJhbWQ2NCIsImNvcmVzX2xvZ2ljYWwiOjgsImNwdV9tb2RlbCI6IkludGVsNjQgRmFtaWx5IDYgTW9kZWwgMTUxIFN0ZXBwaW5nIDUsIEdlbnVpbmVJbnRlbCIsImR1cmF0aW9uX21zIjo1MDAsIm11bHRpY29yZV9oYXNoZXNfcGVyX3NlYyI6OTUwNS4yMTUyODAwMzgxODgsIm9zIjoid2luZG93cyIsInBheWxvYWQiOiJzaGEyNTYoMU1CKSBzaW5nbGUtdGhyZWFkZWQiLCJzY2FsaW5nX2VmZmljaWVuY3kiOjAuNjUyODU5NjA3NzIxMzQ1Miwic3VzdGFpbmVkX3JhdGlvIjoxLjAzNjA0MjkxMzc3MjQzNjN9fQ=="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoxODc0LjAxMjQyMjQyNDc3NjMsInVuaXQiOiJoYXNoZXMvcyIsInRzIjoxNzg0ODA4NTQwNjQxOTQxNjAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImFyY2giOiJhbWQ2NCIsImNvcmVzX2xvZ2ljYWwiOjgsImNwdV9tb2RlbCI6IkludGVsNjQgRmFtaWx5IDYgTW9kZWwgMTUxIFN0ZXBwaW5nIDUsIEdlbnVpbmVJbnRlbCIsImR1cmF0aW9uX21zIjo1MDAsIm11bHRpY29yZV9oYXNoZXNfcGVyX3NlYyI6OTIxOS4zMjExOTQwOTU0MSwib3MiOiJ3aW5kb3dzIiwicGF5bG9hZCI6InNoYTI1NigxTUIpIHNpbmdsZS10aHJlYWRlZCIsInNjYWxpbmdfZWZmaWNpZW5jeSI6MC42MTQ5NDUzMDk1Nzg0ODI2LCJzdXN0YWluZWRfcmF0aW8iOjAuOTg5ODE0NDYxMDU5OTI5fX0="
           },
           "energy": {
             "resource_type": "energy",
@@ -522,29 +572,29 @@
               "gemma4:e2b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
-                  "value": 7.552169080052048,
+                  "value": 7.556737676051693,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "gemma4:e2b",
                     "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
                     "runtime": "ollama",
-                    "sample_count": 469,
+                    "sample_count": 473,
                     "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 15528.121623992003,
-                    "total_tokens": 117271
+                    "total_seconds": 15591.781142992004,
+                    "total_tokens": 117823
                   }
                 },
-                "signature": "UUxaQex+pY3ajbYGRJI1OWSo6hxKpYsI0mCWwIdPG72FEGNvR3otD1xYWlHvth4zIcGeLmuEUq6yhKSkGJkGBQ==",
-                "hash": "3hw+uKw1FBcpzgZTi7atQHBx7DDTbYvRw23vEkhUOi0="
+                "signature": "i0TnHwKDqvm5qxmVfcz6S2vltyh6+86Sa9yGnjiq9XAlYO482TJL6qEoyyUK29t2xgmgBviqgHnNX62U2g9pAA==",
+                "hash": "eies/K55JoINX4HyeX2picJT1S1tghOEIPfeYRRxmoY="
               },
               "gemma4:e2b-it-qat": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 8.928833401968776,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "gemma4:e2b-it-qat",
@@ -556,15 +606,15 @@
                     "total_tokens": 7826
                   }
                 },
-                "signature": "ZR4syfG8DETnwhCHQg8DPyCCfRi/LrrkPqBiEdWbLmULQLsnpIbtxnHCIMcLmHHBs/ZMdO7lymk7lnnervcVCw==",
-                "hash": "9KrLmX7WXubIqXW4Os/WOgvykVSB0uG0kxWhAE656+k="
+                "signature": "LSSWHHna//aUDUwoHCulNem138JF8RlTgBQq+5/6p8zp0hkkmSMCp4PgZEH8iVt+M8tUcRly/QufrOC+56b+Bw==",
+                "hash": "VREWTu8By/g8Q7YSxKwjsQLhJN+a3trJp+Dm002uDtU="
               },
               "google/gemma-4-E2B-it-qat-q4_0-gguf": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 1.9937339789233837,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "google/gemma-4-E2B-it-qat-q4_0-gguf",
@@ -576,15 +626,15 @@
                     "total_tokens": 84
                   }
                 },
-                "signature": "thMvuT7BFW96JqTKSLIEeIYA1grX5coeYQxPOh2qrg8ZTCvq7oWN04gtsHU0VVODz6S0RUU4dXUN2DCy/IQpBw==",
-                "hash": "s2w+X7M3j8TtrNN+tKDQp4YjBVrHFDeI4L4VTLKaUVM="
+                "signature": "ORmL99RHkcY65cHJ+jYv+SGHMmzE3+PiQ/NAlZ47Q0hFQiPls3zty6lGUOIs82hDU2M+3Ejf48B9P9wTk+vLCA==",
+                "hash": "UvLH3YPX87Qszz/yt7Q7awjD+P7TwEDDX4517qpUSeg="
               },
               "lfm2.5-thinking:1.2b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 16.89770033938807,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "lfm2.5-thinking:1.2b",
@@ -596,15 +646,15 @@
                     "total_tokens": 5313
                   }
                 },
-                "signature": "tXQELODm2EeeAcFDv8e70cZfMji2VLPSUsih3By7uja2ylk3CeLkSo2d9K/Ug5gGR+v8Nuth1rcBVqnVV83ECQ==",
-                "hash": "cfVhdVFlfczPvjesMTCJPe5mCs6PHTBkY8a0MMraLj0="
+                "signature": "ijmbLgkyu7mRSHqHn+H/kcT14JBHTr+ESxnoI+o1f1Boc231o4o+3NISeFggj/ZCvL1/MspItIHkXmnAkbWHBQ==",
+                "hash": "vWbm8s5wtvkRyYe9psbM5g6ymMd0HyIkF/SEiXQ2J+k="
               },
               "phi3:3.8b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 7.725546680633756,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "phi3:3.8b",
@@ -616,15 +666,15 @@
                     "total_tokens": 295
                   }
                 },
-                "signature": "9GOz+61rCCcf7hrR079oBlCr9Epl5/RXBEBB0GTHwH5UfwhNNdmygI+tVAcrImP5SV/sQmyFBAzT50rFQA/GDQ==",
-                "hash": "6HcyOR7/DDzmSuXD6KKQy0eZ+3nz7BVDxIhmyrJD1a4="
+                "signature": "j7ENpspFSv5Ty1/sl/1rSVKJTXzQ3kdBGMC8Ru8+St2n1Lhb+LiYz4h9AvcFlF8w3sLXY5zGa5AdnP0YrfJSDQ==",
+                "hash": "9nM/k59aWAIz+WvXvXoiaQNIfd6NeJXbcFhVSRS77Xc="
               },
               "qwen3:0.6b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 18.17466780256037,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "qwen3:0.6b",
@@ -636,15 +686,15 @@
                     "total_tokens": 10899
                   }
                 },
-                "signature": "vrk4jhPLebq+Fbz4iOaHTNmf4b/uA4ddUUVRn3GI6R1Bag4HAQknRQ2icyLZwAYQGCE90cBijcKklU2Jrq3hDQ==",
-                "hash": "nliSKvWDsH00DlS9/oF7/Z8WKtbqTcWaBkDK/PqZmwM="
+                "signature": "x989CX+PlWMzI2R8ksLPulaXBlenITywzTcenDS6Cur4M8lBthT+R+av6PdBqNR9/Y3QWQm6bxOOnn9HTm1lCw==",
+                "hash": "CMTItTxlGORMAhFxfVehNJOKovCt5g0lnf7dq6x71qE="
               },
               "tinyllama:1.1b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 29.913964262078096,
                   "unit": "tokens/s",
-                  "ts": 1784808493810268400,
+                  "ts": 1784809393863336400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "tinyllama:1.1b",
@@ -656,18 +706,18 @@
                     "total_tokens": 226
                   }
                 },
-                "signature": "UidBOvODk9j+c5mXs5ghZePJ3nJX7MjgB8E6BkTi1mAqupQJEtonFRpn4Cdlg29sj1RWZqgHhfS/YQMWFmVABw==",
-                "hash": "mz9HtLzNrK5Od+ucDGKejBv3Cb+TysRQRHEcalpc22w="
+                "signature": "Q2IhyO5OujEK2F3vWc/brrZ7ndvO6RnSm8kIFl4g7iJWxRxH2Ih07wV4/bJl94bh4TPVik2kZT1NqK9YmL1kCA==",
+                "hash": "QhgvHv8853YS3fJ5Ke/f0XQw9Zuwj8ddZsCZkoxVxIc="
               }
             },
             "model_signing_payloads": {
-              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny41NTIxNjkwODAwNTIwNDgsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA4NDkzODEwMjY4NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NDY5LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjE1NTI4LjEyMTYyMzk5MjAwMywidG90YWxfdG9rZW5zIjoxMTcyNzF9fQ==",
-              "gemma4:e2b-it-qat": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OC45Mjg4MzM0MDE5Njg3NzYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA4NDkzODEwMjY4NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYi1pdC1xYXQiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjM2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjg3Ni40ODYyODI5OTgwMDAxLCJ0b3RhbF90b2tlbnMiOjc4MjZ9fQ==",
-              "google/gemma-4-E2B-it-qat-q4_0-gguf": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MS45OTM3MzM5Nzg5MjMzODM3LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NDgwODQ5MzgxMDI2ODUwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6Imdvb2dsZS9nZW1tYS00LUUyQi1pdC1xYXQtcTRfMC1nZ3VmIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjQyLjEzMiwidG90YWxfdG9rZW5zIjo4NH19",
-              "lfm2.5-thinking:1.2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuODk3NzAwMzM5Mzg4MDcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA4NDkzODEwMjY4NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoibGZtMi41LXRoaW5raW5nOjEuMmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjYsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzE0LjQyMTQ4Mjk5OTk5OTk3LCJ0b3RhbF90b2tlbnMiOjUzMTN9fQ==",
-              "phi3:3.8b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MjU1NDY2ODA2MzM3NTYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA4NDkzODEwMjY4NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicGhpMzozLjhiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM4LjE4NSwidG90YWxfdG9rZW5zIjoyOTV9fQ==",
-              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTguMTc0NjY3ODAyNTYwMzcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA4NDkzODEwMjY4NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NTksInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NTk5LjY4MDgzNjk5Nzk5OTcsInRvdGFsX3Rva2VucyI6MTA4OTl9fQ==",
-              "tinyllama:1.1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjkuOTEzOTY0MjYyMDc4MDk2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NDgwODQ5MzgxMDI2ODUwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InRpbnlsbGFtYToxLjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjcuNTU1LCJ0b3RhbF90b2tlbnMiOjIyNn19"
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny41NTY3Mzc2NzYwNTE2OTMsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA5MzkzODYzMzM2NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NDczLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjE1NTkxLjc4MTE0Mjk5MjAwNCwidG90YWxfdG9rZW5zIjoxMTc4MjN9fQ==",
+              "gemma4:e2b-it-qat": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OC45Mjg4MzM0MDE5Njg3NzYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA5MzkzODYzMzM2NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYi1pdC1xYXQiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjM2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjg3Ni40ODYyODI5OTgwMDAxLCJ0b3RhbF90b2tlbnMiOjc4MjZ9fQ==",
+              "google/gemma-4-E2B-it-qat-q4_0-gguf": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MS45OTM3MzM5Nzg5MjMzODM3LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NDgwOTM5Mzg2MzMzNjUwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6Imdvb2dsZS9nZW1tYS00LUUyQi1pdC1xYXQtcTRfMC1nZ3VmIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjQyLjEzMiwidG90YWxfdG9rZW5zIjo4NH19",
+              "lfm2.5-thinking:1.2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuODk3NzAwMzM5Mzg4MDcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA5MzkzODYzMzM2NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoibGZtMi41LXRoaW5raW5nOjEuMmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjYsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzE0LjQyMTQ4Mjk5OTk5OTk3LCJ0b3RhbF90b2tlbnMiOjUzMTN9fQ==",
+              "phi3:3.8b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MjU1NDY2ODA2MzM3NTYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA5MzkzODYzMzM2NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicGhpMzozLjhiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM4LjE4NSwidG90YWxfdG9rZW5zIjoyOTV9fQ==",
+              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTguMTc0NjY3ODAyNTYwMzcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg0ODA5MzkzODYzMzM2NTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NTksInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NTk5LjY4MDgzNjk5Nzk5OTcsInRvdGFsX3Rva2VucyI6MTA4OTl9fQ==",
+              "tinyllama:1.1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjkuOTEzOTY0MjYyMDc4MDk2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NDgwOTM5Mzg2MzMzNjUwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InRpbnlsbGFtYToxLjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjcuNTU1LCJ0b3RhbF90b2tlbnMiOjIyNn19"
             }
           },
           "mem": {
@@ -678,22 +728,22 @@
             "result": {
               "result": {
                 "metric": "mem.bandwidth",
-                "value": 5345.304056922715,
+                "value": 5764.695469779602,
                 "unit": "MB/s",
-                "ts": 1784807501356633300,
+                "ts": 1784808541187651300,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
-                  "available_mb": 6438.9296875,
+                  "available_mb": 6283.984375,
                   "method": "sequential memcpy for bandwidth; dependent pointer chase over a buffer larger than cache for latency",
                   "payload_mb": 64,
-                  "random_access_ns": 14.803028106689453,
+                  "random_access_ns": 15.695762634277344,
                   "total_mb": 16125.421875
                 }
               },
-              "signature": "LjZNcQH2FJfauf3+ibYJlmeUT26cG7Om+85eaoK25qAOmIQssMH32oPfgW7hwqGyA71M8ns78rrg18zEoOEZCA==",
-              "hash": "+v6/0+H7stBIAuP7u18ilpmOiaAIK065kvasGjaBxGg="
+              "signature": "G2NWgG9q5dSOt6Eb03qeXIFr3ItrLTSuH9GKHyIySRaBqWQlnIfdaGGUxbl3i0fTzB0OOKLo63YJDok5ZOIRBA==",
+              "hash": "+h7+tS4QjeS2vsVSneoBNVt2MVYCo0iX/cf2Sk7++Fc="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjUzNDUuMzA0MDU2OTIyNzE1LCJ1bml0IjoiTUIvcyIsInRzIjoxNzg0ODA3NTAxMzU2NjMzMzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF2YWlsYWJsZV9tYiI6NjQzOC45Mjk2ODc1LCJtZXRob2QiOiJzZXF1ZW50aWFsIG1lbWNweSBmb3IgYmFuZHdpZHRoOyBkZXBlbmRlbnQgcG9pbnRlciBjaGFzZSBvdmVyIGEgYnVmZmVyIGxhcmdlciB0aGFuIGNhY2hlIGZvciBsYXRlbmN5IiwicGF5bG9hZF9tYiI6NjQsInJhbmRvbV9hY2Nlc3NfbnMiOjE0LjgwMzAyODEwNjY4OTQ1MywidG90YWxfbWIiOjE2MTI1LjQyMTg3NX19"
+            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjU3NjQuNjk1NDY5Nzc5NjAyLCJ1bml0IjoiTUIvcyIsInRzIjoxNzg0ODA4NTQxMTg3NjUxNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF2YWlsYWJsZV9tYiI6NjI4My45ODQzNzUsIm1ldGhvZCI6InNlcXVlbnRpYWwgbWVtY3B5IGZvciBiYW5kd2lkdGg7IGRlcGVuZGVudCBwb2ludGVyIGNoYXNlIG92ZXIgYSBidWZmZXIgbGFyZ2VyIHRoYW4gY2FjaGUgZm9yIGxhdGVuY3kiLCJwYXlsb2FkX21iIjo2NCwicmFuZG9tX2FjY2Vzc19ucyI6MTUuNjk1NzYyNjM0Mjc3MzQ0LCJ0b3RhbF9tYiI6MTYxMjUuNDIxODc1fX0="
           },
           "network": {
             "resource_type": "network",
@@ -703,26 +753,26 @@
             "result": {
               "result": {
                 "metric": "tunnel.throughput",
-                "value": 504.8465266558966,
+                "value": 452.0463573539467,
                 "unit": "MB/s",
-                "ts": 1784807501781750000,
+                "ts": 1784808541608525000,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
-                  "direct_rtt_ms": 0,
-                  "direct_throughput_mbps": 504.69046702794094,
+                  "direct_rtt_ms": 0.01807,
+                  "direct_throughput_mbps": 681.6574500898936,
                   "interface": "vEthernet (Default Switch)",
                   "mode": "loopback",
                   "mtu_bytes": 1500,
                   "payload_mb": 8,
-                  "rtt_ms": 0.073848,
+                  "rtt_ms": 0.088418,
                   "setup_ms": 0,
-                  "tunnel_overhead_pct": -0.030921849757659103
+                  "tunnel_overhead_pct": 33.684234318229336
                 }
               },
-              "signature": "3APJoURcfzIl0t4yh0OXqb839O8d+WhwcR4N2gIExVW0LZOHKtyDAijOhOiD087eXRhJFTZgA7As9BqDKK1CDw==",
-              "hash": "ml8qNrXZHr6SR9wpz9ABmrR1cVkoeMgXtIgRh+MxBOU="
+              "signature": "+mO6sDqfLw77VHUoxjEXH+PUKS0IMi2rGR9veuShUsD8nptKKrFNpaFMpo2GZRRwruO/85HpFeDyd0JtD6C7Cg==",
+              "hash": "3A+NL22mJIq4UGQdlwRUI7xJfXPRhse7RO7L0zWQn5A="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjo1MDQuODQ2NTI2NjU1ODk2NiwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4NDgwNzUwMTc4MTc0OTkwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJkaXJlY3RfcnR0X21zIjowLCJkaXJlY3RfdGhyb3VnaHB1dF9tYnBzIjo1MDQuNjkwNDY3MDI3OTQwOTQsImludGVyZmFjZSI6InZFdGhlcm5ldCAoRGVmYXVsdCBTd2l0Y2gpIiwibW9kZSI6Imxvb3BiYWNrIiwibXR1X2J5dGVzIjoxNTAwLCJwYXlsb2FkX21iIjo4LCJydHRfbXMiOjAuMDczODQ4LCJzZXR1cF9tcyI6MCwidHVubmVsX292ZXJoZWFkX3BjdCI6LTAuMDMwOTIxODQ5NzU3NjU5MTAzfX0="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjo0NTIuMDQ2MzU3MzUzOTQ2NywidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4NDgwODU0MTYwODUyNTEwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJkaXJlY3RfcnR0X21zIjowLjAxODA3LCJkaXJlY3RfdGhyb3VnaHB1dF9tYnBzIjo2ODEuNjU3NDUwMDg5ODkzNiwiaW50ZXJmYWNlIjoidkV0aGVybmV0IChEZWZhdWx0IFN3aXRjaCkiLCJtb2RlIjoibG9vcGJhY2siLCJtdHVfYnl0ZXMiOjE1MDAsInBheWxvYWRfbWIiOjgsInJ0dF9tcyI6MC4wODg0MTgsInNldHVwX21zIjowLCJ0dW5uZWxfb3ZlcmhlYWRfcGN0IjozMy42ODQyMzQzMTgyMjkzMzZ9fQ=="
           },
           "storage": {
             "resource_type": "storage",
@@ -732,26 +782,26 @@
             "result": {
               "result": {
                 "metric": "storage.throughput",
-                "value": 670.2911262880849,
+                "value": 681.2445912905008,
                 "unit": "MB/s",
-                "ts": 1784807501704090600,
+                "ts": 1784808541523834000,
                 "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                 "extra": {
-                  "fs_free_gb": 54.523529052734375,
+                  "fs_free_gb": 54.379981994628906,
                   "fs_total_gb": 476.14843368530273,
-                  "fs_used_pct": 88.54904790282893,
-                  "fsync_latency_ms": 16.4706,
+                  "fs_used_pct": 88.57919544673545,
+                  "fsync_latency_ms": 13.7706,
                   "iops_caveat": "4 KiB random reads against a file just written, so the page cache is warm; this measures the filesystem path, not a cold device",
                   "payload_mb": 64,
-                  "random_read_4k_iops": 242554.7588620972,
-                  "read_mbps": 4389.032904031053,
-                  "write_mbps": 670.2911262880849
+                  "random_read_4k_iops": 221581.19380522042,
+                  "read_mbps": 4763.499683673849,
+                  "write_mbps": 681.2445912905008
                 }
               },
-              "signature": "fNqb0I7u0t8jAcSmwzc/3P4+yYi9HDoMb1iKoTsp3Lw9S+OP0sM1Ujt2yNcepAWqPRTdTnP/0t9/miCdBlDNCg==",
-              "hash": "kXWEGsgNyzxRT66HbaBw6QkohKykGi+7MedDkYaLjpM="
+              "signature": "i3As+L+mW+DNWPKKN4PPVm3/ZMnUp31XUIYTUhG8Xwz5H3hpgJ7ssgaJBIYvL8S1nU56P/PPe7x2hzL6dQc8Bg==",
+              "hash": "Uom2D+PrPR6qixCV5OsVqcPcRiM9+Stt2D//Ct9Oh6g="
             },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLnRocm91Z2hwdXQiLCJ2YWx1ZSI6NjcwLjI5MTEyNjI4ODA4NDksInVuaXQiOiJNQi9zIiwidHMiOjE3ODQ4MDc1MDE3MDQwOTA2MDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsiZnNfZnJlZV9nYiI6NTQuNTIzNTI5MDUyNzM0Mzc1LCJmc190b3RhbF9nYiI6NDc2LjE0ODQzMzY4NTMwMjczLCJmc191c2VkX3BjdCI6ODguNTQ5MDQ3OTAyODI4OTMsImZzeW5jX2xhdGVuY3lfbXMiOjE2LjQ3MDYsImlvcHNfY2F2ZWF0IjoiNCBLaUIgcmFuZG9tIHJlYWRzIGFnYWluc3QgYSBmaWxlIGp1c3Qgd3JpdHRlbiwgc28gdGhlIHBhZ2UgY2FjaGUgaXMgd2FybTsgdGhpcyBtZWFzdXJlcyB0aGUgZmlsZXN5c3RlbSBwYXRoLCBub3QgYSBjb2xkIGRldmljZSIsInBheWxvYWRfbWIiOjY0LCJyYW5kb21fcmVhZF80a19pb3BzIjoyNDI1NTQuNzU4ODYyMDk3MiwicmVhZF9tYnBzIjo0Mzg5LjAzMjkwNDAzMTA1Mywid3JpdGVfbWJwcyI6NjcwLjI5MTEyNjI4ODA4NDl9fQ=="
+            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLnRocm91Z2hwdXQiLCJ2YWx1ZSI6NjgxLjI0NDU5MTI5MDUwMDgsInVuaXQiOiJNQi9zIiwidHMiOjE3ODQ4MDg1NDE1MjM4MzQwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjAzZmU2OWNlNDRkN2IxNDE4ZGQ0MjYzMzFhNTM5ZjEyYzFkZTQyOGEyMzUwMTc0NDJkNDFjZWFiMGEyOWUzYzc5IiwiZXh0cmEiOnsiZnNfZnJlZV9nYiI6NTQuMzc5OTgxOTk0NjI4OTA2LCJmc190b3RhbF9nYiI6NDc2LjE0ODQzMzY4NTMwMjczLCJmc191c2VkX3BjdCI6ODguNTc5MTk1NDQ2NzM1NDUsImZzeW5jX2xhdGVuY3lfbXMiOjEzLjc3MDYsImlvcHNfY2F2ZWF0IjoiNCBLaUIgcmFuZG9tIHJlYWRzIGFnYWluc3QgYSBmaWxlIGp1c3Qgd3JpdHRlbiwgc28gdGhlIHBhZ2UgY2FjaGUgaXMgd2FybTsgdGhpcyBtZWFzdXJlcyB0aGUgZmlsZXN5c3RlbSBwYXRoLCBub3QgYSBjb2xkIGRldmljZSIsInBheWxvYWRfbWIiOjY0LCJyYW5kb21fcmVhZF80a19pb3BzIjoyMjE1ODEuMTkzODA1MjIwNDIsInJlYWRfbWJwcyI6NDc2My40OTk2ODM2NzM4NDksIndyaXRlX21icHMiOjY4MS4yNDQ1OTEyOTA1MDA4fX0="
           }
         },
         "region": {
@@ -769,25 +819,34 @@
               "metric": "model.probe",
               "value": 1,
               "unit": "pass",
-              "ts": 1784301661425641700,
+              "ts": 1784808822020336000,
               "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
               "extra": {
                 "audio": false,
+                "declared_capabilities": "audio,completion,thinking,tools,vision",
+                "declared_ctx": 131072,
+                "declared_family": "gemma4",
+                "declared_format": "gguf",
+                "declared_parameter_count": 5123179235,
+                "declared_parameter_size": "5.1B",
+                "declared_quantization": "Q4_K_M",
+                "declared_source": "ollama /api/show; the node attests that the runtime reported these, not that they are true",
                 "effective_ctx": 4096,
                 "model": "gemma4:e2b",
                 "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
                 "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
                 "probe_version": 4,
                 "runtime": "ollama",
-                "structured_out": false,
+                "runtime_version": "0.31.2",
+                "structured_out": true,
                 "thinking": false,
                 "tools": true,
-                "tools_loop_terminated": false,
-                "vision": false
+                "tools_loop_terminated": true,
+                "vision": true
               }
             },
-            "signature": "29F05Dfme+xXOXj5Yu4xtzzDDr/85ynb991x6qHb77zAwvucUMC6ie5g4/kUIOF0tpx5RRIq3143PQ65AnP5CQ==",
-            "hash": "SSJ0THs9kVOyMtiQrom5oyCIgLCHDJEqpwfyItv3/Z0="
+            "signature": "3N99lTjyGC2NhYcQPpieIbvP6zbWEXzKzXNx+VYNxCDY6qa3PNGAxo2ruL6XStqcYX67HI5L1lAljJqaI5+fDg==",
+            "hash": "qP3mchjLe8MmsxxgPYawC9sm+7KmmIvg0YOWe0QEKWE="
           },
           "gemma4:e2b-it-qat": {
             "result": {
@@ -866,7 +925,7 @@
           }
         },
         "model_probe_signing_payloads": {
-          "gemma4:e2b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg0MzAxNjYxNDI1NjQxNzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJnZW1tYTQ6ZTJiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjQsInJ1bnRpbWUiOiJvbGxhbWEiLCJzdHJ1Y3R1cmVkX291dCI6ZmFsc2UsInRoaW5raW5nIjpmYWxzZSwidG9vbHMiOnRydWUsInRvb2xzX2xvb3BfdGVybWluYXRlZCI6ZmFsc2UsInZpc2lvbiI6ZmFsc2V9fQ==",
+          "gemma4:e2b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg0ODA4ODIyMDIwMzM2MTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZGVjbGFyZWRfY2FwYWJpbGl0aWVzIjoiYXVkaW8sY29tcGxldGlvbix0aGlua2luZyx0b29scyx2aXNpb24iLCJkZWNsYXJlZF9jdHgiOjEzMTA3MiwiZGVjbGFyZWRfZmFtaWx5IjoiZ2VtbWE0IiwiZGVjbGFyZWRfZm9ybWF0IjoiZ2d1ZiIsImRlY2xhcmVkX3BhcmFtZXRlcl9jb3VudCI6NTEyMzE3OTIzNSwiZGVjbGFyZWRfcGFyYW1ldGVyX3NpemUiOiI1LjFCIiwiZGVjbGFyZWRfcXVhbnRpemF0aW9uIjoiUTRfS19NIiwiZGVjbGFyZWRfc291cmNlIjoib2xsYW1hIC9hcGkvc2hvdzsgdGhlIG5vZGUgYXR0ZXN0cyB0aGF0IHRoZSBydW50aW1lIHJlcG9ydGVkIHRoZXNlLCBub3QgdGhhdCB0aGV5IGFyZSB0cnVlIiwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJnZW1tYTQ6ZTJiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjQsInJ1bnRpbWUiOiJvbGxhbWEiLCJydW50aW1lX3ZlcnNpb24iOiIwLjMxLjIiLCJzdHJ1Y3R1cmVkX291dCI6dHJ1ZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6dHJ1ZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjp0cnVlLCJ2aXNpb24iOnRydWV9fQ==",
           "gemma4:e2b-it-qat": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg0MDYzNDM3NzMxOTEwMDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6MCwibW9kZWwiOiJnZW1tYTQ6ZTJiLWl0LXFhdCIsInByb2JlX2N0eF9sYWRkZXIiOiIxMzEwNzIsNjU1MzYsMzI3NjgsMTYzODQsODE5Miw0MDk2IiwicHJvYmVfbWV0aG9kIjoibmVlZGxlLWluLWhheXN0YWNrIHJlY2FsbDogYSB1bmlxdWUgdG9rZW4gaXMgZW1iZWRkZWQgbmVhciB0aGUgc3RhcnQgb2YgYSBwYWRkZWQgcHJvbXB0IGFuZCB0aGUgbW9kZWwgaXMgYXNrZWQgdG8gcmV0dXJuIGl0LiBUaGUgbGFyZ2VzdCBzaXplIGl0IHJlY2FsbHMgaXMgZWZmZWN0aXZlX2N0eC4iLCJwcm9iZV92ZXJzaW9uIjo0LCJydW50aW1lIjoib2xsYW1hIiwic3RydWN0dXJlZF9vdXQiOmZhbHNlLCJ0aGlua2luZyI6ZmFsc2UsInRvb2xzIjpmYWxzZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjpmYWxzZSwidmlzaW9uIjpmYWxzZX19",
           "gemma4:e4b-it-qat": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg0MDYzMzA1NTQxMDc2MTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6MCwibW9kZWwiOiJnZW1tYTQ6ZTRiLWl0LXFhdCIsInByb2JlX2N0eF9sYWRkZXIiOiIxMzEwNzIsNjU1MzYsMzI3NjgsMTYzODQsODE5Miw0MDk2IiwicHJvYmVfbWV0aG9kIjoibmVlZGxlLWluLWhheXN0YWNrIHJlY2FsbDogYSB1bmlxdWUgdG9rZW4gaXMgZW1iZWRkZWQgbmVhciB0aGUgc3RhcnQgb2YgYSBwYWRkZWQgcHJvbXB0IGFuZCB0aGUgbW9kZWwgaXMgYXNrZWQgdG8gcmV0dXJuIGl0LiBUaGUgbGFyZ2VzdCBzaXplIGl0IHJlY2FsbHMgaXMgZWZmZWN0aXZlX2N0eC4iLCJwcm9iZV92ZXJzaW9uIjo0LCJydW50aW1lIjoib2xsYW1hIiwic3RydWN0dXJlZF9vdXQiOmZhbHNlLCJ0aGlua2luZyI6ZmFsc2UsInRvb2xzIjpmYWxzZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjpmYWxzZSwidmlzaW9uIjpmYWxzZX19",
           "google/gemma-4-E2B-it-qat-q4_0-gguf": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg0MDI0NDY4Njc4ODUyMTAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6MCwibW9kZWwiOiJnb29nbGUvZ2VtbWEtNC1FMkItaXQtcWF0LXE0XzAtZ2d1ZiIsInByb2JlX2N0eF9sYWRkZXIiOiIxMzEwNzIsNjU1MzYsMzI3NjgsMTYzODQsODE5Miw0MDk2IiwicHJvYmVfbWV0aG9kIjoibmVlZGxlLWluLWhheXN0YWNrIHJlY2FsbDogYSB1bmlxdWUgdG9rZW4gaXMgZW1iZWRkZWQgbmVhciB0aGUgc3RhcnQgb2YgYSBwYWRkZWQgcHJvbXB0IGFuZCB0aGUgbW9kZWwgaXMgYXNrZWQgdG8gcmV0dXJuIGl0LiBUaGUgbGFyZ2VzdCBzaXplIGl0IHJlY2FsbHMgaXMgZWZmZWN0aXZlX2N0eC4iLCJwcm9iZV92ZXJzaW9uIjo0LCJydW50aW1lIjoibGxhbWFjcHAiLCJzdHJ1Y3R1cmVkX291dCI6dHJ1ZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6ZmFsc2UsInRvb2xzX2xvb3BfdGVybWluYXRlZCI6ZmFsc2UsInZpc2lvbiI6ZmFsc2V9fQ=="
