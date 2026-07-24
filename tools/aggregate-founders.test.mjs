@@ -624,3 +624,82 @@ test('buildModels keeps a per-node row, and is pessimistic about a hanging tool 
   assert.equal(hung.capabilities.tools_loop_terminated, false);
   assert.equal(hung.runtime_version, '0.31.2');
 });
+
+test('buildModels publishes a verified batch variant, and lets it carry a model alone', () => {
+  const id = testIdentity();
+  const variant = signedResult(id, 'inference.batch_tokens_per_sec', 111.2, 'tokens/s', {
+    model: 'gemma4:e2b',
+    slots: 4,
+    context_tokens: 4096,
+    per_request_tokens_per_sec: 27.5,
+    kv_quant: 'q4_0',
+    per_user_kv_mib: 350,
+    resident_mib: 9000,
+    category: 'high-throughput',
+  });
+
+  const node = {
+    name: 'n1',
+    proof_snapshot: {
+      node_did: id.did,
+      resources: {
+        inference: {
+          variants: { 'gemma4:e2b': [variant.envelope] },
+          variant_signing_payloads: { 'gemma4:e2b': [variant.payloadB64] },
+        },
+      },
+    },
+  };
+
+  const out = buildModels([node], 'now');
+  // No effective_ctx and no best_throughput at all — a batch variant alone
+  // must still be enough for the model to appear (matches the daemon side:
+  // resources.inference.variants is independent of the rolling figure).
+  assert.equal(out.model_count, 1, 'a batch variant alone must publish the model');
+  const m = out.models[0];
+  assert.equal(m.effective_ctx, null);
+  assert.equal(m.best_throughput, null);
+  assert.equal(m.variants.length, 1);
+  const v = m.variants[0];
+  assert.equal(v.slots, 4);
+  assert.equal(v.context_tokens, 4096);
+  assert.equal(v.aggregate_tokens_per_sec, 111.2, 'the AGGREGATE figure, not per-request');
+  assert.equal(v.per_request_tokens_per_sec, 27.5);
+  assert.equal(v.category, 'high-throughput');
+  assert.equal(v.node_did, id.did);
+  assert.ok(v.payload_sha256, 'a verified variant must carry its proof hash');
+
+  const row = m.nodes.find((n) => n.node_did === id.did);
+  assert.equal(row.variants.length, 1, 'the per-node table gets its own copy too');
+  assert.equal(out.rejected_results.length, 0);
+});
+
+test('buildModels rejects a tampered batch variant instead of publishing it', () => {
+  const id = testIdentity();
+  const variant = signedResult(id, 'inference.batch_tokens_per_sec', 111.2, 'tokens/s', {
+    model: 'liar:1b',
+    slots: 4,
+    context_tokens: 4096,
+  });
+  // Signed at 111.2 — claim 999 instead.
+  variant.envelope.result.value = 999;
+
+  const node = {
+    name: 'n1',
+    proof_snapshot: {
+      node_did: id.did,
+      resources: {
+        inference: {
+          variants: { 'liar:1b': [variant.envelope] },
+          variant_signing_payloads: { 'liar:1b': [variant.payloadB64] },
+        },
+      },
+    },
+  };
+
+  const out = buildModels([node], 'now');
+  assert.equal(out.model_count, 0, 'a model whose only evidence is a tampered variant must not appear');
+  assert.equal(out.rejected_results.length, 1);
+  assert.equal(out.rejected_results[0].model, 'liar:1b');
+  assert.equal(out.rejected_results[0].kind, 'batch_variant');
+});

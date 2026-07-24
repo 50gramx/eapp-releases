@@ -771,6 +771,12 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         capabilities: {},
         effective_ctx: null,
         throughput: [],
+        // Every VERIFIED batch-variant measurement across every node — one
+        // per (node, slots, context) operating point. A model can carry
+        // several; unlike effective_ctx/best_throughput this is never
+        // reduced to a single "best" number, because the machine AND the
+        // shape (slots x context) are both what a reader is choosing between.
+        variants: [],
         // One entry per node that measured this model. A model matrix that averages
         // across machines hides the only thing a reader is choosing between.
         nodes: new Map(),
@@ -890,6 +896,50 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       node.measured_at = signed.result.ts;
       node.throughput_payload_sha256 = v.payload_sha256;
     }
+
+    // Batch variants — proved serving capacity at a specific (slots, context)
+    // operating point (internal/agent.SignBatchVariant / BatchVariantCache on
+    // the daemon). Verified with the SAME verifySignedResult every other
+    // signed figure on this page goes through — a batch variant is not a
+    // second, weaker class of "signed". One model can carry many (one per
+    // node x operating point), so — unlike effective_ctx/best_throughput —
+    // nothing here is reduced to a single winner.
+    const variantPayloads = inference?.variant_signing_payloads || {};
+    for (const [model, signedList] of Object.entries(inference?.variants || {})) {
+      const payloadsForModel = variantPayloads[model] || [];
+      (Array.isArray(signedList) ? signedList : []).forEach((signed, i) => {
+        const v = verifySignedResult(signed, payloadsForModel[i] || '');
+        if (!v.ok) {
+          rejected.push({
+            node_name: name || null,
+            node_did: signed?.result?.node_did || null,
+            model,
+            kind: 'batch_variant',
+            reason: v.reason,
+          });
+          return;
+        }
+        const extra = signed.result.extra || {};
+        const m = upsert(model, signed.result.node_did);
+        const variant = {
+          slots: Number(extra.slots) || 0,
+          context_tokens: Number(extra.context_tokens) || 0,
+          aggregate_tokens_per_sec: signed.result.value,
+          per_request_tokens_per_sec: Number(extra.per_request_tokens_per_sec) || 0,
+          kv_quant: extra.kv_quant ?? null,
+          per_user_kv_mib: Number(extra.per_user_kv_mib) || null,
+          resident_mib: Number(extra.resident_mib) || null,
+          category: extra.category ?? null,
+          node_did: signed.result.node_did,
+          ts: signed.result.ts,
+          payload_sha256: v.payload_sha256,
+        };
+        m.variants.push(variant);
+        const node = nodeEntry(m, signed.result.node_did);
+        node.variants = node.variants || [];
+        node.variants.push(variant);
+      });
+    }
   }
 
   const models = [...byModel.values()]
@@ -902,10 +952,15 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       capabilities: m.capabilities,
       best_throughput: m.throughput.reduce((top, t) => (!top || t.tokens_per_sec > top.tokens_per_sec ? t : top), null),
       sample_count: m.throughput.length,
+      // Sorted by capacity (highest aggregate tok/s first), same rule as
+      // best_throughput above — but never reduced to one row, since a reader
+      // is choosing between machines AND between shapes (slots x context).
+      variants: [...m.variants].sort((a, b) => b.aggregate_tokens_per_sec - a.aggregate_tokens_per_sec),
       nodes: [...m.nodes.values()].sort((a, b) => (b.tokens_per_sec || 0) - (a.tokens_per_sec || 0)),
     }))
-    // A model nobody probed and nobody timed is a name. It does not appear.
-    .filter((m) => m.effective_ctx || m.best_throughput)
+    // A model nobody probed, timed, or ran a batch variant on is a name. It
+    // does not appear.
+    .filter((m) => m.effective_ctx || m.best_throughput || m.variants.length > 0)
     .sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
 
   return {
