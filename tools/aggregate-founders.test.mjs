@@ -16,6 +16,7 @@ import {
   mergeBests,
   buildCommunities,
   buildModels,
+  backfillCommunities,
 } from './aggregate-founders.mjs';
 
 let passed = 0;
@@ -703,3 +704,191 @@ test('buildModels rejects a tampered batch variant instead of publishing it', ()
   assert.equal(out.rejected_results[0].model, 'liar:1b');
   assert.equal(out.rejected_results[0].kind, 'batch_variant');
 });
+
+// --- backfilling the signed bytes of already-published records --------------
+//
+// The published corpus predates signing_payload_b64, so most bests hold a value,
+// a signature, and a digest of bytes nobody has. Worse, their `ts` is a unix
+// NANOSECOND int64 that already went through JSON.parse on the way into the
+// previous file, so its exact digits are gone before the backfill ever sees it.
+// These tests pin the two properties that make recovering those bytes safe:
+// a genuine record is recovered exactly, and a record that does not verify gets
+// nothing attached rather than a plausible guess.
+
+function publishedBest(identity, { value = 41.5, ts, tamperValue = null } = {}) {
+  // `ts` arrives as a STRING. A numeric literal this large is already rounded by
+  // the time JavaScript finishes parsing this file, so the only way to sign over
+  // the true nanosecond value is to build the payload bytes by hand — exactly the
+  // asymmetry that makes this backfill necessary in the first place.
+  const payload = Buffer.from(
+    `{"metric":"cpu.throughput","value":${value},"unit":"hashes/s","ts":${ts},"node_did":"${identity.did}"}`
+  );
+  const signature = sign(null, payload, identity.privateKey).toString('base64');
+
+  // Then round-trip through JSON exactly as a previously-published file did,
+  // which is what silently destroys the low digits of ts.
+  const roundTripped = JSON.parse(payload.toString('utf8'));
+  if (tamperValue !== null) roundTripped.value = tamperValue;
+
+  return {
+    status: 'signed',
+    resource_type: 'cpu',
+    metric: 'cpu.throughput',
+    value: roundTripped.value,
+    unit: 'hashes/s',
+    node_did: identity.did,
+    ts: roundTripped.ts,
+    verification: 'verified',
+    payload_sha256: createHash('sha256').update(payload).digest('base64'),
+    signature,
+    signed_result: { result: roundTripped },
+  };
+}
+
+const NANO_TS = '1784871999571592109';
+
+test('backfillCommunities recovers signed bytes whose nanosecond ts was rounded away', () => {
+  const id = testIdentity();
+  // Ends in 109: not representable as a double, so JSON.parse rounds it.
+  assert.notEqual(String(Number(NANO_TS)), NANO_TS, 'fixture must actually lose precision');
+
+  const doc = { communities: [{ id: 'IN_500001', bests: { cpu: publishedBest(id, { ts: NANO_TS }) } }] };
+  const out = backfillCommunities(doc, doc);
+  const best = out.communities[0].bests.cpu;
+
+  assert.ok(best.signing_payload_b64, 'the signed bytes must be recovered');
+
+  // Recovered means recovered: the bytes carry the TRUE ts, not the rounded one,
+  // and they satisfy both the signature and the published digest.
+  const payload = Buffer.from(best.signing_payload_b64, 'base64');
+  assert.equal(JSON.parse(payload.toString('utf8')).metric, 'cpu.throughput');
+  assert.ok(payload.toString('utf8').includes(NANO_TS), 'the exact ts must be recovered');
+  assert.equal(createHash('sha256').update(payload).digest('base64'), best.payload_sha256);
+  assert.equal(verifySignedResult({ result: best.signed_result.result, signature: best.signature }, best.signing_payload_b64).ok, true);
+});
+
+test('backfill attaches nothing to a record whose signature does not hold', () => {
+  const id = testIdentity();
+  const doc = {
+    communities: [
+      { id: 'IN_500001', bests: { cpu: publishedBest(id, { ts: NANO_TS, tamperValue: 99999 }) } },
+    ],
+  };
+  const out = backfillCommunities(doc, doc);
+
+  assert.equal(
+    out.communities[0].bests.cpu.signing_payload_b64,
+    undefined,
+    'a record that cannot be proven must stay unverifiable rather than gain invented bytes'
+  );
+});
+
+test('backfill leaves a record that already carries its bytes untouched', () => {
+  const id = testIdentity();
+  const best = { ...publishedBest(id, { ts: NANO_TS }), signing_payload_b64: 'already-here' };
+  const doc = { communities: [{ id: 'IN_500001', bests: { cpu: best } }] };
+
+  assert.equal(backfillCommunities(doc, doc).communities[0].bests.cpu.signing_payload_b64, 'already-here');
+});
+
+console.log(`\n${passed} test(s) passed`);
+
+// --- a type that stops being a resource net must leave the published data -----
+//
+// The merges are high-water marks: they hold a signed best until something beats
+// it. That is right for capacity and wrong for a misclassification, because a type
+// published in error is never "beaten" — no daemon produces it any more, so it
+// would ride forward forever. speech_asr/speech_tts were published as resources
+// once; these tests pin that they are scrubbed rather than grandfathered.
+
+test('mergeBests drops a best whose type is no longer a resource net', () => {
+  const speechBest = { status: 'signed', resource_type: 'speech_asr', value: 0.42, unit: 'ratio' };
+  const merged = mergeBests(
+    { resources: { cpu: { status: 'signed', value: 100, unit: 'hashes/s' }, speech_asr: speechBest } },
+    { resources: { cpu: { status: 'signed', value: 90, unit: 'hashes/s' } } }
+  );
+
+  assert.equal(merged.resources.speech_asr, undefined, 'speech is not a resource net and must not be carried forward');
+  assert.equal(merged.resources.cpu.value, 100, 'a real net still keeps its high-water mark');
+});
+
+test('mergeCommunityLedger drops community bests that are no longer resource nets', () => {
+  const prev = {
+    communities: [
+      {
+        id: 'IN_500001',
+        bests: {
+          cpu: { status: 'signed', value: 100, unit: 'hashes/s', payload_sha256: 'a' },
+          speech_tts: { status: 'signed', value: 0.31, unit: 'ratio', payload_sha256: 'b' },
+        },
+        nodes: [],
+      },
+    ],
+  };
+  const cur = {
+    community_count: 1,
+    communities: [{ id: 'IN_500001', bests: {}, nodes: [], online_count: 0, reporter_count: 0 }],
+  };
+
+  const out = mergeCommunityLedger(prev, cur);
+  const bests = out.communities[0].bests;
+  assert.equal(bests.speech_tts, undefined, 'a retracted resource type must not survive the ledger merge');
+  assert.ok(bests.cpu, 'a real net survives');
+});
+
+
+// --- a probe proves capability even when it proves no context ----------------
+//
+// The "is this a real model or just a name?" filter used to enumerate only
+// text-shaped evidence: effective_ctx, throughput, batch variants. Two real cases
+// fell through it — a speech model, which has no token context to recall a needle
+// from and emits no tokens/sec but does prove `audio`, and any LLM whose
+// capability probe passed while its context ladder failed. Both carried a VERIFIED
+// signature and were discarded as names.
+
+test('buildModels publishes a model whose only signed evidence is a capability', () => {
+  const id = testIdentity();
+  // A speech-probe-shaped payload: audio proved, everything else deliberately
+  // absent — no effective_ctx, no tools, no vision.
+  const probe = signedResult(id, 'model.probe', 1.0, 'pass', {
+    model: 'moonshine',
+    audio: true,
+    runtime: 'speech-host',
+    probe_version: 1,
+    speech_role: 'asr',
+    speech_realtime_factor: 0.31,
+  });
+
+  const out = buildModels([
+    {
+      name: 'n1',
+      proof_snapshot: {
+        node_did: id.did,
+        model_probes: { moonshine: probe.envelope },
+        model_probe_signing_payloads: { moonshine: probe.payloadB64 },
+        resources: {},
+      },
+    },
+  ], 'now');
+
+  assert.equal(out.model_count, 1, 'a signed capability IS evidence — the model must appear');
+  const m = out.models[0];
+  assert.equal(m.name, 'moonshine');
+  assert.equal(m.capabilities.audio, true, 'audio must be published as proved');
+  assert.equal(m.effective_ctx, null, 'a speech model has no probed context and must not claim one');
+  assert.equal(m.best_throughput, null, 'a speech model emits no tokens and must not claim a rate');
+  // The silences survive the round trip: absent stays absent, never false.
+  for (const cap of ['tools', 'vision', 'thinking', 'structured_output']) {
+    assert.equal(m.capabilities[cap], undefined, `${cap} was never probed and must stay absent`);
+  }
+  // And it is verifiable: the signature and the exact signed bytes travel with it.
+  assert.ok(m.nodes[0].probe_signature, 'the probe signature must be published');
+  assert.ok(m.nodes[0].probe_signing_payload_b64, 'the signed bytes must be published');
+});
+
+test('buildModels still refuses a model with no signed evidence at all', () => {
+  const out = buildModels([{ name: 'n1', proof_snapshot: { node_did: 'did:epn:x', resources: {} } }], 'now');
+  assert.equal(out.model_count, 0, 'a name with nothing signed behind it is still not a model');
+});
+
+console.log(`\n${passed} test(s) passed`);

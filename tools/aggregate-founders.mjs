@@ -19,7 +19,30 @@ const CLOUD_RATE_USD_PER_1M = 10; // transparent cloud-equivalent rate for displ
 // Used only as a cap on how long a single online->online gap between two
 // heartbeats may count toward lifetime uptime (see lifetimeUptimeSeconds).
 const EXPECTED_HEARTBEAT_INTERVAL_SEC = 15 * 60;
+// The metered resource nets, and nothing else. Mirrors proofsnapshot.resourceTypes
+// in epn-daemon and epn-protocol's ResourceVector — three places that must agree,
+// because this list decides what the site presents as capacity a region contributes.
+//
+// speech_asr/speech_tts were briefly added here and must not come back. A speech
+// engine is a model being served: its evidence is task-typed model evidence, its
+// metering is inference metering, and a realtime-factor RATIO cannot be summed into
+// the "aggregate = sum of verified signed node results" this file publishes per
+// resource type. See proofsnapshot.resourceTypes for the full reasoning.
 const RESOURCE_TYPES = ['network', 'inference', 'cpu', 'mem', 'storage', 'gpu', 'energy'];
+
+/**
+ * True when a resource type is one of the metered nets.
+ *
+ * Used to scrub records that a previous run published under a type this list no
+ * longer recognises. The merges below are high-water marks by design — they hold a
+ * signed best until something beats it — which means a type published in error
+ * would otherwise be carried forward forever, long after the daemon stopped
+ * producing it. A resource that is no longer a resource is not a regression to
+ * protect; it is a retraction to honour.
+ */
+function isResourceType(type) {
+    return RESOURCE_TYPES.includes(type);
+}
 const COMMISSIONING_STATUS = 'configured_not_yet_benchmarked';
 
 // ---------------------------------------------------------------------------
@@ -218,6 +241,15 @@ export function verifySignedResult(sr, payloadB64 = '') {
       ok,
       reason: ok ? 'verified' : 'signature invalid',
       payload_sha256: createHash('sha256').update(payload).digest('base64'),
+      // The EXACT bytes the node signed, and only when the node actually
+      // published them. Never the reconstruction from payloadBuffer's fallback:
+      // a consumer that re-serializes `result` in JavaScript cannot reproduce
+      // Go's int64 nanosecond `ts` (it exceeds 2^53, so JSON.parse rounds it),
+      // and would report a valid signature as invalid on roughly a fifth of
+      // real records. Publishing these bytes is what lets a browser verify at
+      // all; publishing a guess at them would manufacture false tampering
+      // alarms on honest measurements, which is worse than publishing nothing.
+      payload_b64: payloadB64 || '',
     };
   } catch (error) {
     return { ok: false, reason: error.message };
@@ -331,6 +363,14 @@ function bestRecord(candidate, verification) {
     payload_sha256: verification.payload_sha256,
     signature: candidate.signed_result.signature,
     hash: candidate.signed_result.hash,
+    // The signed bytes, carried through so a READER can verify this record
+    // instead of taking our word that we did. Everything needed is now in the
+    // published file: these bytes, the signature over them, and the ed25519
+    // public key embedded in node_did. Absent when the producing node did not
+    // publish its signing payload — in which case a consumer must show the
+    // record as unverifiable rather than reconstructing the bytes (see
+    // verifySignedResult).
+    signing_payload_b64: verification.payload_b64 || undefined,
     signed_result: candidate.signed_result,
   };
 }
@@ -503,6 +543,11 @@ export function mergeBests(previous, current) {
   if (!previous?.resources) return current;
   const merged = { ...current.resources };
   for (const [resourceType, held] of Object.entries(previous.resources)) {
+    // Drop a type that is no longer a metered resource net, however well signed
+    // its record is. The signature was always real; the CLASSIFICATION was wrong,
+    // and a valid signature over a misfiled measurement does not entitle it to
+    // stay on the page as capacity.
+    if (!isResourceType(resourceType)) continue;
     if (held?.status !== 'signed' || typeof held.value !== 'number') continue;
     const now = merged[resourceType];
     const nowIsSigned = now?.status === 'signed' && typeof now.value === 'number';
@@ -832,6 +877,12 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       node.probe_ctx_ladder = extra.probe_ctx_ladder ?? null;
       node.probed_at = signed.result.ts;
       node.probe_payload_sha256 = v.payload_sha256;
+      // A digest alone is not checkable — it is a claim about bytes the reader
+      // does not have. The signature and the signed bytes travel with it so the
+      // per-machine table on a model page can be verified machine by machine,
+      // which is the whole point of listing machines separately.
+      node.probe_signature = signed.signature;
+      node.probe_signing_payload_b64 = v.payload_b64 || undefined;
       for (const cap of ['tools', 'tools_loop_terminated', 'structured_out', 'thinking', 'vision', 'audio']) {
         if (typeof extra[cap] === 'boolean') node.capabilities[cap === 'structured_out' ? 'structured_output' : cap] = extra[cap];
       }
@@ -843,6 +894,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
           node_did: signed.result.node_did,
           ts: signed.result.ts,
           payload_sha256: v.payload_sha256,
+          signature: signed.signature,
+          signing_payload_b64: v.payload_b64 || undefined,
           probe_version: extra.probe_version ?? null,
         };
       }
@@ -887,6 +940,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         node_did: signed.result.node_did,
         ts: signed.result.ts,
         payload_sha256: v.payload_sha256,
+        signature: signed.signature,
+        signing_payload_b64: v.payload_b64 || undefined,
       });
       const node = nodeEntry(m, signed.result.node_did);
       node.tokens_per_sec = signed.result.value;
@@ -895,6 +950,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       node.total_seconds = Number(extra.total_seconds) || null;
       node.measured_at = signed.result.ts;
       node.throughput_payload_sha256 = v.payload_sha256;
+      node.throughput_signature = signed.signature;
+      node.throughput_signing_payload_b64 = v.payload_b64 || undefined;
     }
 
     // Batch variants — proved serving capacity at a specific (slots, context)
@@ -933,6 +990,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
           node_did: signed.result.node_did,
           ts: signed.result.ts,
           payload_sha256: v.payload_sha256,
+          signature: signed.signature,
+          signing_payload_b64: v.payload_b64 || undefined,
         };
         m.variants.push(variant);
         const node = nodeEntry(m, signed.result.node_did);
@@ -958,15 +1017,39 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       variants: [...m.variants].sort((a, b) => b.aggregate_tokens_per_sec - a.aggregate_tokens_per_sec),
       nodes: [...m.nodes.values()].sort((a, b) => (b.tokens_per_sec || 0) - (a.tokens_per_sec || 0)),
     }))
-    // A model nobody probed, timed, or ran a batch variant on is a name. It
-    // does not appear.
-    .filter((m) => m.effective_ctx || m.best_throughput || m.variants.length > 0)
+    // A model nobody probed, timed, or ran a batch variant on is a name. It does
+    // not appear.
+    //
+    // "Probed" means a signature proved SOMETHING, which is not the same as
+    // "has a context length". This used to enumerate only text-shaped evidence —
+    // effective_ctx, throughput, batch variants — so a model whose signed probe
+    // proved a CAPABILITY and nothing else was discarded as a name. Two real
+    // things fell through that hole: a speech model, which has no token context to
+    // recall a needle from and no tokens/sec to report but does prove `audio`, and
+    // any LLM whose capability probe passed while its context ladder failed.
+    //
+    // capabilities is only ever populated from a probe that VERIFIED, so a
+    // non-empty map is itself signed evidence — that is why it belongs in this
+    // filter and why adding it cannot let an unproven name through.
+    .filter(
+      (m) =>
+        m.effective_ctx ||
+        m.best_throughput ||
+        m.variants.length > 0 ||
+        Object.keys(m.capabilities).length > 0
+    )
     .sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
 
   return {
     generated_at: generatedAt,
+    // Says what a reader can check, not what we promise. Until this file carried
+    // `signature` and `signing_payload_b64` the sentence below was true of the
+    // PIPELINE and unverifiable from the ARTIFACT — a digest with nothing beside
+    // it is a claim about bytes the reader does not have. Both are published now,
+    // and the ed25519 public key is inside node_did, so "verify it yourself" is a
+    // statement about this file rather than about our process.
     trust_model:
-      'every field verified against the signature of the node that produced it; effective_ctx is the context length a node PROVED by recall, never the length a model card advertises',
+      'every field verified against the signature of the node that produced it, and re-verifiable by you: each signed figure carries the exact bytes the node signed (signing_payload_b64) and the signature over them, and the ed25519 public key is embedded in node_did. effective_ctx is the context length a node PROVED by recall, never the length a model card advertises',
     model_count: models.length,
     models,
     rejected_results: rejected,
@@ -1065,10 +1148,24 @@ function mergeOne(prev, cur, now) {
   }
 
   // High-water marks. Strictly greater, and only ever from a verified result.
-  const bests = { ...(prev.bests || {}) };
+  //
+  // With one exception, which is not a regression: the SAME measurement —
+  // identical payload_sha256, so byte-for-byte the same signed record — arriving
+  // with provenance the held copy lacks. Before signing_payload_b64 was carried
+  // through, every held best was a value plus a digest of bytes the reader did
+  // not have; a strictly-greater rule would have kept those unverifiable copies
+  // forever, because re-publishing the same measurement is by definition not an
+  // improvement in value. The number does not change here. What changes is
+  // whether a reader can check it, and more checkable at the same value is
+  // always the record to keep.
+  // Carried forward only for types that are still resource nets — see mergeBests.
+  const bests = Object.fromEntries(Object.entries(prev.bests || {}).filter(([type]) => isResourceType(type)));
   for (const [resourceType, candidate] of Object.entries(cur.bests)) {
     const held = bests[resourceType];
-    if (!held || Number(candidate.value) > Number(held.value)) {
+    const sameMeasurement =
+      held && candidate.payload_sha256 && candidate.payload_sha256 === held.payload_sha256;
+    const gainsProvenance = sameMeasurement && !!candidate.signing_payload_b64 && !held.signing_payload_b64;
+    if (!held || Number(candidate.value) > Number(held.value) || gainsProvenance) {
       bests[resourceType] = { ...candidate, first_proved_at: held?.first_proved_at || now };
     }
   }
@@ -1386,6 +1483,161 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Backfilling the signed bytes of already-published records
+// ---------------------------------------------------------------------------
+//
+// Every best in data/bests.json and data/communities.json is a high-water mark:
+// once a machine proves a number, that record is held until something beats it.
+// Those records were published before signing_payload_b64 was carried through,
+// so they hold a value, a signature, and a digest of bytes the reader does not
+// have — and because re-publishing the same measurement is not an improvement in
+// value, they would stay unverifiable forever. Most of the published corpus is in
+// that state right now.
+//
+// The bytes are recoverable, because a signature match IS proof of
+// byte-exactness. We rebuild the canonical payload from the `signed_result` we
+// already publish, then verify the node's signature against the bytes we built.
+// If it verifies, those bytes are necessarily the exact bytes the node signed —
+// no other string could satisfy an ed25519 signature. If it does not, we attach
+// nothing and the record stays honestly marked unverifiable. There is no path
+// here that publishes bytes we have not proven correct.
+//
+// The one hard part is `ts`: Go writes a unix NANOSECOND int64, which exceeds
+// 2^53, so JSON.parse rounds it and any naive re-serialization produces a
+// different string (this is exactly the bug that would make a browser verifier
+// report ~19% of honest records as tampered). readPublishedExact preserves those
+// digits verbatim so the rebuilt bytes can match.
+
+const BIG_INT_SENTINEL = "\u0000bigint:";
+
+/**
+ * Reads a published JSON file, preserving integers too large for a JS double as
+ * their exact digits. Without this, `ts` is silently rounded on the way in and
+ * the canonical bytes can never be rebuilt.
+ */
+function readPublishedExact(path) {
+  if (!existsSync(path)) return null;
+  const text = readFileSync(path, 'utf8');
+  try {
+    return JSON.parse(text.replace(/:\s*(-?\d{16,})(?=\s*[,}\]])/g, `: "${BIG_INT_SENTINEL}$1"`));
+  } catch {
+    return null;
+  }
+}
+
+/** Go's encoding/json shape for one value: object keys sorted, big ints raw. */
+function goJSON(value) {
+  if (typeof value === 'string' && value.startsWith(BIG_INT_SENTINEL)) {
+    return value.slice(BIG_INT_SENTINEL.length);
+  }
+  if (Array.isArray(value)) return `[${value.map(goJSON).join(',')}]`;
+  if (value && typeof value === 'object') {
+    return `{${Object.keys(value)
+      .sort()
+      .map((k) => `${JSON.stringify(k)}:${goJSON(value[k])}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value);
+}
+
+/**
+ * Rebuilds the exact bytes bench.Result.signingPayload() produced: struct field
+ * order (metric, value, unit, ts, node_did), `extra` omitted when empty, map
+ * keys sorted, no whitespace.
+ */
+function rebuildSigningPayload(result) {
+  const fields = ['metric', 'value', 'unit', 'ts', 'node_did']
+    .map((k) => `${JSON.stringify(k)}:${goJSON(result[k])}`)
+    .join(',');
+  const extra = result.extra && Object.keys(result.extra).length > 0 ? `,"extra":${goJSON(result.extra)}` : '';
+  return Buffer.from(`{${fields}${extra}}`, 'utf8');
+}
+
+/**
+ * The signed bytes of one already-published best, or '' if they cannot be proven.
+ *
+ * `exact` is the same record read through readPublishedExact (nanosecond `ts`
+ * intact); `best` is the ordinary parse that will actually be written back out.
+ * The sentinel-bearing copy is used only to rebuild and verify bytes — it must
+ * never reach the output document, or a rounded `ts` would be replaced by a
+ * sentinel string in published JSON.
+ */
+/**
+ * Every nanosecond `ts` that could have been rounded to the one we hold.
+ *
+ * A previously-published file went through JSON.stringify on a JS double, so its
+ * exact digits are already gone before we ever read it — readPublishedExact
+ * cannot recover what the writer discarded. But the loss is bounded and small: at
+ * ~1.78e18 the gap between representable doubles is 256, so the int64 the node
+ * actually signed is within ±128 of the value we hold. That is a couple of
+ * hundred candidates, and a signature tells us which one is right.
+ *
+ * This is a search, not a guess. ed25519 over a 32-byte digest makes a false
+ * positive computationally impossible, so a candidate whose signature verifies is
+ * the signed value — recovered, not assumed.
+ */
+function candidateTimestamps(ts) {
+  const base = BigInt(String(ts).replace(BIG_INT_SENTINEL, ''));
+  const out = [base];
+  for (let d = 1n; d <= 256n; d++) out.push(base - d, base + d);
+  return out;
+}
+
+function provenBytesFor(best, exact) {
+  const result = exact?.signed_result?.result || best?.signed_result?.result;
+  if (!best || best.signing_payload_b64 || !result || !best.signature) return '';
+  try {
+    const pub = publicKeyFromDID(result.node_did);
+    const sig = signatureBuffer(best.signature);
+    for (const ts of candidateTimestamps(result.ts)) {
+      const payload = rebuildSigningPayload({ ...result, ts: `${BIG_INT_SENTINEL}${ts}` });
+      if (!verifySignature(null, payload, pub, sig)) continue;
+      // The signature already proves these bytes. This additionally catches a
+      // record whose published digest disagrees with its own signed payload.
+      const digest = createHash('sha256').update(payload).digest('base64');
+      if (best.payload_sha256 && best.payload_sha256 !== digest) return '';
+      return payload.toString('base64');
+    }
+    return '';
+  } catch {
+    return '';
+  }
+}
+
+function backfillOneBest(best, exact) {
+  const bytes = provenBytesFor(best, exact);
+  return bytes ? { ...best, signing_payload_b64: bytes } : best;
+}
+
+/** Backfills every best in a published bests.json-shaped document. */
+export function backfillBests(doc, exactDoc) {
+  if (!doc?.resources) return doc;
+  const resources = {};
+  for (const [type, best] of Object.entries(doc.resources)) {
+    resources[type] = backfillOneBest(best, exactDoc?.resources?.[type]);
+  }
+  return { ...doc, resources };
+}
+
+/** Backfills every best in every community of a published communities.json. */
+export function backfillCommunities(doc, exactDoc) {
+  if (!Array.isArray(doc?.communities)) return doc;
+  const exactById = new Map((exactDoc?.communities || []).map((c) => [c.id, c]));
+  return {
+    ...doc,
+    communities: doc.communities.map((c) => {
+      const exact = exactById.get(c.id);
+      return {
+        ...c,
+        bests: Object.fromEntries(
+          Object.entries(c.bests || {}).map(([t, b]) => [t, backfillOneBest(b, exact?.bests?.[t])])
+        ),
+      };
+    }),
+  };
+}
+
 function main() {
   const { nodes, nodeHistories } = loadNodes();
   const meshViews = loadMeshViews();
@@ -1396,14 +1648,20 @@ function main() {
   // Network-wide bests are MERGED with what was last published, not
   // regenerated: a signed measurement that verified is not un-measured when the
   // machine that made it goes to sleep.
-  proof.bests = mergeBests(readPublished('data/bests.json'), proof.bests);
+  proof.bests = mergeBests(
+    backfillBests(readPublished('data/bests.json'), readPublishedExact('data/bests.json')),
+    proof.bests
+  );
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
   const mesh = buildMeshView(meshViews, out.generated_at);
   writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
   // Same for the community ledger. See mergeCommunityLedger: a region that a
   // node signed itself into happened, and it cannot un-happen because one
   // reporter stopped seeing it on the DHT.
-  const previousCommunities = readPublished('data/communities.json');
+  const previousCommunities = backfillCommunities(
+    readPublished('data/communities.json'),
+    readPublishedExact('data/communities.json')
+  );
   const communities = mergeCommunityLedger(
     previousCommunities,
     buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected)
