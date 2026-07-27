@@ -1387,10 +1387,20 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
     // A reporter's self-report wins over a second-hand DHT sighting: it is the
     // node speaking for itself, and it knows whether it is online.
     if (existing && !isReporter) return;
+    // PRESENCE, WHEN IT IS ACTUALLY KNOWN.
+    //
+    // A reporter speaks for itself. A peer seen on the DHT used to be `null` —
+    // "we cannot tell" — which was honest at the time, because a peer only appeared
+    // in a mesh view while connected and vanished the moment it dropped. The daemon
+    // now keeps away peers and reports online/last_seen for them, so a mesh sighting
+    // carries real presence and `null` is reserved for a reporter on an older build
+    // that genuinely says nothing.
+    const meshKnows = !isReporter && entry.online !== undefined;
     byDid.set(did, {
       did,
       name: entry.name || null,
-      online: isReporter ? entry.online === true : null,
+      online: isReporter ? entry.online === true : meshKnows ? entry.online !== false : null,
+      last_seen: entry.last_seen || null,
       reporter: isReporter,
       region,
     });
@@ -1554,15 +1564,26 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     }
   }
   let nodes = [...byDid.values()];
-  // Ensure each node has a class field, defaulting to "community" (WP-5)
+  // Ensure each node has a class field, defaulting to "community" (WP-5), and
+  // normalise presence.
+  //
+  // ONLINE AND AWAY ARE DIFFERENT FACTS. The daemon now reports both (a peer whose
+  // connection dropped is kept, marked away, with a last_seen) because deleting it
+  // made the fleet look like it was constantly shedding members while every machine
+  // was still running. A reporter on an older build sends neither field; those nodes
+  // are treated as ONLINE, which is exactly what the old data meant — it only ever
+  // contained connected peers.
   nodes = nodes.map((n) => ({
     ...n,
     class: n.class || "community",
+    online: n.online === undefined ? true : !!n.online,
+    last_seen: n.last_seen || null,
   }));
   const totals = {
     vram_gib: 0, ram_pool_gib: 0, vcpu_seconds: 0,
     storage_block_gib: 0, storage_object_gib: 0, egress_gbps: 0,
   };
+  const onlineCount = nodes.filter((n) => n.online !== false).length;
   const models = new Map();
   // Network-wide settlement activity, summed from each node's SIGNED proof
   // snapshot (the mesh path), NOT from self-reported node files. This is how
@@ -1576,13 +1597,29 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
   };
   let estTflops = 0;
   for (const n of nodes) {
-    estTflops += estNodeTflops(n);
+    // AN AWAY GRAM'S CAPACITY IS NOT AVAILABLE CAPACITY.
+    //
+    // Its VRAM, RAM, cores and egress are real, and they are on a machine nothing can
+    // currently reach — summing them would advertise a network that can serve more
+    // than it can. The node still APPEARS in the list, correctly marked away, because
+    // "this gram exists and is asleep" is true and worth showing; what it must not do
+    // is inflate what the network can do right now.
+    //
+    // Its historical ACTIVITY still counts: inferences served and receipts verified
+    // are things that already happened, and they do not stop having happened because
+    // a laptop closed.
+    const present = n.online !== false;
+
     const pm = (n.proof_snapshot && n.proof_snapshot.metrics) || {};
     activity.inferences_served += meshNum(pm.inferences_served);
     activity.tokens_served += meshNum(pm.tokens_served);
     activity.receipts_verified += meshNum(pm.receipts_verified);
     activity.proofs_issued += meshNum(pm.proofs_issued);
     activity.disputes_resolved += meshNum(pm.disputes_resolved);
+
+    if (!present) continue;
+
+    estTflops += estNodeTflops(n);
     totals.vram_gib += meshNum(n.vram_gib);
     totals.ram_pool_gib += meshNum(n.ram_pool_gib);
     totals.vcpu_seconds += meshNum(n.vcpu_seconds);
@@ -1640,6 +1677,11 @@ export function buildMeshView(views, generatedAt = new Date().toISOString()) {
     label: 'DHT-known network, unioned across founder mesh reports',
     reporter_count: reporterCount,
     node_count: nodes.length,
+    // Presence, published rather than inferred. node_count is every gram this
+    // network knows; online_count is how many can be reached right now. A reader
+    // showing only the first would repeat the mistake this whole change fixes.
+    online_count: onlineCount,
+    away_count: nodes.length - onlineCount,
     totals,
     activity,
     capacity: {

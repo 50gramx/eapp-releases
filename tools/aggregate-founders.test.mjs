@@ -972,3 +972,48 @@ test('a room total ships with its coverage and the bytes to re-check it', () => 
   assert.ok(signed.signing_payload_b64.length > 0);
   assert.ok(signed.signature.length > 0);
 });
+
+// -- PRESENCE ------------------------------------------------------------------
+
+// An away gram's capacity is not available capacity: summing it would advertise a
+// network that can serve more than it can.
+test('an away node appears but does not add capacity', () => {
+  const mesh = buildMeshView([{
+    nodes: [
+      { did: 'did:epn:a', online: true, vram_gib: 8, ram_pool_gib: 4, vcpu_seconds: 100 },
+      { did: 'did:epn:b', online: false, last_seen: '2026-07-27T06:00:00Z', vram_gib: 64, ram_pool_gib: 32, vcpu_seconds: 900 },
+    ],
+  }], 'now');
+
+  assert.equal(mesh.node_count, 2, 'both grams must still be listed');
+  assert.equal(mesh.online_count, 1);
+  assert.equal(mesh.away_count, 1);
+  assert.equal(mesh.totals.vram_gib, 8, 'an unreachable machine advertised its VRAM as available');
+  assert.equal(mesh.totals.ram_pool_gib, 4);
+  assert.equal(mesh.totals.vcpu_seconds, 100);
+
+  const away = mesh.nodes.find((n) => n.did === 'did:epn:b');
+  assert.equal(away.online, false);
+  assert.equal(away.last_seen, '2026-07-27T06:00:00Z', 'a reader cannot tell asleep from gone without this');
+});
+
+// Work that already happened does not stop having happened because a laptop closed.
+test('an away node still counts toward historical activity', () => {
+  const mesh = buildMeshView([{
+    nodes: [
+      { did: 'did:epn:b', online: false, proof_snapshot: { metrics: { tokens_served: 500, inferences_served: 7 } } },
+    ],
+  }], 'now');
+  assert.equal(mesh.activity.tokens_served, 500);
+  assert.equal(mesh.activity.inferences_served, 7);
+  assert.equal(mesh.totals.vram_gib, 0);
+});
+
+// A reporter on an older build sends neither field. Its nodes were, by definition,
+// connected — treating them as away would erase the network on the first deploy.
+test('nodes from an older reporter default to online', () => {
+  const mesh = buildMeshView([{ nodes: [{ did: 'did:epn:old', vram_gib: 2 }] }], 'now');
+  assert.equal(mesh.online_count, 1);
+  assert.equal(mesh.away_count, 0);
+  assert.equal(mesh.totals.vram_gib, 2);
+});
