@@ -14,6 +14,7 @@ import {
   buildMeshView,
   mergeCommunityLedger,
   mergeBests,
+  mergeModels,
   buildCommunities,
   buildModels,
   backfillCommunities,
@@ -1016,4 +1017,58 @@ test('nodes from an older reporter default to online', () => {
   assert.equal(mesh.online_count, 1);
   assert.equal(mesh.away_count, 0);
   assert.equal(mesh.totals.vram_gib, 2);
+});
+
+// -- BATCH VARIANTS ------------------------------------------------------------
+
+// A signed batch sweep does not un-happen because its prober went to sleep. This was
+// the model page showing batch capacity on one refresh and none on the next.
+test('batch variants survive a run where their prover is absent', () => {
+  const prev = { models: [{
+    slug: 'llama', name: 'llama', provider_count: 1, nodes: [],
+    variants: [{ node_did: 'did:epn:a', slots: 4, context_tokens: 8192, aggregate_tokens_per_sec: 120, ts: 100 }],
+  }] };
+  // This run the prover is not visible, so it contributes no variants.
+  const cur = { model_count: 1, models: [{ slug: 'llama', name: 'llama', provider_count: 0, nodes: [], variants: [] }] };
+
+  const merged = mergeModels(prev, cur);
+  assert.equal(merged.models[0].variants.length, 1, 'a proved batch shape vanished with its prober');
+  assert.equal(merged.models[0].variants[0].aggregate_tokens_per_sec, 120);
+});
+
+// A re-sweep of the same shape replaces the old figure — it is a fresh measurement of
+// the same thing, not a competing claim, and keeping the best-ever would misreport
+// what the machine can do now.
+test('a re-swept shape replaces its earlier figure', () => {
+  const prev = { models: [{
+    slug: 'llama', name: 'llama', nodes: [],
+    variants: [{ node_did: 'did:epn:a', slots: 4, context_tokens: 8192, aggregate_tokens_per_sec: 900, ts: 100 }],
+  }] };
+  const cur = { model_count: 1, models: [{
+    slug: 'llama', name: 'llama', nodes: [],
+    variants: [{ node_did: 'did:epn:a', slots: 4, context_tokens: 8192, aggregate_tokens_per_sec: 120, ts: 200 }],
+  }] };
+
+  const merged = mergeModels(prev, cur);
+  assert.equal(merged.models[0].variants.length, 1);
+  assert.equal(merged.models[0].variants[0].aggregate_tokens_per_sec, 120, 'a stale high-water figure won');
+});
+
+// Different shapes and different grams are different proofs and all stand.
+test('distinct shapes accumulate rather than overwrite', () => {
+  const prev = { models: [{
+    slug: 'llama', name: 'llama', nodes: [],
+    variants: [{ node_did: 'did:epn:a', slots: 4, context_tokens: 8192, aggregate_tokens_per_sec: 120, ts: 100 }],
+  }] };
+  const cur = { model_count: 1, models: [{
+    slug: 'llama', name: 'llama', nodes: [],
+    variants: [
+      { node_did: 'did:epn:a', slots: 8, context_tokens: 8192, aggregate_tokens_per_sec: 200, ts: 200 },
+      { node_did: 'did:epn:b', slots: 4, context_tokens: 8192, aggregate_tokens_per_sec: 90, ts: 200 },
+    ],
+  }] };
+
+  const merged = mergeModels(prev, cur);
+  assert.equal(merged.models[0].variants.length, 3);
+  assert.equal(merged.models[0].variants[0].aggregate_tokens_per_sec, 200, 'variants must be sorted by throughput');
 });

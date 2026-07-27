@@ -613,8 +613,46 @@ function mergeOneModel(prev, cur) {
     declared: cur.declared || prev.declared || null,
     capabilities: mergeModelCaps(prev.capabilities, cur.capabilities),
     sample_count: nodes.filter((n) => typeof n.tokens_per_sec === 'number').length,
+    // BATCH VARIANTS SURVIVE THEIR PROVER SLEEPING, like every other signed proof
+    // in this file.
+    //
+    // Everything above is merged; variants were not, and `...cur` meant they came
+    // from the CURRENT run alone. So a model's proved batch-serving shapes appeared
+    // whenever the gram that swept them happened to be visible and silently vanished
+    // when it was not — the page showing batch capacity on one refresh and none on
+    // the next. That is the exact failure the surrounding merge exists to prevent:
+    // a signed sweep does not un-happen because its prober went to sleep.
+    variants: mergeVariants(prev.variants, cur.variants),
     nodes,
   };
+}
+
+// mergeVariants unions two variant lists, keyed by the shape that was PROVED.
+//
+// A variant is one (node, slots, context) operating point, so that triple is its
+// identity: the same gram re-sweeping the same shape replaces its earlier figure, and
+// a different shape is a different proof that stands on its own. Ties go to the newer
+// timestamp, because a re-sweep is a fresh measurement of the same thing rather than a
+// competing claim — this is not a high-water mark, and quietly keeping the best number
+// a machine ever produced would misreport what it can do now.
+function mergeVariants(prevList, curList) {
+  const byShape = new Map();
+  const key = (v) => `${v.node_did}|${v.slots}|${v.context_tokens}`;
+
+  for (const v of prevList || []) {
+    if (v && v.node_did) byShape.set(key(v), v);
+  }
+  for (const v of curList || []) {
+    if (!v || !v.node_did) continue;
+    const existing = byShape.get(key(v));
+    if (!existing || Number(v.ts || 0) >= Number(existing.ts || 0)) {
+      byShape.set(key(v), v);
+    }
+  }
+
+  return [...byShape.values()].sort(
+    (a, b) => (b.aggregate_tokens_per_sec || 0) - (a.aggregate_tokens_per_sec || 0),
+  );
 }
 
 export function mergeModels(previous, current) {
