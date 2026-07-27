@@ -903,22 +903,23 @@ console.log(`\n${passed} test(s) passed`);
 // the JS field order or shape ever drifts from the Go struct, this fails, which is
 // the only early warning that the site has started rejecting honest numbers.
 const GO_SIGNED_STATEMENT = {
-  node_did: 'did:epn:0024080112208f8c1fc904dbf06d28e25ddd29d78c6bb20ac2d292a9d0fe4d79b2e4d584cbf7',
-  gramx_id: 'IN_400001',
-  resource_type: 'gpu_second',
+  node_did: "did:epn:0024080112206491c45b17f86551d4a3eba94930cc2f5123411de08b1b8a077cf2e0131e6af0",
+  gramx_id: "IN_400001",
+  resource_type: "gpu_second",
   epoch_start: 1785000000,
   epoch_end: 1785003600,
-  total_units: 12.5,
-  total_cost_uusd: 125,
+  total_units: 308.01785907100003,
+  total_cost_uusd: 3080,
   receipt_count: 7,
   private: false,
   trust_factor: 0,
   credit_uusd: 0,
-  side: 'provider',
+  side: "provider",
   first_at: 1785000001000000000,
   last_at: 1785003599000000000,
   generated_at: 1785003700,
-  sig: 'T3AFvdEe8CK+qoY1v8tJgz4f5qF851gS/SOzV70HAkMnkiFopOKrk0fve1SBXM8qStxDHpNYSrloNkfVXXDKCA==',
+  sig: "hCNrzIsXpTMU7ZHgt9BD/VL23t8Gzcp9n/OdjvavgkzMtpslXrDPB2sd75W+786Ds+ep47liIqBDp9TLZitIBg==",
+  signing_payload_b64: "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwNjQ5MWM0NWIxN2Y4NjU1MWQ0YTNlYmE5NDkzMGNjMmY1MTIzNDExZGUwOGIxYjhhMDc3Y2YyZTAxMzFlNmFmMCIsImdyYW14X2lkIjoiSU5fNDAwMDAxIiwicmVzb3VyY2VfdHlwZSI6ImdwdV9zZWNvbmQiLCJlcG9jaF9zdGFydCI6MTc4NTAwMDAwMCwiZXBvY2hfZW5kIjoxNzg1MDAzNjAwLCJ0b3RhbF91bml0cyI6MzA4LjAxNzg1OTA3MTAwMDAzLCJ0b3RhbF9jb3N0X3V1c2QiOjMwODAsInJlY2VpcHRfY291bnQiOjcsInByaXZhdGUiOmZhbHNlLCJ0cnVzdF9mYWN0b3IiOjAsImNyZWRpdF91dXNkIjowLCJzaWRlIjoicHJvdmlkZXIiLCJmaXJzdF9hdCI6MTc4NTAwMDAwMTAwMDAwMDAwMCwibGFzdF9hdCI6MTc4NTAwMzU5OTAwMDAwMDAwMCwiZ2VuZXJhdGVkX2F0IjoxNzg1MDAzNzAwfQ=="
 };
 
 test('a statement signed by the Go daemon verifies here', () => {
@@ -943,14 +944,14 @@ test('one piece of work between two grams is not counted twice', () => {
   const consumer = { ...GO_SIGNED_STATEMENT, side: 'consumer' };
   const out = buildGramxRooms([{ gramx_epochs: { IN_400001: [provider, consumer] } }], 'now', []);
   const room = out.rooms[0];
-  assert.equal(room.resources[0].total_units, 12.5);
-  assert.equal(room.resources[0].total_cost_uusd, 125);
+  assert.equal(room.resources[0].total_units, 308.017859);
+  assert.equal(room.resources[0].total_cost_uusd, 3080);
 });
 
 test('unverifiable statements are rejected, not down-weighted', () => {
   const forged = { ...GO_SIGNED_STATEMENT, total_units: 99999 };
   const out = buildGramxRooms([{ gramx_epochs: { IN_400001: [GO_SIGNED_STATEMENT, forged] } }], 'now', []);
-  assert.equal(out.rooms[0].resources[0].total_units, 12.5);
+  assert.equal(out.rooms[0].resources[0].total_units, 308.017859);
   assert.equal(out.rejected, 1);
 });
 
@@ -961,7 +962,7 @@ test('the same statement seen by two reporters counts once', () => {
     [{ nodes: [{ gramx_epochs: { IN_400001: [GO_SIGNED_STATEMENT] } }] }],
   );
   assert.equal(out.rooms[0].resources[0].statements, 1);
-  assert.equal(out.rooms[0].resources[0].total_units, 12.5);
+  assert.equal(out.rooms[0].resources[0].total_units, 308.017859);
 });
 
 test('a room total ships with its coverage and the bytes to re-check it', () => {

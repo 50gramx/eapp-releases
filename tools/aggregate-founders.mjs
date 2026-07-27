@@ -765,18 +765,6 @@ function loadNodes() {
 const GRAMX_SIDE_PROVIDER = 'provider';
 const GRAMX_SIDE_SELF = 'self';
 
-// Field order of payment.GramxEpochStatement, minus `sig`. Go's encoding/json emits
-// struct fields in declaration order, so this is the shape that was signed. It is
-// the only reconstruction this file performs, and it is self-checking: if the order
-// or shape is wrong the signature simply fails, so a wrong guess can never be read
-// as a valid number.
-const EPOCH_FIELD_ORDER = [
-  'node_did', 'gramx_id', 'resource_type', 'epoch_start', 'epoch_end',
-  'total_units', 'total_cost_uusd', 'receipt_count',
-  'private', 'trust_factor', 'credit_uusd', 'side',
-  'first_at', 'last_at', 'prev_hash', 'generated_at',
-];
-
 /** Verifies one signed epoch statement against the DID that published it. */
 export function verifyEpochStatement(statement, fromDID) {
   try {
@@ -789,16 +777,50 @@ export function verifyEpochStatement(statement, fromDID) {
     const sig = signatureBuffer(statement.sig);
     if (sig.length === 0) return { ok: false, reason: 'missing signature' };
 
-    const ordered = {};
-    for (const key of EPOCH_FIELD_ORDER) {
-      if (statement[key] !== undefined) ordered[key] = statement[key];
+    // VERIFY THE BYTES THAT WERE SIGNED. NEVER REBUILD THEM.
+    //
+    // This used to reconstruct the payload by re-marshalling the fields in Go's
+    // struct order, and it was wrong in a way that looked right: Go and JavaScript
+    // do not render every float64 to the same string, so genuine statements were
+    // refused by an ed25519 check working perfectly. Measured on live published
+    // data, 17 of 19 statements failed — silently, leaving room totals that looked
+    // complete and were a small arbitrary subset.
+    //
+    // It is the int64-nanosecond bug again, on a new record type, and the remedy is
+    // the one already proven here: the daemon publishes what it signed and this
+    // reads it. A statement without carried bytes is UNVERIFIABLE, which is our gap
+    // to close by shipping the daemon fix everywhere — never a reason to guess.
+    if (!statement.signing_payload_b64) {
+      return { ok: false, reason: 'no signed bytes published with this statement' };
     }
-    const payload = Buffer.from(JSON.stringify(ordered));
+    const payload = Buffer.from(statement.signing_payload_b64, 'base64');
     const key = publicKeyFromDID(fromDID);
     if (!verifySignature(null, payload, key, sig)) {
       return { ok: false, reason: 'signature does not verify' };
     }
-    return { ok: true, payload_b64: payload.toString('base64') };
+
+    // The carried bytes are what the signature covers, so the readable fields must
+    // agree with them — otherwise a valid payload could be published beside a
+    // re-labelled envelope and the numbers read from the wrong one. Same guard
+    // payloadMatchesResult applies to signed results.
+    let decoded;
+    try {
+      decoded = JSON.parse(payload.toString('utf8'));
+    } catch {
+      return { ok: false, reason: 'carried payload is not readable JSON' };
+    }
+    for (const k of ['node_did', 'gramx_id', 'resource_type', 'epoch_start', 'side']) {
+      if (decoded[k] !== undefined && decoded[k] !== statement[k]) {
+        return { ok: false, reason: `envelope disagrees with the signed payload on ${k}` };
+      }
+    }
+    for (const k of ['total_units', 'total_cost_uusd', 'credit_uusd']) {
+      if (decoded[k] !== undefined && Number(decoded[k]) !== Number(statement[k])) {
+        return { ok: false, reason: `envelope disagrees with the signed payload on ${k}` };
+      }
+    }
+
+    return { ok: true, payload_b64: statement.signing_payload_b64 };
   } catch (err) {
     return { ok: false, reason: (err && err.message) || 'verify failed' };
   }
