@@ -848,8 +848,27 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
   const seen = new Set();
   let rejected = 0;
 
+  let withheld = 0;
+
   for (const { room, fromDID, statement } of collected) {
     if (!room || !fromDID) { rejected++; continue; }
+
+    // A PRIVATE ROOM IS NEVER NAMED IN A PUBLIC ARTIFACT.
+    //
+    // The daemon already strips these at the door (see api.publicStatementsOnly),
+    // and this is the second lock on the same door. The rule is not "trust the
+    // reporter": this file re-verifies every signature rather than trusting the
+    // collector, and it must re-enforce every privacy rule for exactly the same
+    // reason. A reporter running an older build, or a hand-edited node file, would
+    // otherwise put a private circle's id, its members' DIDs and its hour-by-hour
+    // activity into a public repository.
+    //
+    // Withheld, not rejected. A private statement is not a bad statement — it is a
+    // good one that is none of the public's business — and counting it as a
+    // verification failure would make an honest network look like it was publishing
+    // forgeries.
+    if (statement && statement.private === true) { withheld++; continue; }
+
     const v = verifyEpochStatement(statement, fromDID);
     if (!v.ok) { rejected++; continue; }
 
@@ -938,6 +957,10 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
     generated_at: generatedAt,
     room_count: out.length,
     rejected,
+    // How many signed statements were withheld for being about a private room.
+    // Reported as a COUNT and nothing else: a reader can see that this page is not
+    // the whole network without learning anything about the rooms it is not.
+    withheld_private: withheld,
     // Said in the data, not in a footnote a reader can drop: these totals are what
     // the listed grams REPORTED. A gram that never published leaves no signature to
     // notice the absence of, so this can never be read as a room's complete
@@ -1040,6 +1063,14 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
 
   for (const { fromDID, statement } of collected) {
     if (!fromDID) { rejected++; continue; }
+
+    // The daemon strips a private room's id BEFORE signing the digest, so a private
+    // statement arrives here already anonymous and its work can be published safely
+    // — that is the whole design. This guard is for a statement that is marked
+    // private and STILL carries a room id, which can only mean an older or altered
+    // signer. The work is dropped rather than the id trusted to be harmless.
+    if (statement && statement.private === true && statement.gramx_id) { rejected++; continue; }
+
     const v = verifyTurnStatement(statement, fromDID);
     if (!v.ok) { rejected++; continue; }
 

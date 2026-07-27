@@ -1179,3 +1179,46 @@ test('distinct shapes accumulate rather than overwrite', () => {
   assert.equal(merged.models[0].variants.length, 3);
   assert.equal(merged.models[0].variants[0].aggregate_tokens_per_sec, 200, 'variants must be sorted by throughput');
 });
+
+// -- PRIVACY -------------------------------------------------------------------
+
+// THE LEAK. Both rooms on the live network were private, and their ids, their
+// members' DIDs and their hour-by-hour activity were published to a public
+// repository. The daemon strips these at the door now; this is the second lock,
+// because this file already refuses to trust the reporter on signatures and must
+// refuse to trust it on privacy for the same reason.
+test('a private room is never named in the published rollup', () => {
+  const priv = { ...GO_SIGNED_STATEMENT, gramx_id: 'DG1h70GzVONqlxjluvnM', private: true };
+  const out = buildGramxRooms(
+    [{ gramx_epochs: { DG1h70GzVONqlxjluvnM: [priv], IN_400001: [GO_SIGNED_STATEMENT] } }],
+    'now', [],
+  );
+  const published = JSON.stringify(out);
+  assert.ok(!published.includes('DG1h70GzVONqlxjluvnM'), 'a private room id reached the published file');
+  assert.equal(out.room_count, 1);
+  assert.equal(out.rooms[0].gramx_id, 'IN_400001');
+  // Withheld, not rejected: a private statement is a good statement that is none of
+  // the public's business, and counting it as a failure would make an honest
+  // network look like it was publishing forgeries.
+  assert.equal(out.withheld_private, 1);
+  assert.equal(out.rejected, 0);
+});
+
+// A private room's members must not be published either — the contributor list is
+// the membership of the room.
+test('a private room contributes no DIDs to the public file', () => {
+  const priv = { ...GO_SIGNED_STATEMENT, gramx_id: 'secret', private: true };
+  const out = buildGramxRooms([{ gramx_epochs: { secret: [priv] } }], 'now', []);
+  assert.equal(out.rooms.length, 0);
+  assert.ok(!JSON.stringify(out).includes(priv.node_did));
+});
+
+// The daemon strips the room id BEFORE signing, so a private digest arrives already
+// anonymous and its WORK is publishable. One that still carries an id can only come
+// from an older or altered signer, and its id is not to be trusted as harmless.
+test('a private turn digest that still names its room is dropped', () => {
+  const leaky = { ...GO_SIGNED_TURN_DIGEST, private: true };
+  const out = buildAgentTurns([{ agent_turns: [leaky] }], 'now', []);
+  assert.equal(out.agent_count, 0);
+  assert.equal(out.rejected, 1);
+});
