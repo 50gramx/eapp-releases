@@ -20,6 +20,8 @@ import {
   backfillCommunities,
   buildGramxRooms,
   buildAgentTurns,
+  buildPrivateWork,
+  verifyPrivateAggregate,
   verifyTurnStatement,
   verifyEpochStatement,
 } from './aggregate-founders.mjs';
@@ -1079,6 +1081,84 @@ test('a gram with no agents produces an empty, honest turn ledger', () => {
   assert.equal(out.agent_count, 0);
   assert.equal(out.totals.turns, 0);
   assert.equal(out.totals.held_pct, null);
+});
+
+
+// -- PRIVATE WORK, COUNTED WITHOUT CONTEXT --------------------------------------
+
+// Signed by AggregatePrivate and pasted verbatim. It sums TWO private rooms
+// (105.09268272099999 + 308.01785907100003) into one figure, and the awkward floats
+// are the point: they are the exact shape that made a JS reconstruction refuse 17 of
+// 19 genuine epoch statements.
+const GO_SIGNED_PRIVATE_AGGREGATE = {
+  "node_did": "did:epn:0024080112202917f0d78980c4e96f28090dca450942483bddc164fd01611c4966d4873b09f0",
+  "resource_type": "gpu_second",
+  "epoch_start": 1785160800,
+  "epoch_end": 1785164400,
+  "total_units": 413.110542,
+  "total_cost_uusd": 4130,
+  "credit_uusd": 413,
+  "receipt_count": 2,
+  "side": "provider",
+  "generated_at": 1785164158,
+  "sig": "9l/A6eOOJoyTOSQtc2EtjK+TKtnMLlVV3PlCwS6fwJ9KAUEXWoz/X4Y4fUtyw+e7HPkpj3SZH5iUVymQmbn5BA==",
+  "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMjkxN2YwZDc4OTgwYzRlOTZmMjgwOTBkY2E0NTA5NDI0ODNiZGRjMTY0ZmQwMTYxMWM0OTY2ZDQ4NzNiMDlmMCIsInJlc291cmNlX3R5cGUiOiJncHVfc2Vjb25kIiwiZXBvY2hfc3RhcnQiOjE3ODUxNjA4MDAsImVwb2NoX2VuZCI6MTc4NTE2NDQwMCwidG90YWxfdW5pdHMiOjQxMy4xMTA1NDIsInRvdGFsX2Nvc3RfdXVzZCI6NDEzMCwiY3JlZGl0X3V1c2QiOjQxMywicmVjZWlwdF9jb3VudCI6Miwic2lkZSI6InByb3ZpZGVyIiwiZ2VuZXJhdGVkX2F0IjoxNzg1MTY0MTU4fQ=="
+};
+
+test('a private aggregate signed by the Go daemon verifies here', () => {
+  const v = verifyPrivateAggregate(GO_SIGNED_PRIVATE_AGGREGATE, GO_SIGNED_PRIVATE_AGGREGATE.node_did);
+  assert.equal(v.ok, true, v.reason);
+});
+
+test('two private rooms arrive as one figure that cannot be decomposed', () => {
+  const out = buildPrivateWork([{ private_work: [GO_SIGNED_PRIVATE_AGGREGATE] }], 'now', []);
+  assert.equal(out.rejected, 0);
+  assert.equal(out.resources.length, 1);
+  assert.equal(out.resources[0].total_units, 413.110542);
+  // The work is counted; the rooms are gone.
+  const published = JSON.stringify(out);
+  assert.ok(!published.includes('room-a') && !published.includes('room-b'));
+  assert.ok(!published.includes('gramx_id'));
+});
+
+// There is no per-gram split, on purpose: published alongside a public list of which
+// grams are in which region, a per-gram figure narrows a private room to a handful of
+// machines.
+test('private work is not broken down per gram', () => {
+  const out = buildPrivateWork([{ private_work: [GO_SIGNED_PRIVATE_AGGREGATE] }], 'now', []);
+  assert.ok(!JSON.stringify(out.resources).includes(GO_SIGNED_PRIVATE_AGGREGATE.node_did));
+  assert.equal(out.gram_count, 1); // the coverage figure survives; the split does not
+});
+
+// An aggregate that names a room was built by something that did not understand what
+// it is for. Refused rather than stripped — we do not know what else that signer got
+// wrong.
+test('a private aggregate that names a room is refused outright', () => {
+  const named = { ...GO_SIGNED_PRIVATE_AGGREGATE, gramx_id: 'room-a' };
+  assert.equal(verifyPrivateAggregate(named, named.node_did).ok, false);
+  const out = buildPrivateWork([{ private_work: [named] }], 'now', []);
+  assert.equal(out.rejected, 1);
+  assert.equal(out.resources.length, 0);
+});
+
+test('a tampered private total does not verify', () => {
+  const t = { ...GO_SIGNED_PRIVATE_AGGREGATE, total_units: 99999 };
+  assert.equal(verifyPrivateAggregate(t, t.node_did).ok, false);
+});
+
+test('the same aggregate seen by two reporters counts once', () => {
+  const out = buildPrivateWork(
+    [{ private_work: [GO_SIGNED_PRIVATE_AGGREGATE] }],
+    'now',
+    [{ nodes: [{ private_work: [GO_SIGNED_PRIVATE_AGGREGATE] }] }],
+  );
+  assert.equal(out.resources[0].total_units, 413.110542);
+});
+
+test('the private note says what a reader cannot check', () => {
+  const out = buildPrivateWork([{ private_work: [GO_SIGNED_PRIVATE_AGGREGATE] }], 'now', []);
+  assert.ok(out.note.includes('No room is named'));
+  assert.ok(out.note.includes('not cross-checkable'));
 });
 
 // -- PRESENCE ------------------------------------------------------------------

@@ -10,10 +10,13 @@
 // counters as network totals. All three are fixed below. Every number this
 // script emits is still a SELF-REPORT from the node's own daemon — there is
 // no independent verification — and every card on the page must say so.
-import { readFileSync, writeFileSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 
 const NODES_DIR = 'data/nodes';
+// What the published data/ directory may weigh before this run says so out loud.
+// See the check at the end of main() for why a warning and not a failure.
+const PUBLISH_BUDGET_BYTES = 5_000_000;
 const CLOUD_RATE_USD_PER_1M = 10; // transparent cloud-equivalent rate for displaced-cost estimate
 // The reporter timer runs every 15 minutes (report-bootstrap-status.timer).
 // Used only as a cap on how long a single online->online gap between two
@@ -1179,6 +1182,150 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
   };
 }
 
+// PRIVATE WORK COUNTS, WITHOUT SAYING WHERE.
+//
+// Withholding private rooms entirely was an over-correction. It made a gram that
+// works mostly inside private circles look idle, and a gram's weight is supposed to
+// be what it earned. The distinction that was missing is between the WORK and its
+// CONTEXT:
+//
+//   the work     how many GPU-seconds, at what cost, credited back by how much.
+//                Aggregate, resource-typed, unremarkable on its own.
+//   the context  which room, which members, which hour was busy. This is what a
+//                competitor mines. Never published.
+//
+// Each gram signs ONE statement per (resource, hour) summed across EVERY private room
+// it served — see payment.PrivateAggregateStatement, which explains why summing
+// BEFORE signing is the part that matters: four id-less statements for one hour say
+// this gram serves four private rooms, and published hourly their individual rhythms
+// come back by size.
+//
+// Verified here like everything else, and NOT cross-checkable the way a public room's
+// total is: there are no per-room statements to check it against, by design. It is a
+// signed assertion by a known identity. Members of a room check their own room.
+
+/** Verifies one signed private-work aggregate against the DID that published it. */
+export function verifyPrivateAggregate(statement, fromDID) {
+  try {
+    if (!statement || typeof statement !== 'object') {
+      return { ok: false, reason: 'not an object' };
+    }
+    if (!statement.node_did || statement.node_did !== fromDID) {
+      return { ok: false, reason: 'aggregate is about a different gram than the one that published it' };
+    }
+    // A room id here means the aggregate was built by something that did not
+    // understand what it is for. Refused rather than stripped: we do not know what
+    // else that signer got wrong.
+    if (statement.gramx_id) {
+      return { ok: false, reason: 'a private aggregate must not name a room' };
+    }
+    const sig = signatureBuffer(statement.sig);
+    if (sig.length === 0) return { ok: false, reason: 'missing signature' };
+    if (!statement.signing_payload_b64) {
+      return { ok: false, reason: 'no signed bytes published with this aggregate' };
+    }
+    const payload = Buffer.from(statement.signing_payload_b64, 'base64');
+    const key = publicKeyFromDID(fromDID);
+    if (!verifySignature(null, payload, key, sig)) {
+      return { ok: false, reason: 'signature does not verify' };
+    }
+    let decoded;
+    try {
+      decoded = JSON.parse(payload.toString('utf8'));
+    } catch {
+      return { ok: false, reason: 'carried payload is not readable JSON' };
+    }
+    if (decoded.gramx_id) {
+      return { ok: false, reason: 'the signed payload names a room' };
+    }
+    for (const k of ['node_did', 'resource_type', 'epoch_start', 'side']) {
+      if (decoded[k] !== undefined && decoded[k] !== statement[k]) {
+        return { ok: false, reason: 'envelope disagrees with the signed payload on ' + k };
+      }
+    }
+    for (const k of ['total_units', 'total_cost_uusd', 'credit_uusd']) {
+      if (decoded[k] !== undefined && Number(decoded[k]) !== Number(statement[k])) {
+        return { ok: false, reason: 'envelope disagrees with the signed payload on ' + k };
+      }
+    }
+
+    return { ok: true, payload_b64: statement.signing_payload_b64 };
+  } catch (err) {
+    return { ok: false, reason: (err && err.message) || 'verify failed' };
+  }
+}
+
+/** Network-wide private work, by resource. No rooms, no members, no per-gram split. */
+export function buildPrivateWork(nodes, generatedAt, meshViews = []) {
+  const collected = [];
+  const addFrom = (source) => {
+    const raw = source && source.private_work;
+    if (!Array.isArray(raw)) return;
+    for (const st of raw) collected.push({ fromDID: st && st.node_did, statement: st });
+  };
+  for (const n of nodes || []) addFrom(n);
+  for (const view of meshViews || []) {
+    for (const n of (view && view.nodes) || []) addFrom(n);
+  }
+
+  const byResource = new Map();
+  const grams = new Set();
+  const seen = new Set();
+  let rejected = 0;
+
+  for (const { fromDID, statement } of collected) {
+    if (!fromDID) { rejected++; continue; }
+    const v = verifyPrivateAggregate(statement, fromDID);
+    if (!v.ok) { rejected++; continue; }
+
+    // Provider side only, exactly as the room rollup does: one piece of work between
+    // two grams produces two statements, and summing both would inflate the network
+    // by the volume of its own internal traffic.
+    const side = statement.side;
+    if (side !== 'provider' && side !== 'self') continue;
+
+    const dedupe = [fromDID, statement.resource_type, statement.epoch_start, side].join('|');
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    grams.add(fromDID);
+
+    const rt = statement.resource_type || 'unknown';
+    let acc = byResource.get(rt);
+    if (!acc) {
+      acc = { resource_type: rt, total_units: 0, total_cost_uusd: 0, credit_uusd: 0, receipt_count: 0, epochs: new Set() };
+      byResource.set(rt, acc);
+    }
+    acc.total_units += Number(statement.total_units) || 0;
+    acc.total_cost_uusd += Number(statement.total_cost_uusd) || 0;
+    acc.credit_uusd += Number(statement.credit_uusd) || 0;
+    acc.receipt_count += Number(statement.receipt_count) || 0;
+    acc.epochs.add(statement.epoch_start);
+  }
+
+  // NOT per gram. A per-gram breakdown of private work, published alongside a public
+  // list of which grams belong to which region, narrows a private room to a handful
+  // of machines. The count of contributing grams is published; the split between them
+  // is not.
+  const resources = [...byResource.values()]
+    .map((a) => ({
+      resource_type: a.resource_type,
+      total_units: Math.round(a.total_units * 1e6) / 1e6,
+      total_cost_uusd: a.total_cost_uusd,
+      credit_uusd: a.credit_uusd,
+      receipt_count: a.receipt_count,
+      epochs: a.epochs.size,
+    }))
+    .sort((a, b) => a.resource_type.localeCompare(b.resource_type));
+
+  return {
+    generated_at: generatedAt,
+    gram_count: grams.size,
+    rejected,
+    note: 'work done inside private rooms, summed across every room and every gram. No room is named, no membership is implied, and there is no per-gram split — the work is public, its context is not. Signed by each gram that did it; not cross-checkable by strangers, because the per-room statements it sums are deliberately unpublished.',
+    resources,
+  };
+}
+
 export function buildAggregate(nodes, nodeHistories) {
   const founders = nodes.filter((n) => n.class === 'founder');
   const community = nodes.filter((n) => n.class !== 'founder');
@@ -2202,7 +2349,6 @@ function main() {
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.
   const gramx = buildGramxRooms(out.nodes, out.generated_at, meshViews);
-  writeFileSync('data/gramx.json', JSON.stringify(gramx, null, 2) + '\n');
 
   // What each AGENT did, from the digest each gram signed about its own. A separate
   // file from gramx.json because it answers a different question - what an agent did,
@@ -2210,6 +2356,43 @@ function main() {
   // resource totals together.
   const turns = buildAgentTurns(out.nodes, out.generated_at, meshViews);
   writeFileSync('data/turns.json', JSON.stringify(turns, null, 2) + '\n');
+
+  // Private work, counted and context-free. Folded INTO gramx.json rather than a file
+  // of its own: a reader asking "what did this network do" must see both halves at
+  // once, or the public rooms read as the whole of it.
+  gramx.private_work = buildPrivateWork(out.nodes, out.generated_at, meshViews);
+  writeFileSync('data/gramx.json', JSON.stringify(gramx, null, 2) + '\n');
+  console.log('private work: grams', gramx.private_work.gram_count,
+    'resources', gramx.private_work.resources.length,
+    'rejected', gramx.private_work.rejected);
+
+  // A SIZE BUDGET, CHECKED EVERY RUN.
+  //
+  // This directory is committed on every aggregate - today roughly every 15 minutes.
+  // Measured at 3 nodes it is already 1.1 MB, of which one file (mesh.json) is 66 KB
+  // and scales linearly with the network: ~22 KB per node, so ~22 MB per commit at a
+  // thousand grams, and gigabytes of git objects a day. That is a repository that
+  // stops being clonable, and it would arrive gradually enough that nobody notices
+  // the run it became a problem.
+  //
+  // A warning, not a failure: the honest response to "the network grew" is to change
+  // what is published, not to stop publishing. But it must be SAID, in the log of the
+  // run that crossed the line, rather than discovered later from a slow clone.
+  const publishedBytes = readdirSync('data').filter((f) => f.endsWith('.json'))
+    .reduce((n, f) => n + statSync('data/' + f).size, 0);
+  const perNode = mesh.node_count > 0 ? Math.round(publishedBytes / mesh.node_count) : 0;
+  console.log('published bytes:', publishedBytes, '(' + perNode + '/node)');
+  if (publishedBytes > PUBLISH_BUDGET_BYTES) {
+    console.warn(
+      '\n!! data/ is ' + (publishedBytes / 1e6).toFixed(1) + ' MB, over the '
+      + (PUBLISH_BUDGET_BYTES / 1e6).toFixed(1) + ' MB budget.\n'
+      + '   Most of the weight is signed payloads carried so a browser can verify\n'
+      + '   offline. The network already holds every one of them. Publish a REFERENCE\n'
+      + '   (node DID + record key + payload hash) and let the proof page fetch the\n'
+      + '   payload from the gram that signed it - the repo becomes an index, not an\n'
+      + '   archive.\n'
+    );
+  }
   console.log('agents:', turns.agent_count, 'turns:', turns.totals.turns, 'rejected digests:', turns.rejected);
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log('gramx rooms:', gramx.room_count, 'rejected statements:', gramx.rejected);
