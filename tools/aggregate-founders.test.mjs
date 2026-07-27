@@ -17,6 +17,8 @@ import {
   buildCommunities,
   buildModels,
   backfillCommunities,
+  buildGramxRooms,
+  verifyEpochStatement,
 } from './aggregate-founders.mjs';
 
 let passed = 0;
@@ -892,3 +894,81 @@ test('buildModels still refuses a model with no signed evidence at all', () => {
 });
 
 console.log(`\n${passed} test(s) passed`);
+
+// -- GRAMX ROOM TOTALS --------------------------------------------------------
+
+// A statement signed by the Go daemon must verify here, byte for byte. This
+// fixture was produced by payment.GramxEpochStatement.Sign and pasted verbatim: if
+// the JS field order or shape ever drifts from the Go struct, this fails, which is
+// the only early warning that the site has started rejecting honest numbers.
+const GO_SIGNED_STATEMENT = {
+  node_did: 'did:epn:0024080112208f8c1fc904dbf06d28e25ddd29d78c6bb20ac2d292a9d0fe4d79b2e4d584cbf7',
+  gramx_id: 'IN_400001',
+  resource_type: 'gpu_second',
+  epoch_start: 1785000000,
+  epoch_end: 1785003600,
+  total_units: 12.5,
+  total_cost_uusd: 125,
+  receipt_count: 7,
+  private: false,
+  trust_factor: 0,
+  credit_uusd: 0,
+  side: 'provider',
+  first_at: 1785000001000000000,
+  last_at: 1785003599000000000,
+  generated_at: 1785003700,
+  sig: 'T3AFvdEe8CK+qoY1v8tJgz4f5qF851gS/SOzV70HAkMnkiFopOKrk0fve1SBXM8qStxDHpNYSrloNkfVXXDKCA==',
+};
+
+test('a statement signed by the Go daemon verifies here', () => {
+  const v = verifyEpochStatement(GO_SIGNED_STATEMENT, GO_SIGNED_STATEMENT.node_did);
+  assert.equal(v.ok, true, v.reason);
+  assert.ok(v.payload_b64.length > 0);
+});
+
+test('a tampered total does not verify', () => {
+  const tampered = { ...GO_SIGNED_STATEMENT, total_cost_uusd: 999999 };
+  assert.equal(verifyEpochStatement(tampered, tampered.node_did).ok, false);
+});
+
+test('a gram may not publish a statement about another gram', () => {
+  const v = verifyEpochStatement(GO_SIGNED_STATEMENT, 'did:epn:00240801122000000000000000000000000000000000000000000000000000000000000000');
+  assert.equal(v.ok, false);
+});
+
+test('one piece of work between two grams is not counted twice', () => {
+  // The same work, provider side and consumer side. Only the provider is summed.
+  const provider = GO_SIGNED_STATEMENT;
+  const consumer = { ...GO_SIGNED_STATEMENT, side: 'consumer' };
+  const out = buildGramxRooms([{ gramx_epochs: { IN_400001: [provider, consumer] } }], 'now', []);
+  const room = out.rooms[0];
+  assert.equal(room.resources[0].total_units, 12.5);
+  assert.equal(room.resources[0].total_cost_uusd, 125);
+});
+
+test('unverifiable statements are rejected, not down-weighted', () => {
+  const forged = { ...GO_SIGNED_STATEMENT, total_units: 99999 };
+  const out = buildGramxRooms([{ gramx_epochs: { IN_400001: [GO_SIGNED_STATEMENT, forged] } }], 'now', []);
+  assert.equal(out.rooms[0].resources[0].total_units, 12.5);
+  assert.equal(out.rejected, 1);
+});
+
+test('the same statement seen by two reporters counts once', () => {
+  const out = buildGramxRooms(
+    [{ gramx_epochs: { IN_400001: [GO_SIGNED_STATEMENT] } }],
+    'now',
+    [{ nodes: [{ gramx_epochs: { IN_400001: [GO_SIGNED_STATEMENT] } }] }],
+  );
+  assert.equal(out.rooms[0].resources[0].statements, 1);
+  assert.equal(out.rooms[0].resources[0].total_units, 12.5);
+});
+
+test('a room total ships with its coverage and the bytes to re-check it', () => {
+  const out = buildGramxRooms([{ gramx_epochs: { IN_400001: [GO_SIGNED_STATEMENT] } }], 'now', []);
+  const room = out.rooms[0];
+  assert.equal(room.contributor_count, 1);
+  assert.ok(out.coverage_note.includes('floor'));
+  const signed = room.resources[0].signed[0];
+  assert.ok(signed.signing_payload_b64.length > 0);
+  assert.ok(signed.signature.length > 0);
+});

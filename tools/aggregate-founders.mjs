@@ -697,6 +697,196 @@ function loadNodes() {
   return { nodes, nodeHistories };
 }
 
+// -- GRAMX ROOM TOTALS -------------------------------------------------------
+//
+// What a whole room did, summed from the epoch statements its grams each signed.
+//
+// Every rule the daemon's payment.Rollup enforces is enforced again HERE, because
+// this side must not trust the reporter that collected the bytes any more than a
+// browser trusts this aggregator:
+//
+//   verify        a statement whose signature does not check against the DID that
+//                 published it is DISCARDED. A number containing unverifiable input
+//                 is not a weaker proof, it is not a proof.
+//   own work only a statement signed by one gram but claiming to be another's is
+//                 refused, or one peer could inflate a room with grams that never ran.
+//   provider only one piece of work between two grams in a room produces TWO signed
+//                 statements (provider and consumer). Summing both inflates a room by
+//                 exactly the volume of its own internal traffic, so the more a gramx
+//                 talks to itself the busier it would look. Only the provider side --
+//                 the gram that actually burned the seconds -- is counted; self is
+//                 counted once.
+//   coverage      omission is undetectable, so the total always ships with how many
+//                 grams contributed. A bare number would imply a completeness it
+//                 cannot have.
+//
+// The statements are carried and verified as PUBLISHED BYTES wherever possible. See
+// the int64-nanosecond lesson in verifySignedResult: a payload rebuilt in JS is not
+// automatically the payload that was signed.
+
+const GRAMX_SIDE_PROVIDER = 'provider';
+const GRAMX_SIDE_SELF = 'self';
+
+// Field order of payment.GramxEpochStatement, minus `sig`. Go's encoding/json emits
+// struct fields in declaration order, so this is the shape that was signed. It is
+// the only reconstruction this file performs, and it is self-checking: if the order
+// or shape is wrong the signature simply fails, so a wrong guess can never be read
+// as a valid number.
+const EPOCH_FIELD_ORDER = [
+  'node_did', 'gramx_id', 'resource_type', 'epoch_start', 'epoch_end',
+  'total_units', 'total_cost_uusd', 'receipt_count',
+  'private', 'trust_factor', 'credit_uusd', 'side',
+  'first_at', 'last_at', 'prev_hash', 'generated_at',
+];
+
+/** Verifies one signed epoch statement against the DID that published it. */
+export function verifyEpochStatement(statement, fromDID) {
+  try {
+    if (!statement || typeof statement !== 'object') {
+      return { ok: false, reason: 'not an object' };
+    }
+    if (!statement.node_did || statement.node_did !== fromDID) {
+      return { ok: false, reason: 'statement is about a different gram than the one that published it' };
+    }
+    const sig = signatureBuffer(statement.sig);
+    if (sig.length === 0) return { ok: false, reason: 'missing signature' };
+
+    const ordered = {};
+    for (const key of EPOCH_FIELD_ORDER) {
+      if (statement[key] !== undefined) ordered[key] = statement[key];
+    }
+    const payload = Buffer.from(JSON.stringify(ordered));
+    const key = publicKeyFromDID(fromDID);
+    if (!verifySignature(null, payload, key, sig)) {
+      return { ok: false, reason: 'signature does not verify' };
+    }
+    return { ok: true, payload_b64: payload.toString('base64') };
+  } catch (err) {
+    return { ok: false, reason: (err && err.message) || 'verify failed' };
+  }
+}
+
+/** Rolls verified statements into per-room, per-resource totals with coverage. */
+export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
+  const collected = [];
+  const addFrom = (source) => {
+    const epochs = source && source.gramx_epochs;
+    if (!epochs || typeof epochs !== 'object') return;
+    for (const [room, raw] of Object.entries(epochs)) {
+      const list = Array.isArray(raw) ? raw : [];
+      for (const st of list) {
+        collected.push({ room, fromDID: st && st.node_did, statement: st });
+      }
+    }
+  };
+  for (const n of nodes || []) addFrom(n);
+  for (const view of meshViews || []) {
+    for (const n of (view && view.nodes) || []) addFrom(n);
+  }
+
+  const rooms = new Map();
+  const seen = new Set();
+  let rejected = 0;
+
+  for (const { room, fromDID, statement } of collected) {
+    if (!room || !fromDID) { rejected++; continue; }
+    const v = verifyEpochStatement(statement, fromDID);
+    if (!v.ok) { rejected++; continue; }
+
+    const dedupe = fromDID + '|' + room + '|' + statement.resource_type + '|' + statement.epoch_start;
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+
+    let entry = rooms.get(room);
+    if (!entry) {
+      entry = { gramx_id: room, resources: new Map(), contributors: new Set(), rejected: 0 };
+      rooms.set(room, entry);
+    }
+    entry.contributors.add(fromDID);
+
+    const side = statement.side;
+    if (side !== GRAMX_SIDE_PROVIDER && side !== GRAMX_SIDE_SELF) {
+      if (side !== 'consumer') entry.rejected++;
+      continue;
+    }
+
+    const rt = statement.resource_type || 'unknown';
+    let acc = entry.resources.get(rt);
+    if (!acc) {
+      acc = {
+        resource_type: rt, total_units: 0, total_cost_uusd: 0, credit_uusd: 0,
+        receipt_count: 0, statements: 0, epochs: new Set(),
+        first_epoch: null, last_epoch: null, signed: [],
+      };
+      entry.resources.set(rt, acc);
+    }
+    acc.total_units += Number(statement.total_units) || 0;
+    acc.total_cost_uusd += Number(statement.total_cost_uusd) || 0;
+    acc.credit_uusd += Number(statement.credit_uusd) || 0;
+    acc.receipt_count += Number(statement.receipt_count) || 0;
+    acc.statements++;
+    acc.epochs.add(statement.epoch_start);
+    if (acc.first_epoch === null || statement.epoch_start < acc.first_epoch) acc.first_epoch = statement.epoch_start;
+    if (acc.last_epoch === null || statement.epoch_end > acc.last_epoch) acc.last_epoch = statement.epoch_end;
+
+    // Carry the verified bytes so a BROWSER can check the same statement itself.
+    // Capped: the page needs enough to show the number is real, not the archive.
+    if (acc.signed.length < 24) {
+      acc.signed.push({
+        node_did: fromDID,
+        epoch_start: statement.epoch_start,
+        total_units: statement.total_units,
+        total_cost_uusd: statement.total_cost_uusd,
+        credit_uusd: statement.credit_uusd,
+        side: statement.side,
+        signature: statement.sig,
+        signing_payload_b64: v.payload_b64,
+      });
+    }
+  }
+
+  const out = [];
+  for (const entry of rooms.values()) {
+    const resources = [];
+    for (const acc of entry.resources.values()) {
+      resources.push({
+        resource_type: acc.resource_type,
+        total_units: Math.round(acc.total_units * 1e6) / 1e6,
+        total_cost_uusd: acc.total_cost_uusd,
+        credit_uusd: acc.credit_uusd,
+        receipt_count: acc.receipt_count,
+        statements: acc.statements,
+        epochs: acc.epochs.size,
+        first_epoch: acc.first_epoch,
+        last_epoch: acc.last_epoch,
+        signed: acc.signed,
+      });
+    }
+    resources.sort((a, b) => a.resource_type.localeCompare(b.resource_type));
+    if (resources.length === 0) continue;
+    out.push({
+      gramx_id: entry.gramx_id,
+      contributors: [...entry.contributors].sort(),
+      contributor_count: entry.contributors.size,
+      rejected: entry.rejected,
+      resources,
+    });
+  }
+  out.sort((a, b) => a.gramx_id.localeCompare(b.gramx_id));
+
+  return {
+    generated_at: generatedAt,
+    room_count: out.length,
+    rejected,
+    // Said in the data, not in a footnote a reader can drop: these totals are what
+    // the listed grams REPORTED. A gram that never published leaves no signature to
+    // notice the absence of, so this can never be read as a room's complete
+    // activity -- only as its verified, attributed floor.
+    coverage_note: 'totals are summed from verified provider-side statements by the listed contributors; grams that did not publish are invisible, so these are a verified floor, not a complete account',
+    rooms: out,
+  };
+}
+
 export function buildAggregate(nodes, nodeHistories) {
   const founders = nodes.filter((n) => n.class === 'founder');
   const community = nodes.filter((n) => n.class !== 'founder');
@@ -1674,7 +1864,13 @@ function main() {
   // blinking empty and 404-ing /inference/models/[slug].
   const models = mergeModels(readPublished('data/models.json'), buildModels(out.nodes, out.generated_at, meshViews));
   writeFileSync('data/models.json', JSON.stringify(models, null, 2) + '\n');
+
+  // What each ROOM did, from the hours its grams each signed. Verified here and
+  // re-verifiable in the browser from the same carried bytes.
+  const gramx = buildGramxRooms(out.nodes, out.generated_at, meshViews);
+  writeFileSync('data/gramx.json', JSON.stringify(gramx, null, 2) + '\n');
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
+  console.log('gramx rooms:', gramx.room_count, 'rejected statements:', gramx.rejected);
   console.log(
     'nodes:', out.node_count,
     'founders:', out.founder_count,
