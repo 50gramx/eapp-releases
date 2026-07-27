@@ -43,11 +43,18 @@ jobs:
             # no difference — so the old guard exited "no change" and the file the
             # aggregator had just written was thrown away on every run, for as long
             # as buildCommunities() has existed. --cached sees adds as well as edits.
-            git add data/founders.json data/network.json data/bests.json data/mesh.json data/communities.json data/models.json
+            # THE LIST IS THE BUG SURFACE. Every output the aggregator writes has to
+            # be named here or it is silently discarded on every run — which is
+            # exactly what happened to data/communities.json once (see above) and
+            # then, identically, to data/gramx.json: written by main(), never staged,
+            # thrown away by the reset --hard at the top of the next run. A file that
+            # is generated and never committed looks like an aggregator bug and is a
+            # workflow one.
+            git add -A data/
             if git diff --cached --quiet; then
               echo "no change"; exit 0
             fi
-            git commit -q -m "ci: aggregate founder nodes + network/bests/communities proof"
+            git commit -q -m "ci: aggregate founder nodes + network/bests/communities/gramx proof"
             if git push -q origin HEAD:main; then
               echo "pushed"
               # The brand site is a static export: its region pages are baked at
