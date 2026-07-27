@@ -947,6 +947,207 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
   };
 }
 
+// WHAT THE AGENTS DID, from the digest each gram signed about its own.
+//
+// The same three rules the room rollup enforces, for the same reasons:
+//
+//   verify        a digest whose signature does not check against the DID that
+//                 published it is DISCARDED, not down-weighted.
+//   own work only a digest signed by one gram but claiming to be another's is refused.
+//   coverage      the totals ship with how many grams contributed, because omission
+//                 is undetectable and a bare number would imply completeness.
+//
+// There is no provider/consumer split here and there must not be one. A turn is
+// taken ONCE, by one agent, on one gram — it is not a two-sided exchange the way a
+// metered resource is, so there is nothing to double-count and nothing to pick a side
+// of. Deduping is by (gram, agent, room, epoch), which is exactly the key the daemon
+// grouped by.
+//
+// The resource figures here are an ATTRIBUTION of cost that data/gramx.json already
+// accounts for, seen from the agent's side rather than the room's. They must never be
+// added to it — that would bill the network twice for one second of compute.
+
+/** Verifies one signed agent-turn digest against the DID that published it. */
+export function verifyTurnStatement(statement, fromDID) {
+  try {
+    if (!statement || typeof statement !== 'object') {
+      return { ok: false, reason: 'not an object' };
+    }
+    if (!statement.node_did || statement.node_did !== fromDID) {
+      return { ok: false, reason: 'digest is about a different gram than the one that published it' };
+    }
+    const sig = signatureBuffer(statement.sig);
+    if (sig.length === 0) return { ok: false, reason: 'missing signature' };
+
+    // Carried bytes only. This record type has float64 fields (vcpu_seconds,
+    // energy_kwh), which is precisely the shape that made re-marshalling in JS refuse
+    // 17 of 19 genuine epoch statements. Rebuilding the payload here would repeat that
+    // bug knowingly.
+    if (!statement.signing_payload_b64) {
+      return { ok: false, reason: 'no signed bytes published with this digest' };
+    }
+    const payload = Buffer.from(statement.signing_payload_b64, 'base64');
+    const key = publicKeyFromDID(fromDID);
+    if (!verifySignature(null, payload, key, sig)) {
+      return { ok: false, reason: 'signature does not verify' };
+    }
+
+    let decoded;
+    try {
+      decoded = JSON.parse(payload.toString('utf8'));
+    } catch {
+      return { ok: false, reason: 'carried payload is not readable JSON' };
+    }
+    // The envelope must agree with the bytes the signature covers, or a valid payload
+    // could be published beside a re-labelled envelope and the numbers read from the
+    // wrong one.
+    for (const k of ['node_did', 'persona_id', 'gramx_id', 'epoch_start']) {
+      if (decoded[k] !== undefined && decoded[k] !== statement[k]) {
+        return { ok: false, reason: 'envelope disagrees with the signed payload on ' + k };
+      }
+    }
+    for (const k of ['turns', 'tool_calls', 'held', 'failed', 'gated']) {
+      if (decoded[k] !== undefined && Number(decoded[k]) !== Number(statement[k])) {
+        return { ok: false, reason: 'envelope disagrees with the signed payload on ' + k };
+      }
+    }
+
+    return { ok: true, payload_b64: statement.signing_payload_b64 };
+  } catch (err) {
+    return { ok: false, reason: (err && err.message) || 'verify failed' };
+  }
+}
+
+/** Rolls verified turn digests into per-agent totals, with the rooms they worked in. */
+export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
+  const collected = [];
+  const addFrom = (source) => {
+    const raw = source && source.agent_turns;
+    if (!Array.isArray(raw)) return;
+    for (const st of raw) {
+      collected.push({ fromDID: st && st.node_did, statement: st });
+    }
+  };
+  for (const n of nodes || []) addFrom(n);
+  for (const view of meshViews || []) {
+    for (const n of (view && view.nodes) || []) addFrom(n);
+  }
+
+  const agents = new Map();
+  const seen = new Set();
+  const grams = new Set();
+  let rejected = 0;
+
+  for (const { fromDID, statement } of collected) {
+    if (!fromDID) { rejected++; continue; }
+    const v = verifyTurnStatement(statement, fromDID);
+    if (!v.ok) { rejected++; continue; }
+
+    const persona = statement.persona_id || 'unnamed';
+    const room = statement.gramx_id || '';
+    const dedupe = [fromDID, persona, room, statement.epoch_start].join('|');
+    if (seen.has(dedupe)) continue;
+    seen.add(dedupe);
+    grams.add(fromDID);
+
+    // Keyed by (gram, agent). NOT by agent name alone: two grams may each run a
+    // concierge called "evo", and merging them would invent one agent out of two and
+    // attribute each gram's work to the other. An agent belongs to the gram that
+    // vouches for it — that is what its DID is for.
+    const key = fromDID + '|' + persona;
+    let a = agents.get(key);
+    if (!a) {
+      a = {
+        node_did: fromDID, persona_id: persona, kind: statement.kind || '',
+        turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0,
+        prompt_tokens: 0, output_tokens: 0,
+        vcpu_seconds: 0, gpu_seconds: 0, energy_kwh: 0, carbon_grams: 0,
+        rooms: new Set(), models: new Set(), tools: new Set(),
+        first_epoch: null, last_epoch: null, epochs: new Set(), signed: [],
+      };
+      agents.set(key, a);
+    }
+    for (const k of ['turns', 'tool_calls', 'held', 'failed', 'gated',
+      'prompt_tokens', 'output_tokens',
+      'vcpu_seconds', 'gpu_seconds', 'energy_kwh', 'carbon_grams']) {
+      a[k] += Number(statement[k]) || 0;
+    }
+    if (room) a.rooms.add(room);
+    for (const m of statement.models || []) a.models.add(m);
+    for (const t of statement.tools || []) a.tools.add(t);
+    a.epochs.add(statement.epoch_start);
+    if (a.first_epoch === null || statement.epoch_start < a.first_epoch) a.first_epoch = statement.epoch_start;
+    if (a.last_epoch === null || statement.epoch_end > a.last_epoch) a.last_epoch = statement.epoch_end;
+
+    // Carry the verified bytes so a BROWSER can check the same digest itself.
+    // Capped: the page needs enough to show the number is real, not the archive.
+    if (a.signed.length < 24) {
+      a.signed.push({
+        node_did: fromDID,
+        epoch_start: statement.epoch_start,
+        turns: statement.turns,
+        held: statement.held,
+        signature: statement.sig,
+        signing_payload_b64: v.payload_b64,
+      });
+    }
+  }
+
+  const out = [];
+  for (const a of agents.values()) {
+    // Held rate is over the turns that HAVE an outcome, never over all turns. A
+    // receipt written before the outcome field existed has none, and dividing by every
+    // turn would report a settled agent as failing.
+    const decided = a.held + a.failed + a.gated;
+    out.push({
+      node_did: a.node_did,
+      persona_id: a.persona_id,
+      kind: a.kind,
+      turns: a.turns,
+      tool_calls: a.tool_calls,
+      held: a.held, failed: a.failed, gated: a.gated,
+      decided,
+      held_pct: decided > 0 ? +((a.held / decided) * 100).toFixed(1) : null,
+      prompt_tokens: a.prompt_tokens,
+      output_tokens: a.output_tokens,
+      vcpu_seconds: Math.round(a.vcpu_seconds * 1e6) / 1e6,
+      gpu_seconds: Math.round(a.gpu_seconds * 1e6) / 1e6,
+      energy_kwh: a.energy_kwh,
+      carbon_grams: Math.round(a.carbon_grams * 1e3) / 1e3,
+      rooms: [...a.rooms].sort(),
+      models: [...a.models].sort(),
+      tools: [...a.tools].sort(),
+      epochs: a.epochs.size,
+      first_epoch: a.first_epoch,
+      last_epoch: a.last_epoch,
+      signed: a.signed,
+    });
+  }
+  out.sort((x, y) => y.turns - x.turns || x.persona_id.localeCompare(y.persona_id));
+
+  const totals = out.reduce((t, a) => {
+    t.turns += a.turns; t.tool_calls += a.tool_calls;
+    t.held += a.held; t.failed += a.failed; t.gated += a.gated;
+    return t;
+  }, { turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0 });
+  const decided = totals.held + totals.failed + totals.gated;
+
+  return {
+    generated_at: generatedAt,
+    agent_count: out.length,
+    gram_count: grams.size,
+    rejected,
+    totals: {
+      ...totals,
+      decided,
+      held_pct: decided > 0 ? +((totals.held / decided) * 100).toFixed(1) : null,
+    },
+    // Said in the data, not in a footnote a reader can drop.
+    coverage_note: 'turn counts are summed from digests the listed grams each signed about their own agents; a gram that did not publish is invisible, so these are a verified floor, not a complete account. The resource figures attribute cost already accounted in data/gramx.json and must not be added to it.',
+    agents: out,
+  };
+}
+
 export function buildAggregate(nodes, nodeHistories) {
   const founders = nodes.filter((n) => n.class === 'founder');
   const community = nodes.filter((n) => n.class !== 'founder');
@@ -1971,6 +2172,14 @@ function main() {
   // re-verifiable in the browser from the same carried bytes.
   const gramx = buildGramxRooms(out.nodes, out.generated_at, meshViews);
   writeFileSync('data/gramx.json', JSON.stringify(gramx, null, 2) + '\n');
+
+  // What each AGENT did, from the digest each gram signed about its own. A separate
+  // file from gramx.json because it answers a different question - what an agent did,
+  // not what a room owes - and because a reader must never be tempted to add the two
+  // resource totals together.
+  const turns = buildAgentTurns(out.nodes, out.generated_at, meshViews);
+  writeFileSync('data/turns.json', JSON.stringify(turns, null, 2) + '\n');
+  console.log('agents:', turns.agent_count, 'turns:', turns.totals.turns, 'rejected digests:', turns.rejected);
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log('gramx rooms:', gramx.room_count, 'rejected statements:', gramx.rejected);
   console.log(

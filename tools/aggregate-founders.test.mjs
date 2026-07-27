@@ -19,6 +19,8 @@ import {
   buildModels,
   backfillCommunities,
   buildGramxRooms,
+  buildAgentTurns,
+  verifyTurnStatement,
   verifyEpochStatement,
 } from './aggregate-founders.mjs';
 
@@ -973,6 +975,110 @@ test('a room total ships with its coverage and the bytes to re-check it', () => 
   const signed = room.resources[0].signed[0];
   assert.ok(signed.signing_payload_b64.length > 0);
   assert.ok(signed.signature.length > 0);
+});
+
+
+// -- AGENT TURNS ---------------------------------------------------------------
+
+// Produced by agent.AgentTurnStatement.Sign and pasted verbatim, exactly like
+// GO_SIGNED_STATEMENT above and for the same reason: this is the only early warning
+// that the site has started rejecting honest numbers.
+//
+// energy_kwh is deliberately the awkward float that broke the epoch statements. If
+// this file ever goes back to reconstructing the payload, this fixture is what fails.
+const GO_SIGNED_TURN_DIGEST = {
+  node_did: "did:epn:002408011220a1a8cc5afeff04364363dab32362bd32851746d3e91003e9f2317ba776e615b7",
+  persona_id: "evo",
+  gramx_id: "room-a",
+  kind: "concierge_turn",
+  epoch_start: 1785153600,
+  epoch_end: 1785157200,
+  turns: 2,
+  tool_calls: 2,
+  held: 1,
+  failed: 1,
+  gated: 0,
+  prompt_tokens: 0,
+  output_tokens: 0,
+  vcpu_seconds: 1.4,
+  energy_kwh: 0.0000030337805555555625,
+  models: ["gemma4:e2b"],
+  tools: ["ask_specialist", "cite_fact"],
+  generated_at: 1785155903,
+  sig: "FkycMAvvAaTJjlHN451Y6+6gGK2Cp2ZN6E/X7o5zpQ00yHLubrYOIOkHQ9/20LpwhCz435Mv0T+qVB4TYHduBQ==",
+  signing_payload_b64: "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwYTFhOGNjNWFmZWZmMDQzNjQzNjNkYWIzMjM2MmJkMzI4NTE3NDZkM2U5MTAwM2U5ZjIzMTdiYTc3NmU2MTViNyIsInBlcnNvbmFfaWQiOiJldm8iLCJncmFteF9pZCI6InJvb20tYSIsImtpbmQiOiJjb25jaWVyZ2VfdHVybiIsImVwb2NoX3N0YXJ0IjoxNzg1MTUzNjAwLCJlcG9jaF9lbmQiOjE3ODUxNTcyMDAsInR1cm5zIjoyLCJ0b29sX2NhbGxzIjoyLCJoZWxkIjoxLCJmYWlsZWQiOjEsImdhdGVkIjowLCJwcm9tcHRfdG9rZW5zIjowLCJvdXRwdXRfdG9rZW5zIjowLCJ2Y3B1X3NlY29uZHMiOjEuNCwiZW5lcmd5X2t3aCI6MC4wMDAwMDMwMzM3ODA1NTU1NTU1NjI1LCJtb2RlbHMiOlsiZ2VtbWE0OmUyYiJdLCJ0b29scyI6WyJhc2tfc3BlY2lhbGlzdCIsImNpdGVfZmFjdCJdLCJnZW5lcmF0ZWRfYXQiOjE3ODUxNTU5MDN9"
+};
+
+test('a turn digest signed by the Go daemon verifies here', () => {
+  const v = verifyTurnStatement(GO_SIGNED_TURN_DIGEST, GO_SIGNED_TURN_DIGEST.node_did);
+  assert.equal(v.ok, true, v.reason);
+});
+
+test('a tampered turn count does not verify', () => {
+  const tampered = { ...GO_SIGNED_TURN_DIGEST, turns: 9999 };
+  assert.equal(verifyTurnStatement(tampered, tampered.node_did).ok, false);
+});
+
+test('a gram may not publish a digest about another gram', () => {
+  const v = verifyTurnStatement(GO_SIGNED_TURN_DIGEST,
+    'did:epn:00240801122000000000000000000000000000000000000000000000000000000000000000');
+  assert.equal(v.ok, false);
+});
+
+test('the same digest seen by two reporters counts once', () => {
+  const out = buildAgentTurns(
+    [{ agent_turns: [GO_SIGNED_TURN_DIGEST] }],
+    'now',
+    [{ nodes: [{ agent_turns: [GO_SIGNED_TURN_DIGEST] }] }],
+  );
+  assert.equal(out.agent_count, 1);
+  assert.equal(out.agents[0].turns, 2);
+});
+
+// A turn is taken once by one agent. There is no provider/consumer side to pick, so
+// the only defence against double counting is the dedupe key — and it must be the
+// same key the daemon grouped by.
+test('two agents on one gram are not merged into one', () => {
+  const other = { ...GO_SIGNED_TURN_DIGEST, persona_id: 'reference' };
+  const out = buildAgentTurns([{ agent_turns: [GO_SIGNED_TURN_DIGEST, other] }], 'now', []);
+  // The second is a re-labelled envelope, so it must be REFUSED rather than counted
+  // as a second agent: the signature covers persona_id.
+  assert.equal(out.agent_count, 1);
+  assert.equal(out.rejected, 1);
+});
+
+test('an unverifiable digest is rejected, not down-weighted', () => {
+  const forged = { ...GO_SIGNED_TURN_DIGEST, held: 999 };
+  const out = buildAgentTurns([{ agent_turns: [GO_SIGNED_TURN_DIGEST, forged] }], 'now', []);
+  assert.equal(out.agents[0].held, 1);
+  assert.equal(out.rejected, 1);
+});
+
+// The held rate is over decided turns, never over all of them: a receipt written
+// before the outcome field existed has no outcome, and dividing by every turn would
+// report a working agent as failing.
+test('the held rate divides by decided turns, not by every turn', () => {
+  const out = buildAgentTurns([{ agent_turns: [GO_SIGNED_TURN_DIGEST] }], 'now', []);
+  const a = out.agents[0];
+  assert.equal(a.decided, 2);
+  assert.equal(a.held_pct, 50);
+});
+
+test('agent totals ship with coverage and the bytes to re-check them', () => {
+  const out = buildAgentTurns([{ agent_turns: [GO_SIGNED_TURN_DIGEST] }], 'now', []);
+  assert.equal(out.gram_count, 1);
+  assert.ok(out.coverage_note.includes('floor'));
+  assert.ok(out.coverage_note.includes('must not be added'));
+  const signed = out.agents[0].signed[0];
+  assert.ok(signed.signing_payload_b64.length > 0);
+  assert.ok(signed.signature.length > 0);
+});
+
+test('a gram with no agents produces an empty, honest turn ledger', () => {
+  const out = buildAgentTurns([{}], 'now', []);
+  assert.equal(out.agent_count, 0);
+  assert.equal(out.totals.turns, 0);
+  assert.equal(out.totals.held_pct, null);
 });
 
 // -- PRESENCE ------------------------------------------------------------------
