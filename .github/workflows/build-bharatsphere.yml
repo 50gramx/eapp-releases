@@ -21,6 +21,15 @@ name: Deploy bharatsphere
 # release, no step summary of source — artifacts and logs on a public repo are
 # world-readable.
 #
+# CREDENTIALS ARE SERVICE ACCOUNTS, NOT CI TOKENS. `firebase login:ci` mints a
+# token bound to a PERSON's Google account, and `--token` is deprecated besides.
+# A project-scoped robot is the right shape anywhere, and more so here: this
+# workflow lives in a public repo, so the credential it carries should be one
+# that can be rotated and audited per project rather than one that inherits a
+# founder's whole Google identity. The JSON is written to a file and passed via
+# GOOGLE_APPLICATION_CREDENTIALS, which firebase-tools, gcloud and firebase-admin
+# all read without being told.
+#
 # Firestore indexes ride along unchanged: `validate-indexes.js` gates the deploy
 # and `firestore:indexes` is in the same --only list it always was, so index
 # changes still ship with the code that needs them. bharatsphere-app's own
@@ -128,6 +137,8 @@ jobs:
     needs: check
     if: needs.check.outputs.deploy_demo == 'true'
     runs-on: ubuntu-latest
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/bharatsphere-sa.json
     steps:
       - uses: actions/checkout@v4
 
@@ -179,18 +190,34 @@ jobs:
           (cd functions && npm ci)
           (cd scripts && npm install)
 
+      - name: Write service account credentials
+        env:
+          SA: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT_DEV }}
+        run: |
+          if [ -z "${SA:-}" ]; then
+            echo "::error::BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT_DEV is not set — cannot deploy."
+            exit 1
+          fi
+          # printf from the environment, never inline: an interpolated secret is
+          # masked in logs but is still the literal text of the command GitHub
+          # renders, so keep it out of the command line entirely.
+          printf '%s' "$SA" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
+
       - name: Validate Firestore indexes
         working-directory: bharatsphere
-        run: node scripts/validate-indexes.js --project bharatsphere-app-dev --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN_DEV }}
+        run: node scripts/validate-indexes.js --project bharatsphere-app-dev
 
       - name: Deploy to Firebase (demo)
         working-directory: bharatsphere
+        # No `firebase use`: it writes a login-scoped alias and expects an
+        # interactive account. --project takes the ID directly, and .firebaserc
+        # keys its hosting targets by that same ID, so targets still resolve.
         run: |
           cp remote_config/remote_config_dev.json remote_config/remote_config_template.json
-          firebase use dev --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN_DEV }}
           firebase deploy \
             --only hosting:app,firestore:rules,firestore:indexes,storage,functions,remoteconfig,database \
-            --project bharatsphere-app-dev --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN_DEV }} --force
+            --project bharatsphere-app-dev --force
 
       - name: Update Firestore version record
         continue-on-error: true
@@ -199,10 +226,6 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
         working-directory: bharatsphere/functions
         run: |
-          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
-            echo "::notice::BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT_DEV not set — version record skipped."
-            exit 0
-          fi
           npm install firebase-admin --silent
           node -e "
             const admin = require('firebase-admin');
@@ -228,6 +251,8 @@ jobs:
     if: needs.check.outputs.deploy_live == 'true'
     runs-on: ubuntu-latest
     environment: bharatsphere-live
+    env:
+      GOOGLE_APPLICATION_CREDENTIALS: /tmp/bharatsphere-sa.json
     steps:
       - uses: actions/checkout@v4
 
@@ -282,12 +307,22 @@ jobs:
           (cd functions && npm ci)
           (cd scripts && npm install)
 
+      - name: Write service account credentials
+        env:
+          SA: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "${SA:-}" ]; then
+            echo "::error::BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT is not set — cannot deploy."
+            exit 1
+          fi
+          printf '%s' "$SA" > "$GOOGLE_APPLICATION_CREDENTIALS"
+          chmod 600 "$GOOGLE_APPLICATION_CREDENTIALS"
+
       - name: Validate Firestore indexes
         working-directory: bharatsphere
-        run: node scripts/validate-indexes.js --project bharatsphere-183e7 --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN }}
+        run: node scripts/validate-indexes.js --project bharatsphere-183e7
 
       - name: Seed pincodes
-        if: ${{ env.SERVICE_ACCOUNT_JSON != '' }}
         env:
           SERVICE_ACCOUNT_JSON: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT }}
         working-directory: bharatsphere
@@ -299,10 +334,9 @@ jobs:
         working-directory: bharatsphere
         run: |
           cp remote_config/remote_config_prod.json remote_config/remote_config_template.json
-          firebase use default --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN }}
           firebase deploy \
             --only hosting:app,hosting:demo,firestore:rules,firestore:indexes,storage,functions,remoteconfig,database \
-            --project bharatsphere-183e7 --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN }} --force
+            --project bharatsphere-183e7 --force
 
       - name: Update Firestore version record
         continue-on-error: true
@@ -311,10 +345,6 @@ jobs:
           VERSION: ${{ steps.version.outputs.VERSION }}
         working-directory: bharatsphere/functions
         run: |
-          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
-            echo "::notice::BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT not set — version record skipped."
-            exit 0
-          fi
           npm install firebase-admin --silent
           node -e "
             const admin = require('firebase-admin');
