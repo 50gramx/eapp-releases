@@ -1,0 +1,334 @@
+name: Deploy bharatsphere
+
+# Runs bharatsphere-app's deployment from THIS repo because this repo is public
+# and therefore has free Actions minutes; the private repo's minutes are the
+# scarce resource. The private repo is untouched — we poll its latest `main` SHA
+# and latest `v*` tag (via CI_READ_TOKEN, read-only) and only deploy when either
+# moves. Markers live on this repo's main:
+#
+#   bharatsphere-last-deployed.txt   last main SHA deployed to demo
+#   bharatsphere-last-released.txt   last v* tag deployed to live
+#
+# WHAT IS AND IS NOT HERE. The two automatic paths moved: demo web on every push
+# to main, and live on every `v*` tag. The Android/Play path did NOT — it is
+# manual, rare, and signing a public-repo build with the keystore would mean
+# putting bharatsphere's upload key and Play credentials into a repo that already
+# holds different values under those same secret names. It stays in
+# bharatsphere-app/.github/workflows/deploy.yml (now workflow_dispatch-only).
+#
+# NOTHING PRIVATE MAY LEAVE THIS RUNNER. The private checkout lands in
+# ./bharatsphere and is deployed straight to Firebase. No upload-artifact, no
+# release, no step summary of source — artifacts and logs on a public repo are
+# world-readable.
+#
+# Firestore indexes ride along unchanged: `validate-indexes.js` gates the deploy
+# and `firestore:indexes` is in the same --only list it always was, so index
+# changes still ship with the code that needs them. bharatsphere-app's own
+# deploy_indexes.yml stays where it is as the manual escape hatch.
+on:
+  schedule:
+    # Offset off :00/:15/:30/:45 — the most congested minutes in GitHub's shared
+    # scheduled-workflow queue, where runs are frequently delayed or dropped.
+    # Same reasoning (and a different offset) as build-epnd.yml.
+    - cron: '9,24,39,54 * * * *'
+  workflow_dispatch:
+    inputs:
+      deploy_target:
+        description: 'Deploy now, ignoring the marker'
+        required: true
+        default: demo
+        type: choice
+        options:
+          - demo
+          - live
+
+permissions:
+  contents: write
+
+# A deploy writes to Firebase Hosting, Firestore rules/indexes and Functions.
+# Two overlapping runs would race each other onto the same project, so the
+# poller must never lap itself.
+concurrency:
+  group: deploy-bharatsphere
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      sha: ${{ steps.latest.outputs.sha }}
+      tag: ${{ steps.latest.outputs.tag }}
+      deploy_demo: ${{ steps.compare.outputs.deploy_demo }}
+      deploy_live: ${{ steps.compare.outputs.deploy_live }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest bharatsphere-app main SHA and v* tag
+        id: latest
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          set -euo pipefail
+          sha=$(gh api repos/50gramx/bharatsphere-app/commits/main --jq .sha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          # The tags endpoint does not order by version, so sort -V ourselves and
+          # take the highest. Empty is fine — it just means live never fires.
+          tag=$(gh api repos/50gramx/bharatsphere-app/tags --paginate --jq '.[].name' \
+                | grep '^v' | sort -V | tail -1 || true)
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "main=$sha tag=${tag:-<none>}"
+
+      - name: Compare against markers
+        id: compare
+        env:
+          DISPATCH: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_target || '' }}
+          SHA: ${{ steps.latest.outputs.sha }}
+          TAG: ${{ steps.latest.outputs.tag }}
+        run: |
+          set -euo pipefail
+          demo=false; live=false; adopt=false
+          released=$(cat bharatsphere-last-released.txt 2>/dev/null || echo)
+          case "$DISPATCH" in
+            demo) demo=true ;;
+            live) live=true ;;
+            *)
+              [ "$(cat bharatsphere-last-deployed.txt 2>/dev/null || echo)" = "$SHA" ] || demo=true
+              # An EMPTY released-marker means this workflow has never run, not
+              # that a release is pending. Deploying prod unattended on the first
+              # cron after the cutover is exactly the wrong first act, so adopt
+              # the current tag as the baseline instead and fire from the NEXT
+              # tag onward. (The demo marker needs no such care — worst case is
+              # one redundant deploy to dev.)
+              if [ -z "$released" ] && [ -n "$TAG" ]; then
+                echo "::notice::adopting $TAG as the live baseline; not deploying"
+                adopt=true
+              elif [ -n "$TAG" ] && [ "$released" != "$TAG" ]; then
+                live=true
+              fi
+              ;;
+          esac
+          # A tagged release supersedes the demo deploy of the same commit.
+          if [ "$live" = true ] && [ "$DISPATCH" = "" ]; then demo=false; fi
+          echo "deploy_demo=$demo" >> "$GITHUB_OUTPUT"
+          echo "deploy_live=$live" >> "$GITHUB_OUTPUT"
+          echo "adopt=$adopt" >> "$GITHUB_OUTPUT"
+          echo "demo=$demo live=$live adopt=$adopt"
+
+      - name: Adopt the current tag as the live baseline
+        if: steps.compare.outputs.adopt == 'true'
+        run: |
+          .github/scripts/push-marker.sh \
+            bharatsphere-last-released.txt "${{ steps.latest.outputs.tag }}" \
+            "ci: adopt ${{ steps.latest.outputs.tag }} as bharatsphere live baseline"
+
+  # ========================================================================
+  # DEMO WEB (was: push to bharatsphere-app main)
+  # ========================================================================
+  deploy_demo:
+    needs: check
+    if: needs.check.outputs.deploy_demo == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout bharatsphere-app (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/bharatsphere-app
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: bharatsphere
+
+      - name: Generate version number
+        id: version
+        # Same YEAR.MMDD.build shape as before. The build counter is now this
+        # repo's run_number rather than bharatsphere-app's, so the number jumps
+        # once at the cutover — it stays monotonic from here, and nothing reads
+        # it as a Play versionCode (Android did not move).
+        run: echo "VERSION=$(date +'%Y.%m%d').${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Update pubspec.yaml version
+        working-directory: bharatsphere/bharatsphere_mobile
+        run: |
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.VERSION }}/" pubspec.yaml
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Build web (dev)
+        working-directory: bharatsphere/bharatsphere_mobile
+        run: |
+          flutter pub get
+          flutter build web --release --dart-define=ENVIRONMENT=dev \
+            --build-name=${{ steps.version.outputs.VERSION }} \
+            --build-number=${{ github.run_number }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install dependencies
+        working-directory: bharatsphere
+        run: |
+          (cd functions && npm ci)
+          (cd scripts && npm install)
+
+      - name: Validate Firestore indexes
+        working-directory: bharatsphere
+        run: node scripts/validate-indexes.js --project bharatsphere-app-dev --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN_DEV }}
+
+      - name: Deploy to Firebase (demo)
+        working-directory: bharatsphere
+        run: |
+          cp remote_config/remote_config_dev.json remote_config/remote_config_template.json
+          firebase use dev --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN_DEV }}
+          firebase deploy \
+            --only hosting:app,firestore:rules,firestore:indexes,storage,functions,remoteconfig,database \
+            --project bharatsphere-app-dev --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN_DEV }} --force
+
+      - name: Update Firestore version record
+        continue-on-error: true
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT_DEV }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        working-directory: bharatsphere/functions
+        run: |
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::notice::BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT_DEV not set — version record skipped."
+            exit 0
+          fi
+          npm install firebase-admin --silent
+          node -e "
+            const admin = require('firebase-admin');
+            admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)) });
+            admin.firestore().collection('config').doc('app').set({
+              webVersion: process.env.VERSION,
+              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+              updatedBy: 'eapp-releases-demo',
+            }, { merge: true }).then(() => console.log('version updated'));
+          "
+
+      - name: Update marker
+        run: |
+          "${GITHUB_WORKSPACE}/.github/scripts/push-marker.sh" \
+            bharatsphere-last-deployed.txt "${{ needs.check.outputs.sha }}" \
+            "ci: deployed bharatsphere demo @ ${{ needs.check.outputs.sha }}"
+
+  # ========================================================================
+  # LIVE (was: v* tag push on bharatsphere-app)
+  # ========================================================================
+  deploy_live:
+    needs: check
+    if: needs.check.outputs.deploy_live == 'true'
+    runs-on: ubuntu-latest
+    environment: bharatsphere-live
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout bharatsphere-app at the release tag
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/bharatsphere-app
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.tag || 'main' }}
+          path: bharatsphere
+
+      - name: Generate version number
+        id: version
+        run: echo "VERSION=$(date +'%Y.%V').${{ github.run_number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Update pubspec.yaml version
+        working-directory: bharatsphere/bharatsphere_mobile
+        run: |
+          sed -i "s/^version: .*/version: ${{ steps.version.outputs.VERSION }}/" pubspec.yaml
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.41.5'
+          channel: 'stable'
+          cache: true
+
+      - name: Build web (prod)
+        working-directory: bharatsphere/bharatsphere_mobile
+        run: |
+          flutter pub get
+          flutter build web --release --dart-define=ENVIRONMENT=prod \
+            --build-name=${{ steps.version.outputs.VERSION }} \
+            --build-number=${{ github.run_number }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      # hosting:demo is HunarManch (bharat-spheres-vibes is hunarmanch-web).
+      - name: Build HunarManch landing page
+        working-directory: bharatsphere/bharat-spheres-vibes
+        run: |
+          npm ci
+          npm run build
+
+      - name: Install Firebase CLI
+        run: npm install -g firebase-tools
+
+      - name: Install dependencies
+        working-directory: bharatsphere
+        run: |
+          (cd functions && npm ci)
+          (cd scripts && npm install)
+
+      - name: Validate Firestore indexes
+        working-directory: bharatsphere
+        run: node scripts/validate-indexes.js --project bharatsphere-183e7 --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN }}
+
+      - name: Seed pincodes
+        if: ${{ env.SERVICE_ACCOUNT_JSON != '' }}
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT }}
+        working-directory: bharatsphere
+        run: |
+          npm install firebase-admin csv-parser
+          node scripts/ingest_pincodes.js bharatsphere_mobile/assets/5c2f62fe-5afa-4119-a499-fec9d604d5bd.csv
+
+      - name: Deploy to Firebase (live)
+        working-directory: bharatsphere
+        run: |
+          cp remote_config/remote_config_prod.json remote_config/remote_config_template.json
+          firebase use default --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN }}
+          firebase deploy \
+            --only hosting:app,hosting:demo,firestore:rules,firestore:indexes,storage,functions,remoteconfig,database \
+            --project bharatsphere-183e7 --token ${{ secrets.BHARATSPHERE_FIREBASE_TOKEN }} --force
+
+      - name: Update Firestore version record
+        continue-on-error: true
+        env:
+          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT }}
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        working-directory: bharatsphere/functions
+        run: |
+          if [ -z "${FIREBASE_SERVICE_ACCOUNT:-}" ]; then
+            echo "::notice::BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT not set — version record skipped."
+            exit 0
+          fi
+          npm install firebase-admin --silent
+          node -e "
+            const admin = require('firebase-admin');
+            admin.initializeApp({ credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT)) });
+            admin.firestore().collection('config').doc('app').set({
+              webVersion: process.env.VERSION,
+              lastUpdated: admin.firestore.FieldValue.serverTimestamp(),
+              updatedBy: 'eapp-releases-prod',
+            }, { merge: true }).then(() => console.log('version updated'));
+          "
+
+      - name: Update marker
+        if: needs.check.outputs.tag != ''
+        run: |
+          "${GITHUB_WORKSPACE}/.github/scripts/push-marker.sh" \
+            bharatsphere-last-released.txt "${{ needs.check.outputs.tag }}" \
+            "ci: deployed bharatsphere live @ ${{ needs.check.outputs.tag }}"
