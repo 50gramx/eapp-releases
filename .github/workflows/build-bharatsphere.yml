@@ -69,6 +69,7 @@ jobs:
       tag: ${{ steps.latest.outputs.tag }}
       deploy_demo: ${{ steps.compare.outputs.deploy_demo }}
       deploy_live: ${{ steps.compare.outputs.deploy_live }}
+      live_ref: ${{ steps.compare.outputs.live_ref }}
     steps:
       - uses: actions/checkout@v4
 
@@ -95,11 +96,18 @@ jobs:
           TAG: ${{ steps.latest.outputs.tag }}
         run: |
           set -euo pipefail
-          demo=false; live=false; adopt=false
+          demo=false; live=false; adopt=false; live_ref=""
           released=$(cat bharatsphere-last-released.txt 2>/dev/null || echo)
           case "$DISPATCH" in
             demo) demo=true ;;
-            live) live=true ;;
+            # A MANUAL live deploy BUILDS MAIN, NOT THE HIGHEST TAG. The old CI
+            # deployed live from a tag PUSH, where the tag was by definition the
+            # commit you had just made; "highest tag that exists" is a different
+            # thing entirely and can be arbitrarily old. It was: the first manual
+            # live run checked out v2025.1.4 from December and failed on an intl
+            # constraint fixed months later. Automatic runs still use the tag,
+            # because there the tag is new by construction.
+            live) live=true; live_ref=main ;;
             *)
               [ "$(cat bharatsphere-last-deployed.txt 2>/dev/null || echo)" = "$SHA" ] || demo=true
               # An EMPTY released-marker means this workflow has never run, not
@@ -112,7 +120,7 @@ jobs:
                 echo "::notice::adopting $TAG as the live baseline; not deploying"
                 adopt=true
               elif [ -n "$TAG" ] && [ "$released" != "$TAG" ]; then
-                live=true
+                live=true; live_ref="$TAG"
               fi
               ;;
           esac
@@ -121,7 +129,8 @@ jobs:
           echo "deploy_demo=$demo" >> "$GITHUB_OUTPUT"
           echo "deploy_live=$live" >> "$GITHUB_OUTPUT"
           echo "adopt=$adopt" >> "$GITHUB_OUTPUT"
-          echo "demo=$demo live=$live adopt=$adopt"
+          echo "live_ref=$live_ref" >> "$GITHUB_OUTPUT"
+          echo "demo=$demo live=$live adopt=$adopt live_ref=${live_ref:-<none>}"
 
       - name: Adopt the current tag as the live baseline
         if: steps.compare.outputs.adopt == 'true'
@@ -165,7 +174,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.5'
+          # NOT pinned to a patch version. The pin inherited from the private
+          # repo's workflow was 3.41.5 while the app had already moved on (see
+          # "migrate feather -> lucide to unblock Flutter 3.44 builds"), and
+          # pubspec.lock now wants flutter >=3.35.0 with dart >=3.10.0-0. A
+          # version written in THIS repo cannot track upgrades made in THAT one,
+          # so it only ever drifts. Track stable; pin here deliberately if a
+          # stable release ever breaks the build.
           channel: 'stable'
           cache: true
 
@@ -256,12 +271,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Checkout bharatsphere-app at the release tag
+      - name: Checkout bharatsphere-app at the release ref
         uses: actions/checkout@v4
         with:
           repository: 50gramx/bharatsphere-app
           token: ${{ secrets.CI_READ_TOKEN }}
-          ref: ${{ needs.check.outputs.tag || 'main' }}
+          ref: ${{ needs.check.outputs.live_ref }}
           path: bharatsphere
 
       - name: Generate version number
@@ -275,7 +290,13 @@ jobs:
 
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.41.5'
+          # NOT pinned to a patch version. The pin inherited from the private
+          # repo's workflow was 3.41.5 while the app had already moved on (see
+          # "migrate feather -> lucide to unblock Flutter 3.44 builds"), and
+          # pubspec.lock now wants flutter >=3.35.0 with dart >=3.10.0-0. A
+          # version written in THIS repo cannot track upgrades made in THAT one,
+          # so it only ever drifts. Track stable; pin here deliberately if a
+          # stable release ever breaks the build.
           channel: 'stable'
           cache: true
 
@@ -357,7 +378,9 @@ jobs:
           "
 
       - name: Update marker
-        if: needs.check.outputs.tag != ''
+        # Only a tag deploy advances the release marker. A manual run built main,
+        # which is not a release and must not be recorded as one.
+        if: needs.check.outputs.live_ref == needs.check.outputs.tag && needs.check.outputs.tag != ''
         run: |
           "${GITHUB_WORKSPACE}/.github/scripts/push-marker.sh" \
             bharatsphere-last-released.txt "${{ needs.check.outputs.tag }}" \
