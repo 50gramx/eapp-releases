@@ -3,7 +3,10 @@ name: Build epnd
 # Mirrors private epn-daemon/.github/workflows/release.yml exactly. Private
 # repo is untouched — we just poll its latest `main` SHA (via CI_READ_TOKEN,
 # read-only) and only rebuild when it moves.
-# A marker commit SHA is kept in `epnd-last-built.txt` on this repo's main.
+# A marker of "<epn-daemon sha> <scripts hash>" is kept in `epnd-last-built.txt`
+# on this repo's main. It covers the SCRIPTS as well as the daemon because this
+# workflow publishes both -- watching only the daemon meant a fix to install.ps1
+# or epnd-autoupdate.ps1 could never ship on its own.
 #
 # Automatic behavior: Publishes new epnd when epn-daemon main moves.
 # Manual option: Can cascade to rebuild all brand/platform combos (for critical updates).
@@ -34,6 +37,7 @@ jobs:
     outputs:
       sha: ${{ steps.latest.outputs.sha }}
       should_build: ${{ steps.compare.outputs.should_build }}
+      marker: ${{ steps.compare.outputs.marker }}
     steps:
       - uses: actions/checkout@v4
 
@@ -45,15 +49,36 @@ jobs:
           sha=$(gh api repos/50gramx/epn-daemon/commits/main --jq .sha)
           echo "sha=$sha" >> "$GITHUB_OUTPUT"
 
+      - name: Hash the scripts this workflow publishes
+        id: scripts
+        run: |
+          set -euo pipefail
+          # THE MARKER MUST COVER EVERYTHING THE RELEASE CONTAINS.
+          #
+          # This workflow publishes install/update scripts from THIS repo
+          # alongside the binaries, but change detection used to watch only
+          # epn-daemon's SHA. So a fix to install.ps1 or epnd-autoupdate.ps1
+          # could never ship on its own: with the marker already equal to
+          # epn-daemon HEAD, every scheduled run skipped, and the corrected
+          # script sat in git forever while nodes kept downloading the broken
+          # one. That is how the em-dash bug survived its own fix.
+          h=$(cat scripts/install.sh scripts/install.ps1                   scripts/epnd-autoupdate.sh scripts/epnd-autoupdate.ps1               | sha256sum | cut -d' ' -f1)
+          echo "hash=$h" >> "$GITHUB_OUTPUT"
+
       - name: Compare against last built marker
         id: compare
         run: |
+          # The marker is "<epn-daemon sha> <scripts hash>". A first line alone
+          # is an older marker: treat it as a scripts mismatch so the next run
+          # republishes once and settles.
           last=$(cat epnd-last-built.txt 2>/dev/null || echo "")
-          if [ "$last" = "${{ steps.latest.outputs.sha }}" ]; then
+          want="${{ steps.latest.outputs.sha }} ${{ steps.scripts.outputs.hash }}"
+          if [ "$last" = "$want" ]; then
             echo "should_build=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_build=true" >> "$GITHUB_OUTPUT"
           fi
+          echo "marker=$want" >> "$GITHUB_OUTPUT"
 
   build:
     needs: check
@@ -214,7 +239,7 @@ jobs:
             epn-daemon/dist/checksums.txt
 
       - name: Update built-marker
-        run: echo "${{ needs.check.outputs.sha }}" > epnd-last-built.txt
+        run: echo "${{ needs.check.outputs.marker }}" > epnd-last-built.txt
 
       - name: Commit marker
         # eapp-releases main is pushed by several scheduled workflows on
@@ -228,7 +253,7 @@ jobs:
           for i in $(seq 1 6); do
             git fetch -q origin main
             git reset -q --hard origin/main
-            echo "${{ needs.check.outputs.sha }}" > epnd-last-built.txt
+            echo "${{ needs.check.outputs.marker }}" > epnd-last-built.txt
             if git diff --quiet -- epnd-last-built.txt; then
               echo "marker already current"; exit 0
             fi
