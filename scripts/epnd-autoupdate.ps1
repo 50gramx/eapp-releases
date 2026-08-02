@@ -5,6 +5,47 @@ Safe for in-flight work: atomic binary swap + graceful service restart.
 #>
 $ErrorActionPreference = 'Continue'
 
+# Keep THIS updater script current too. The updater replaces epnd.exe but never
+# itself, so a bug in the updater -- like the em dash on line 79 that Windows
+# PowerShell decoded as a smart quote, ending the string early and derailing the
+# parse of everything after it -- could never be fixed remotely. Every node would
+# need a manual reinstall.
+#
+# ALWAYS CALLED LAST. Replacing the file the engine is currently reading can
+# derail the rest of the run; deferring costs one cycle and removes the hazard.
+# The new logic takes effect on the next run.
+function Update-Self {
+  param([string]$Base, [string]$SumsPath, [string]$Tmp)
+
+  if (-not $PSCommandPath) { return }
+  $selfLine = Select-String -Path $SumsPath -Pattern "[ *]epnd-autoupdate.ps1$" | Select-Object -First 1
+  if (-not $selfLine) { return }
+
+  $selfWant = (($selfLine.Line -split '\s+')[0]).ToLower()
+  $selfHave = (Get-FileHash -Path $PSCommandPath -Algorithm SHA256 -ErrorAction SilentlyContinue).Hash.ToLower()
+  if ($selfHave -eq $selfWant) { return }
+
+  try {
+    Invoke-WebRequest -Uri "$Base/epnd-autoupdate.ps1" -OutFile (Join-Path $Tmp 'self.ps1') -UseBasicParsing -ErrorAction Stop
+    $selfGot = (Get-FileHash -Path (Join-Path $Tmp 'self.ps1') -Algorithm SHA256).Hash.ToLower()
+    if ($selfGot -ne $selfWant) { return }
+
+    # A published script must be pure ASCII (the build enforces it). Refusing a
+    # non-ASCII one here too means a bad publish cannot brick the updater on the
+    # machines that already have a working copy.
+    $bytes = [System.IO.File]::ReadAllBytes((Join-Path $Tmp 'self.ps1'))
+    if ($bytes | Where-Object { $_ -gt 127 }) {
+      Write-Host "refusing a non-ASCII updater script -- keeping the working copy" -ForegroundColor Yellow
+      return
+    }
+
+    Copy-Item (Join-Path $Tmp 'self.ps1') $PSCommandPath -Force -ErrorAction Stop
+    Write-Host "updated the auto-update script itself; it takes effect next run" -ForegroundColor Green
+  } catch {
+    Write-Host "note: could not self-update the updater script" -ForegroundColor Gray
+  }
+}
+
 $repo = if ($env:EPND_REPO) { $env:EPND_REPO } else { '50gramx/eapp-releases' }
 $tag  = if ($env:EPND_TAG)  { $env:EPND_TAG }  else { 'epnd-latest' }
 $base = "https://github.com/$repo/releases/download/$tag"
@@ -33,28 +74,12 @@ try {
     exit 0
   }
 
-  # Keep THIS updater script current too. The updater replaces epnd.exe but never
-  # itself, so a bug in the updater (like the one that left the binary file-locked
-  # and every node stuck on an old build) could never be fixed remotely — every
-  # node would need a manual reinstall. Refresh our own file from the published,
-  # checksum-verified copy; the new logic takes effect on the next run.
-  if ($PSCommandPath) {
-    $selfLine = Select-String -Path (Join-Path $tmp 'checksums.txt') -Pattern "[ *]epnd-autoupdate.ps1$" | Select-Object -First 1
-    if ($selfLine) {
-      $selfWant = (($selfLine.Line -split '\s+')[0]).ToLower()
-      $selfHave = (Get-FileHash -Path $PSCommandPath -Algorithm SHA256 -ErrorAction SilentlyContinue).Hash.ToLower()
-      if ($selfHave -ne $selfWant) {
-        try {
-          Invoke-WebRequest -Uri "$base/epnd-autoupdate.ps1" -OutFile (Join-Path $tmp 'self.ps1') -UseBasicParsing -ErrorAction Stop
-          $selfGot = (Get-FileHash -Path (Join-Path $tmp 'self.ps1') -Algorithm SHA256).Hash.ToLower()
-          if ($selfGot -eq $selfWant) {
-            Copy-Item (Join-Path $tmp 'self.ps1') $PSCommandPath -Force -ErrorAction Stop
-            Write-Host "updated the auto-update script itself" -ForegroundColor Green
-          }
-        } catch { Write-Host "note: could not self-update the updater script" -ForegroundColor Gray }
-      }
-    }
-  }
+  # THE SELF-UPDATE RUNS LAST, NOT HERE. See Update-Self at the end of this file.
+  #
+  # It used to run at this point, and rewriting the file PowerShell is CURRENTLY
+  # EXECUTING is a real hazard: the engine reads a script incrementally, so
+  # replacing the bytes underneath it can derail the rest of the run. Deferring it
+  # to the very end costs one update cycle and removes the hazard entirely.
 
   $line = Select-String -Path (Join-Path $tmp 'checksums.txt') -Pattern "[ *]$asset$" | Select-Object -First 1
   if (-not $line) {
@@ -76,7 +101,7 @@ try {
     exit 0
   }
 
-  Write-Host "new epnd available (have=$($have.Substring(0,8))... want=$($want.Substring(0,8))...) — updating…" -ForegroundColor Yellow
+  Write-Host "new epnd available (have=$($have.Substring(0,8))... want=$($want.Substring(0,8))...) -- updating..." -ForegroundColor Yellow
 
   # Download and verify
   try {
@@ -100,7 +125,7 @@ try {
 
   # Stop-ScheduledTask does NOT reliably kill epnd.exe: the task launches it via a
   # cmd.exe wrapper, so epnd.exe is a GRANDCHILD that gets orphaned and keeps the
-  # binary file-locked — which made the in-place swap fail and the node silently
+  # binary file-locked -- which made the in-place swap fail and the node silently
   # stay on the old build. Kill the actual running binary at $bin (path-matched;
   # fall back to any epnd.exe if the path can't be read).
   $procs = Get-CimInstance Win32_Process -Filter "Name='epnd.exe'" -ErrorAction SilentlyContinue
@@ -119,6 +144,8 @@ try {
   Write-Host "updated epnd from $tag" -ForegroundColor Green
 
   Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+
+  Update-Self -Base $base -SumsPath (Join-Path $tmp 'checksums.txt') -Tmp $tmp
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }

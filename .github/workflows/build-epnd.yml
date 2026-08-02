@@ -162,6 +162,18 @@ jobs:
           abuild x86_64      amd64 x86_64-linux-android${API}-clang
           ls -la dist/epnd-android-*
 
+      - name: PowerShell scripts must be pure ASCII
+        run: |
+          set -euo pipefail
+          python3 scripts/check-ps1-ascii.py 'scripts/*.ps1'
+          # ASCII-clean is necessary, not sufficient: a script that does not parse
+          # must never be published either.
+          if command -v pwsh >/dev/null 2>&1; then
+            for f in scripts/*.ps1; do
+              pwsh -NoProfile -Command "\$e = \$null; [void][System.Management.Automation.Language.Parser]::ParseFile('$f', [ref]\$null, [ref]\$e); if (\$e.Count) { \$e | ForEach-Object { Write-Host \$_.Message }; exit 1 }"                 || { echo "::error file=$f::does not parse"; exit 1; }
+            done
+          fi
+
       - name: Stage installer + checksums
         run: |
           set -euo pipefail

@@ -33,7 +33,7 @@ New-Item -ItemType Directory -Force -Path $dest | Out-Null
 $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("gram-install-" + [System.Guid]::NewGuid())
 New-Item -ItemType Directory -Force -Path $tmp | Out-Null
 try {
-  Write-Host "downloading Gram node ($tag)…"
+  Write-Host "downloading Gram node ($tag)..."
   Invoke-WebRequest -Uri $url -OutFile (Join-Path $tmp 'epnd.exe') -UseBasicParsing
 
   $sumsPath = Join-Path $tmp 'checksums.txt'
@@ -48,12 +48,12 @@ try {
       Write-Host "checksum verified"
     }
   } else {
-    Write-Warning "no checksums.txt found — skipping verification"
+    Write-Warning "no checksums.txt found -- skipping verification"
   }
 
   # Re-running this installer (upgrade, or just retrying) is common, and a
   # previously-installed node is very likely still running in the background
-  # (that is the whole point of registering it as a service) — the binary is
+  # (that is the whole point of registering it as a service) -- the binary is
   # locked while its process is alive, so Copy-Item fails with "being used by
   # another process" unless the running instance is stopped first.
   Stop-ScheduledTask -TaskName 'GramNode' -ErrorAction SilentlyContinue
@@ -72,28 +72,28 @@ try {
 
   & (Join-Path $dest 'epnd.exe') version 2>$null
 
-  # ── register as a background service (Task Scheduler) ────────────────────────
+  # -- register as a background service (Task Scheduler) ------------------------
   # Two separate concerns, both best-effort so a failure in either never aborts
   # an otherwise-successful install:
   #
-  # 1. Access Denied — Register-ScheduledTask can throw this in a plain
+  # 1. Access Denied -- Register-ScheduledTask can throw this in a plain
   #    (non-elevated) PowerShell. Elevation is NOT required to run the node at
   #    all, only to make it auto-start via Task Scheduler.
   #
-  # 2. Visible console window — a scheduled task launching a console .exe runs
+  # 2. Visible console window -- a scheduled task launching a console .exe runs
   #    it under an INTERACTIVE logon token by default, which pops a real
   #    console window in the user's session. Closing that window sends
-  #    CTRL_CLOSE and kills the process — not what "background service" means.
+  #    CTRL_CLOSE and kills the process -- not what "background service" means.
   #    -LogonType S4U runs the task in a non-interactive session: no window,
   #    and nothing to accidentally close.
   Write-Host ""
-  Write-Host "registering Gram node as a background service…"
+  Write-Host "registering Gram node as a background service..."
 
   $exePath = Join-Path $dest 'epnd.exe'
   $taskName = "GramNode"
   $serviceRegistered = $false
 
-  # A hidden (S4U) task has no console to show output in — without redirecting
+  # A hidden (S4U) task has no console to show output in -- without redirecting
   # somewhere, `serve`'s logs (engine spin-up, k3s provisioning failures, probe
   # results) are simply gone, and there is no way to tell a running-but-silent
   # node from one whose engine never came up.
@@ -120,7 +120,7 @@ try {
     $taskAction = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument $wrappedArg
     $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
     $taskPrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
-    $task = New-ScheduledTask -Action $taskAction -Trigger $startupTrigger -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node — auto-starts on boot and auto-restarts on failure, runs hidden"
+    $task = New-ScheduledTask -Action $taskAction -Trigger $startupTrigger -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node -- auto-starts on boot and auto-restarts on failure, runs hidden"
     Register-ScheduledTask -TaskName $taskName -InputObject $task -Force -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
 
@@ -129,7 +129,7 @@ try {
     $serviceRegistered = $true
   } catch {
     Write-Warning "Task Scheduler registration failed (Access Denied is common without elevation): $($_.Exception.Message)"
-    Write-Host "falling back to a per-user startup entry (starts at login, no elevation needed)…"
+    Write-Host "falling back to a per-user startup entry (starts at login, no elevation needed)..."
 
     try {
       $runKey = 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run'
@@ -141,11 +141,11 @@ try {
       Write-Host "you can still run the node manually: $exePath serve"
     }
 
-    # Start it now regardless, so this session has a running node — hidden,
+    # Start it now regardless, so this session has a running node -- hidden,
     # same as the Task Scheduler path, logs to the same file.
     try {
       Start-Process -FilePath $exePath -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput $logPath -RedirectStandardError "$logPath.err"
-      Write-Host "started Gram node for this session — logs: $logPath"
+      Write-Host "started Gram node for this session -- logs: $logPath"
     } catch {
       Write-Warning "could not start Gram node: $($_.Exception.Message)"
     }
@@ -156,8 +156,8 @@ try {
     Write-Host "  irm https://raw.githubusercontent.com/50gramx/eapp-releases/main/scripts/install.ps1 | iex"
   }
 
-  # ── install and register auto-update script ────────────────────────────────
-  Write-Host "installing auto-update script…"
+  # -- install and register auto-update script --------------------------------
+  Write-Host "installing auto-update script..."
 
   $scriptPath = Join-Path $dest 'epnd-autoupdate.ps1'
   try {
@@ -182,7 +182,7 @@ try {
   }
   # Self-update THIS updater script: it replaces epnd.exe but never itself, so a
   # bug in it would strand every node on an old build with no remote fix. Pull the
-  # published, checksum-verified copy over ourselves (effective next run) — this is
+  # published, checksum-verified copy over ourselves (effective next run) -- this is
   # what lets the binary-lock fix reach nodes without a manual reinstall.
   if (`$PSCommandPath) {
     `$selfLine = Select-String -Path (Join-Path `$tmp 'checksums.txt') -Pattern "[ *]epnd-autoupdate.ps1`$" | Select-Object -First 1
@@ -239,13 +239,13 @@ try {
     Write-Warning "could not install auto-update script: $_"
   }
 
-  # Register auto-update task (runs every 15 minutes) — same elevation and
+  # Register auto-update task (runs every 15 minutes) -- same elevation and
   # hidden-window handling as the main service task, independently best-effort.
   #
   # No -RepetitionDuration: Task Scheduler's XML serializer rejects the
   # ~100-year duration `New-TimeSpan -Days 36500` produces ("value ...
   # incorrectly formatted or out of range", P36500D). Omitting it entirely
-  # means "repeat forever" — exactly what's wanted, and it's valid XML.
+  # means "repeat forever" -- exactly what's wanted, and it's valid XML.
   $updateTaskName = "GramNodeAutoUpdate"
   $autoUpdateRegistered = $false
 
@@ -262,7 +262,7 @@ try {
     $updateAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
     $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable
     $updatePrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
-    $updateTask = New-ScheduledTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Principal $updatePrincipal -Description "Gram node auto-update — checks for updates every 15 minutes"
+    $updateTask = New-ScheduledTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Principal $updatePrincipal -Description "Gram node auto-update -- checks for updates every 15 minutes"
     Register-ScheduledTask -TaskName $updateTaskName -InputObject $updateTask -Force -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $updateTaskName -ErrorAction SilentlyContinue
 
@@ -274,17 +274,17 @@ try {
 
   Write-Host ""
   if ($serviceRegistered -and $autoUpdateRegistered) {
-    Write-Host "✓ Gram node is installed and running in the background"
-    Write-Host "  • auto-starts on boot"
-    Write-Host "  • auto-restarts on crash"
-    Write-Host "  • auto-updates every 15 minutes"
-    Write-Host "  • no visible window — it runs hidden, closing a terminal does not stop it"
-    Write-Host "  • logs: $logPath"
+    Write-Host "[ok] Gram node is installed and running in the background"
+    Write-Host "  * auto-starts on boot"
+    Write-Host "  * auto-restarts on crash"
+    Write-Host "  * auto-updates every 15 minutes"
+    Write-Host "  * no visible window -- it runs hidden, closing a terminal does not stop it"
+    Write-Host "  * logs: $logPath"
   } else {
-    Write-Host "✓ Gram node is installed and running for this session"
-    Write-Host "  • re-run from an Administrator PowerShell for full auto-start/auto-update"
+    Write-Host "[ok] Gram node is installed and running for this session"
+    Write-Host "  * re-run from an Administrator PowerShell for full auto-start/auto-update"
   }
-  Write-Host "  • run: epnd node list"
+  Write-Host "  * run: epnd node list"
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
