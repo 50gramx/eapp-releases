@@ -20,6 +20,9 @@ import {
   backfillCommunities,
   buildGramxRooms,
   buildAgentTurns,
+  collectVerifiedTurnStatements,
+  rollAgentTurns,
+  mergeTurnArchive,
   buildPrivateWork,
   verifyPrivateAggregate,
   verifyTurnStatement,
@@ -1301,4 +1304,119 @@ test('a private turn digest that still names its room is dropped', () => {
   const out = buildAgentTurns([{ agent_turns: [leaky] }], 'now', []);
   assert.equal(out.agent_count, 0);
   assert.equal(out.rejected, 1);
+});
+
+// THE TURN ARCHIVE.
+//
+// rollAgentTurns takes statements that are already verified, so these fixtures carry
+// no real signature: what is under test is the adding up, not the checking. The
+// checking is covered by the buildAgentTurns cases above, which run the whole path.
+const ARCHIVED_TURN = {
+  node_did: 'did:epn:aaa',
+  persona_id: 'evo',
+  gramx_id: 'room-a',
+  kind: 'concierge_turn',
+  epoch_start: 1785153600,
+  epoch_end: 1785157200,
+  turns: 2, tool_calls: 2, held: 1, failed: 1, gated: 0,
+  prompt_tokens: 0, output_tokens: 0,
+  vcpu_seconds: 1.4, gpu_seconds: 0, energy_kwh: 0, carbon_grams: 0,
+  models: ['gemma4:e2b'], tools: ['cite_fact'],
+  sig: 'sig-1', signing_payload_b64: 'payload-1',
+};
+const atEpoch = (epoch, over = {}) => ({
+  ...ARCHIVED_TURN, epoch_start: epoch, epoch_end: epoch + 3600, ...over,
+});
+
+// A daemon republishes the same hour on every run for a week. If that added up, the
+// network would be billed many times over for one turn.
+test('a statement republished every run lands in the archive exactly once', () => {
+  const first = mergeTurnArchive([], [atEpoch(1785153600)]);
+  const again = mergeTurnArchive(first, [atEpoch(1785153600)]);
+  assert.equal(again.length, 1);
+  assert.equal(rollAgentTurns(again, 'now').totals.turns, 2);
+});
+
+// The whole reason the archive exists: turn_digest.go folds seven days and no more,
+// so without this the total SHRANK as an agent's work aged out of the window.
+test('a turn the daemon has aged out of its window is still counted', () => {
+  const archive = mergeTurnArchive(
+    [atEpoch(1785153600, { turns: 2, held: 1, failed: 1 })],
+    [atEpoch(1786000000, { turns: 3, held: 3, failed: 0 })]
+  );
+  const out = rollAgentTurns(archive, 'now');
+  assert.equal(out.agent_count, 1);
+  assert.equal(out.totals.turns, 5);
+  assert.equal(out.agents[0].epochs, 2);
+  // decided = 4 held + 1 failed, and the rate is over those, never over every turn.
+  assert.equal(out.totals.decided, 5);
+  assert.equal(out.totals.held_pct, 80);
+});
+
+test('an agent keeps every turn it proved when its gram publishes nothing', () => {
+  const archive = mergeTurnArchive([atEpoch(1785153600)], []);
+  const out = rollAgentTurns(archive, 'now');
+  assert.equal(out.agent_count, 1);
+  assert.equal(out.gram_count, 1);
+  assert.equal(out.totals.turns, 2);
+});
+
+// Same number either way; only one of them can be checked in a reader's browser.
+test('a statement that arrives with its signed bytes replaces one without them', () => {
+  const bare = atEpoch(1785153600, { signing_payload_b64: '' });
+  const full = atEpoch(1785153600);
+  assert.equal(mergeTurnArchive([bare], [full])[0].signing_payload_b64, 'payload-1');
+  assert.equal(mergeTurnArchive([full], [bare])[0].signing_payload_b64, 'payload-1');
+});
+
+// An agent belongs to the gram that vouches for it — that is what its DID is for.
+test('two grams running an agent of the same name stay two agents in the archive', () => {
+  const archive = mergeTurnArchive([], [
+    atEpoch(1785153600),
+    atEpoch(1785153600, { node_did: 'did:epn:bbb' }),
+  ]);
+  assert.equal(archive.length, 2);
+  assert.equal(rollAgentTurns(archive, 'now').agent_count, 2);
+});
+
+test('the archive is ordered oldest epoch first, so a run diffs to the lines it added', () => {
+  const archive = mergeTurnArchive([], [atEpoch(1786000000), atEpoch(1785153600)]);
+  assert.deepEqual(archive.map((s) => s.epoch_start), [1785153600, 1786000000]);
+});
+
+test('the rooms, models and tools an agent worked in accumulate across epochs', () => {
+  const archive = mergeTurnArchive([], [
+    atEpoch(1785153600, { gramx_id: 'room-a', models: ['m1'], tools: ['t1'] }),
+    atEpoch(1786000000, { gramx_id: 'room-b', models: ['m2'], tools: ['t2'] }),
+  ]);
+  const a = rollAgentTurns(archive, 'now').agents[0];
+  assert.deepEqual(a.rooms, ['room-a', 'room-b']);
+  assert.deepEqual(a.models, ['m1', 'm2']);
+  assert.deepEqual(a.tools, ['t1', 't2']);
+  assert.equal(a.first_epoch, 1785153600);
+  assert.equal(a.last_epoch, 1786000000 + 3600);
+});
+
+// Verified once, on the way in — the archive is extended from exactly these.
+test('collecting verifies once and carries the signed bytes through', () => {
+  const { statements, rejected } = collectVerifiedTurnStatements(
+    [{ agent_turns: [GO_SIGNED_TURN_DIGEST] }],
+    []
+  );
+  assert.equal(rejected, 0);
+  assert.equal(statements.length, 1);
+  assert.equal(statements[0].signing_payload_b64, GO_SIGNED_TURN_DIGEST.signing_payload_b64);
+  // And a forgery never reaches the archive at all.
+  assert.equal(
+    collectVerifiedTurnStatements([{ agent_turns: [{ ...GO_SIGNED_TURN_DIGEST, turns: 9999 }] }], []).statements.length,
+    0
+  );
+});
+
+// The published page and the archive must never disagree about what happened.
+test('turns.json derived from the archive matches building it from the daemons direct', () => {
+  const nodes = [{ agent_turns: [GO_SIGNED_TURN_DIGEST] }];
+  const { statements, rejected } = collectVerifiedTurnStatements(nodes, []);
+  const viaArchive = rollAgentTurns(mergeTurnArchive([], statements), 'now', rejected);
+  assert.deepEqual(viaArchive, buildAgentTurns(nodes, 'now', []));
 });

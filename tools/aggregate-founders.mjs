@@ -534,6 +534,32 @@ function readPublished(path) {
   }
 }
 
+/** Where every signed turn statement is kept. See mergeTurnArchive. */
+const TURN_ARCHIVE_PATH = 'data/turns-archive.jsonl';
+
+/**
+ * The turn archive, one signed statement per line.
+ *
+ * Best-effort per line, like readHistory and like the daemon's own ledger reader: a
+ * single unparseable line is skipped rather than fatal. An archive that refused to
+ * load because one byte was corrupt would take every agent off the site with it, and
+ * the line is still in the file for anyone auditing.
+ */
+function readTurnArchive(path) {
+  if (!existsSync(path)) return [];
+  return readFileSync(path, 'utf8')
+    .split('\n')
+    .filter(Boolean)
+    .map((line) => {
+      try {
+        return JSON.parse(line);
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
+}
+
 /**
  * Network-wide high-water marks. Same rule as a community's: replaced only by a
  * strictly greater verified value, and carrying the ts + DID of the machine that
@@ -1044,8 +1070,13 @@ export function verifyTurnStatement(statement, fromDID) {
   }
 }
 
-/** Rolls verified turn digests into per-agent totals, with the rooms they worked in. */
-export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
+/**
+ * Every turn statement the daemons published this run, verified once and kept whole.
+ *
+ * Exposed for the same reason buildProofOutputs exposes `verified`: the turn archive
+ * is extended from exactly these, and no signature is verified twice to do it.
+ */
+export function collectVerifiedTurnStatements(nodes, meshViews = []) {
   const collected = [];
   const addFrom = (source) => {
     const raw = source && source.agent_turns;
@@ -1059,9 +1090,7 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
     for (const n of (view && view.nodes) || []) addFrom(n);
   }
 
-  const agents = new Map();
-  const seen = new Set();
-  const grams = new Set();
+  const statements = [];
   let rejected = 0;
 
   for (const { fromDID, statement } of collected) {
@@ -1077,6 +1106,35 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
     const v = verifyTurnStatement(statement, fromDID);
     if (!v.ok) { rejected++; continue; }
 
+    // Whole, and carrying the bytes that were signed — what the archive keeps and what
+    // a browser re-checks. Carried through untouched, never rebuilt.
+    statements.push({ ...statement, signing_payload_b64: v.payload_b64 });
+  }
+
+  return { statements, rejected };
+}
+
+/** Rolls verified turn digests into per-agent totals, with the rooms they worked in. */
+export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
+  const { statements, rejected } = collectVerifiedTurnStatements(nodes, meshViews);
+  return rollAgentTurns(statements, generatedAt, rejected);
+}
+
+/**
+ * The roll itself, over statements that are already verified.
+ *
+ * Split out from collection so the SAME roll runs over one run's statements and over
+ * the whole archive. That is what keeps the published totals a function of the record
+ * they claim to summarise — the discipline turn_digest.go's Digest already keeps on
+ * the daemon side, held one level further along the road.
+ */
+export function rollAgentTurns(statements, generatedAt, rejected = 0) {
+  const agents = new Map();
+  const seen = new Set();
+  const grams = new Set();
+
+  for (const statement of statements || []) {
+    const fromDID = statement.node_did;
     const persona = statement.persona_id || 'unnamed';
     const room = statement.gramx_id || '';
     const dedupe = [fromDID, persona, room, statement.epoch_start].join('|');
@@ -1114,7 +1172,10 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
     if (a.last_epoch === null || statement.epoch_end > a.last_epoch) a.last_epoch = statement.epoch_end;
 
     // Carry the verified bytes so a BROWSER can check the same digest itself.
-    // Capped: the page needs enough to show the number is real, not the archive.
+    // Capped: the page needs enough to show the number is real, not the archive —
+    // and since the roll runs newest-first over data/turns-archive.jsonl, these are
+    // the freshest statements. Nothing is lost by the cap: the archive keeps every
+    // statement, and the totals above are summed from all of them, not from these.
     if (a.signed.length < 24) {
       a.signed.push({
         node_did: fromDID,
@@ -1122,7 +1183,7 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
         turns: statement.turns,
         held: statement.held,
         signature: statement.sig,
-        signing_payload_b64: v.payload_b64,
+        signing_payload_b64: statement.signing_payload_b64,
       });
     }
   }
@@ -1177,9 +1238,66 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
       held_pct: decided > 0 ? +((totals.held / decided) * 100).toFixed(1) : null,
     },
     // Said in the data, not in a footnote a reader can drop.
-    coverage_note: 'turn counts are summed from digests the listed grams each signed about their own agents; a gram that did not publish is invisible, so these are a verified floor, not a complete account. The resource figures attribute cost already accounted in data/gramx.json and must not be added to it.',
+    coverage_note: 'turn counts are summed from every digest the listed grams have signed about their own agents, including epochs their daemons have since aged out of the seven-day window they publish; a gram that has never published is invisible, so these are a verified floor, not a complete account. The resource figures attribute cost already accounted in data/gramx.json and must not be added to it.',
     agents: out,
   };
+}
+
+/**
+ * THE TURN ARCHIVE — every statement a daemon ever signed about its agents, kept
+ * because the daemon itself cannot keep them.
+ *
+ * turn_digest.go folds a TRAILING SEVEN DAYS and says why: "a DHT value is size-capped
+ * and a ledger is not, and an unbounded digest would grow until the put silently
+ * failed". That bound is right for a DHT put and wrong for a ledger. A turn that fell
+ * out of the window still happened. Without this archive the site published whatever
+ * the window happened to hold, so an agent's total SHRANK as its work aged, and when
+ * every gram was briefly quiet the whole file went to zero agents — which is not a
+ * quiet network, it is a network that forgot. data/turns.json blinked between two
+ * agents and none of them roughly every quarter hour, and each site build that landed
+ * on an empty one died: `output: export` refuses a dynamic route with no params and
+ * reports it as a missing generateStaticParams(), which is not where the fault is.
+ *
+ * Merge, never regenerate — the rule bests, communities and the model matrix already
+ * follow (see mergeModels, mergeCommunityLedger).
+ *
+ * ON ADDING, WHICH IS THE PART THAT MUST NOT BE GOT WRONG. The unit here is the signed
+ * per-epoch statement, and the key is (gram, agent, room, epoch) — the same key the
+ * roll dedupes on. That key is what makes adding safe: a daemon republishes the same
+ * epoch on every run for a week, and each one lands exactly once, so totals can be
+ * summed from the archive without billing the network many times over for one turn. A
+ * gram that was offline and later backfills an old epoch has it counted, because the
+ * epoch is keyed by when the work happened and not by when it was heard.
+ *
+ * Ordering is by epoch, oldest first: the archive is appended to far more often than
+ * it is rewritten, and a stable order keeps each run's diff to the lines it actually
+ * added.
+ */
+export function mergeTurnArchive(previous, incoming) {
+  const byKey = new Map();
+  const keyOf = (s) => [s.node_did, s.persona_id || 'unnamed', s.gramx_id || '', s.epoch_start].join('|');
+
+  for (const s of previous || []) {
+    if (s && s.node_did) byKey.set(keyOf(s), s);
+  }
+  for (const s of incoming || []) {
+    if (!s || !s.node_did) continue;
+    const held = byKey.get(keyOf(s));
+    // The same gram's statement about the same agent in the same hour is the same
+    // statement; it does not improve by being heard again. The one exception is a copy
+    // that carries its signed bytes where the held one does not — the number is
+    // identical, but only one of them can be checked in a reader's browser, and more
+    // checkable at the same value is always the record to keep. Same rule as a best.
+    if (!held || (!held.signing_payload_b64 && s.signing_payload_b64)) byKey.set(keyOf(s), s);
+  }
+
+  return [...byKey.values()].sort(
+    (a, b) =>
+      (Number(a.epoch_start) || 0) - (Number(b.epoch_start) || 0) ||
+      String(a.node_did).localeCompare(String(b.node_did)) ||
+      String(a.persona_id || '').localeCompare(String(b.persona_id || '')) ||
+      String(a.gramx_id || '').localeCompare(String(b.gramx_id || ''))
+  );
 }
 
 // PRIVATE WORK COUNTS, WITHOUT SAYING WHERE.
@@ -2354,7 +2472,27 @@ function main() {
   // file from gramx.json because it answers a different question - what an agent did,
   // not what a room owes - and because a reader must never be tempted to add the two
   // resource totals together.
-  const turns = buildAgentTurns(out.nodes, out.generated_at, meshViews);
+  //
+  // The archive is the record; turns.json is DERIVED from it every run, never
+  // accumulated into — so the published totals stay a function of statements that were
+  // verified, and an agent whose gram is asleep keeps every turn it proved. See
+  // mergeTurnArchive for why the per-epoch key is what makes that safe to add up.
+  const { statements: turnStatements, rejected: turnsRejected } = collectVerifiedTurnStatements(
+    out.nodes,
+    meshViews
+  );
+  const turnArchive = mergeTurnArchive(readTurnArchive(TURN_ARCHIVE_PATH), turnStatements);
+  writeFileSync(
+    TURN_ARCHIVE_PATH,
+    turnArchive.length ? turnArchive.map((s) => JSON.stringify(s)).join('\n') + '\n' : ''
+  );
+  // Newest first, so the bounded `signed` sample each agent carries on the page is its
+  // freshest evidence. The archive above keeps the rest, and the totals are summed
+  // from all of it regardless of what the sample holds.
+  //
+  // `rejected` is this run's, not the archive's: it describes what arrived today, and
+  // an old rejection is not a standing accusation against a gram.
+  const turns = rollAgentTurns([...turnArchive].reverse(), out.generated_at, turnsRejected);
   writeFileSync('data/turns.json', JSON.stringify(turns, null, 2) + '\n');
 
   // Private work, counted and context-free. Folded INTO gramx.json rather than a file
@@ -2378,7 +2516,11 @@ function main() {
   // A warning, not a failure: the honest response to "the network grew" is to change
   // what is published, not to stop publishing. But it must be SAID, in the log of the
   // run that crossed the line, rather than discovered later from a slow clone.
-  const publishedBytes = readdirSync('data').filter((f) => f.endsWith('.json'))
+  // .jsonl counts too. The turn archive is the one published file that grows with
+  // TIME rather than with the network — a line per agent per hour worked, kept because
+  // the daemon's digest only reaches back seven days — so it is the last file that
+  // should be able to cross this line unseen.
+  const publishedBytes = readdirSync('data').filter((f) => /\.jsonl?$/.test(f))
     .reduce((n, f) => n + statSync('data/' + f).size, 0);
   const perNode = mesh.node_count > 0 ? Math.round(publishedBytes / mesh.node_count) : 0;
   console.log('published bytes:', publishedBytes, '(' + perNode + '/node)');
@@ -2393,7 +2535,10 @@ function main() {
       + '   archive.\n'
     );
   }
-  console.log('agents:', turns.agent_count, 'turns:', turns.totals.turns, 'rejected digests:', turns.rejected);
+  console.log(
+    'agents:', turns.agent_count, 'turns:', turns.totals.turns, 'rejected digests:', turns.rejected,
+    'archived statements:', turnArchive.length, `(+${turnStatements.length} seen this run)`
+  );
   console.log('mesh nodes:', mesh.node_count, 'models:', mesh.models.length, 'communities:', communities.community_count);
   console.log('gramx rooms:', gramx.room_count, 'rejected statements:', gramx.rejected);
   console.log(
