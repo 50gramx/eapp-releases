@@ -1857,6 +1857,11 @@ export function mergeCommunityLedger(previous, current) {
     if (seenIds.has(prev.id)) continue;
     out.push({
       ...prev,
+      // Stamped here too, from this record's OWN label, so a region that happens to
+      // be invisible on the run that introduced url_slug still gets its address —
+      // and gets the label it has now, rather than whichever one the estimator
+      // happens to be holding on the distant run when it next becomes visible.
+      url_slug: prev.url_slug || communitySlug(prev),
       node_count: prev.nodes?.length || 0,
       online_count: 0,
       reporter_count: 0,
@@ -1869,12 +1874,33 @@ export function mergeCommunityLedger(previous, current) {
   return { ...current, community_count: out.length, communities: out };
 }
 
+/**
+ * A URL-safe segment from free text. Must stay byte-identical to slugify() in the
+ * site's src/lib/regionTree.ts: the two compute the address of the same page, and a
+ * page whose link and whose route disagree is a 404 either way round.
+ */
+function slugify(s) {
+  return (
+    String(s == null ? '' : s)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-+|-+$)/g, '') || 'x'
+  );
+}
+
+/** The city segment of a region's URL. Mirrors buildRegionTree's `${state}-${city}`. */
+function communitySlug(c) {
+  return slugify(`${c.state || ''}-${c.city || c.id || ''}`);
+}
+
 function mergeOne(prev, cur, now) {
   if (!prev) {
     return {
       ...cur,
       first_seen_at: now,
       last_seen_at: now,
+      url_slug: communitySlug(cur),
       nodes: cur.nodes.map((n) => ({ ...n, first_seen_at: now, last_seen_at: now, visible: true })),
       bests: Object.fromEntries(Object.entries(cur.bests).map(([k, b]) => [k, { ...b, first_proved_at: now }])),
     };
@@ -1921,6 +1947,22 @@ function mergeOne(prev, cur, now) {
     ...cur,
     first_seen_at: prev.first_seen_at || now,
     last_seen_at: now,
+    // The address this region is reachable at, fixed the first time we saw it.
+    //
+    // A node's city is ESTIMATED (two IP-geolocation providers, majority vote —
+    // see epn-daemon internal/bench/location.go), and an estimate can change its
+    // mind. On 2026-08-05 the estimate for pincode 800001 moved from Patna to
+    // Bodh Gaya, and because the site builds its URL out of that label, the page
+    // moved with it: /regions/in/bihar-patna/800001 stopped existing. A static
+    // export cannot redirect, so the old address simply died.
+    //
+    // A label is a description and may be corrected. An address is a promise and
+    // may not — not by an estimator changing its mind between two runs. So the
+    // slug is frozen here on first sight, exactly as first_seen_at is, and a
+    // later relabel changes what the page CALLS itself, never where it lives.
+    // Correcting an address stays possible; it just has to be done on purpose,
+    // by editing this field, rather than happening to a reader mid-crawl.
+    url_slug: prev.url_slug || communitySlug(cur),
     node_count: nodes.length,
     // online/verified/reporter counts describe RIGHT NOW, over visible nodes only.
     online_count: cur.online_count,

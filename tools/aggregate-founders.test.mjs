@@ -1420,3 +1420,47 @@ test('turns.json derived from the archive matches building it from the daemons d
   const viaArchive = rollAgentTurns(mergeTurnArchive([], statements), 'now', rejected);
   assert.deepEqual(viaArchive, buildAgentTurns(nodes, 'now', []));
 });
+
+// A REGION'S ADDRESS IS NOT ITS LABEL.
+//
+// The city on a community is an ESTIMATE — epn-daemon takes a majority vote across
+// two IP-geolocation providers, and with two voters a disagreement is a tie broken
+// alphabetically. On 2026-08-05 the estimate for pincode 800001 moved from Patna to
+// Bodh Gaya (which is a different pincode entirely, 824231), and the site builds its
+// region URL out of that label — so the page moved and /regions/in/bihar-patna/800001
+// died. A static export leaves no redirect behind.
+const PATNA = {
+  id: 'IN_800001',
+  pincode: '800001',
+  city: 'Patna',
+  state: 'Bihar',
+  country: 'IN',
+  node_count: 1,
+  online_count: 1,
+  verified_count: 1,
+  reporter_count: 1,
+  nodes: [{ node_did: 'did:a', confidence: 'verified', online: true, visible: true }],
+  bests: {},
+  rejected_results: [],
+};
+const runAt = (t, communities) => ({ generated_at: t, community_count: communities.length, communities });
+
+test('a region is stamped with its address the first time it is seen', () => {
+  const out = mergeCommunityLedger(null, runAt('2026-07-10T00:00:00Z', [PATNA]));
+  assert.equal(out.communities[0].url_slug, 'bihar-patna');
+});
+
+test('a re-estimated city changes what a region is called, never where it lives', () => {
+  const first = mergeCommunityLedger(null, runAt('2026-07-10T00:00:00Z', [PATNA]));
+  const relabelled = { ...PATNA, city: 'Bodh Gaya' };
+  const out = mergeCommunityLedger(first, runAt('2026-08-05T00:00:00Z', [relabelled]));
+  const c = out.communities[0];
+  assert.equal(c.city, 'Bodh Gaya', 'the label follows the estimate');
+  assert.equal(c.url_slug, 'bihar-patna', 'the address does not move');
+});
+
+test('a region keeps its address through a run in which nobody could see it', () => {
+  const first = mergeCommunityLedger(null, runAt('2026-07-10T00:00:00Z', [PATNA]));
+  const out = mergeCommunityLedger(first, runAt('2026-07-11T00:00:00Z', []));
+  assert.equal(out.communities[0].url_slug, 'bihar-patna');
+});
