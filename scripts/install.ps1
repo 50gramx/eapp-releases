@@ -132,12 +132,29 @@ try {
         $p = Start-Process -FilePath 'wsl.exe' -ArgumentList '--update' -Verb RunAs -Wait -PassThru
         if ($p.ExitCode -ne 0) { throw "wsl --update exited $($p.ExitCode)" }
       }
-      try { & wsl.exe --version *> $null; $wslSystemd = ($LASTEXITCODE -eq 0) } catch { $wslSystemd = $false }
+      # THE UPDATE IS NOT LIVE UNTIL THE WSL VM RESTARTS. `wsl --update` writes the
+      # new runtime to disk; the running utility VM and LxssManager keep serving
+      # the old one. Asking `wsl --version` the instant the installer returns is
+      # how this script came to warn "wsl --update ran but WSL still reports no
+      # systemd support" on a machine whose WSL supported systemd fine a minute
+      # later -- and, worse, left the old runtime live, so the daemon's distro
+      # rebooted into it and systemd never became PID 1.
+      #
+      # `--shutdown` terminates distros, it does not delete anything, and any
+      # distro the user is working in restarts on next use. Doing it here, once,
+      # right after we changed WSL ourselves, is the cheapest possible moment.
+      try { & wsl.exe --shutdown *> $null } catch { }
+      $deadline = (Get-Date).AddSeconds(60)
+      while (-not $wslSystemd -and (Get-Date) -lt $deadline) {
+        Start-Sleep -Seconds 3
+        try { & wsl.exe --version *> $null; $wslSystemd = ($LASTEXITCODE -eq 0) } catch { $wslSystemd = $false }
+      }
       if ($wslSystemd) {
         Write-Host "WSL2 updated - systemd is available"
       } else {
         Write-Warning "wsl --update ran but WSL still reports no systemd support"
         Write-Host "your node will run without a local cluster until that is resolved."
+        Write-Host "a Windows restart usually completes it - nothing else is needed."
       }
     } catch {
       # Declining is an answer. The node still installs and still works on the
@@ -249,11 +266,36 @@ try {
     Register-ScheduledTask -TaskName $taskName -InputObject $task -Force -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
 
-    Write-Host "Gram node registered in Task Scheduler (runs hidden, no console window)"
+    # REGISTERING A TASK IS NOT RUNNING ONE, and this script used to announce
+    # "installed and running in the background" purely on the strength of two
+    # cmdlets returning. They return successfully in cases where nothing starts:
+    # Start-ScheduledTask only QUEUES the task, so an S4U principal that lacks the
+    # "Log on as a batch job" right -- a normal state on a locked-down or
+    # domain-joined machine -- fails afterwards, inside Task Scheduler, where the
+    # only trace is the task's LastTaskResult. That is exactly what a user saw:
+    # the installer said the node was running, and it was not.
+    #
+    # There is a fact available here that settles it, so check the fact: is there
+    # an epnd.exe running out of the directory we just installed into. If not,
+    # treat it as a failed registration and take the fallback path below, which
+    # starts the node directly and does work.
+    $running = $false
+    $deadline = (Get-Date).AddSeconds(25)
+    while (-not $running -and (Get-Date) -lt $deadline) {
+      Start-Sleep -Seconds 2
+      $running = [bool](Get-CimInstance Win32_Process -Filter "Name='epnd.exe'" -ErrorAction SilentlyContinue |
+        Where-Object { $_.ExecutablePath -eq $exePath })
+    }
+    if (-not $running) {
+      $lastResult = (Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue).LastTaskResult
+      throw "the GramNode task was registered but no node process started (task result: $lastResult)"
+    }
+
+    Write-Host "Gram node registered in Task Scheduler and running (hidden, no console window)"
     Write-Host "logs: $logPath"
     $serviceRegistered = $true
   } catch {
-    Write-Warning "Task Scheduler registration failed (Access Denied is common without elevation): $($_.Exception.Message)"
+    Write-Warning "Task Scheduler setup did not produce a running node (Access Denied is common without elevation): $($_.Exception.Message)"
     Write-Host "falling back to a per-user startup entry (starts at login, no elevation needed)..."
 
     try {
