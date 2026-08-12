@@ -88,9 +88,21 @@ try {
   # once, with a UAC prompt they are expecting, and the daemon then runs
   # unprivileged forever after with everything it needs already in place.
   #
-  # wsl.exe EXISTING proves nothing -- it ships in System32 on every Windows 10
-  # and 11 machine, installed or not, and is a stub whose job is to tell you WSL
-  # is missing. Ask it to do something and see whether it can.
+  # TWO QUESTIONS, NOT ONE. "Is WSL there" and "can this WSL run systemd" are
+  # different facts about different WSL builds, and a machine can pass the first
+  # and fail the second -- which is exactly what happened on a real node:
+  #
+  #   wsl --status   -> succeeds  (the in-box WSL that ships with Windows)
+  #   wsl --version  -> fails     (that WSL predates systemd support)
+  #
+  # k3s installs a service and needs a process supervisor, so without systemd the
+  # cluster never comes up. That node reported a healthy VM and a passing k3s
+  # install, then stopped dead at "cluster not reachable" -- with every upstream
+  # signal saying WSL was fine, because by the only question being asked, it was.
+  #
+  # wsl.exe EXISTING proves neither thing: it ships in System32 on every Windows
+  # 10 and 11 machine, installed or not, and is a stub whose job is to tell you
+  # WSL is missing. Ask it to do things and see what it can do.
   $wslOK = $false
   try { & wsl.exe --status *> $null; $wslOK = ($LASTEXITCODE -eq 0) } catch { $wslOK = $false }
   if (-not $wslOK) {
@@ -98,10 +110,44 @@ try {
     # concluding anything. Only if BOTH fail is WSL genuinely unusable.
     try { & wsl.exe --list --quiet *> $null; $wslOK = ($LASTEXITCODE -eq 0) } catch { $wslOK = $false }
   }
+  # `wsl --version` exists only on the Store-distributed WSL (0.67.6+), which is
+  # precisely the build where systemd support landed. Its presence is the check:
+  # no version string to parse, nothing to keep in step with a changing format.
+  $wslSystemd = $false
+  try { & wsl.exe --version *> $null; $wslSystemd = ($LASTEXITCODE -eq 0) } catch { $wslSystemd = $false }
 
   $wslNeedsRestart = $false
-  if ($wslOK) {
-    Write-Host "WSL2 is available"
+  if ($wslOK -and -not $wslSystemd) {
+    # WSL is here and too old. One command fixes it, it needs no reboot, and the
+    # daemon cannot run it later (S4U, no desktop, no UAC) -- so run it now,
+    # while someone is at the keyboard to approve it.
+    Write-Host ""
+    Write-Host "WSL2 is installed but too old to run systemd, which your node's cluster needs."
+    Write-Host "Updating it now - this needs no restart. Windows may ask you to approve."
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    try {
+      if ($isAdmin) {
+        & wsl.exe --update *> $null
+      } else {
+        $p = Start-Process -FilePath 'wsl.exe' -ArgumentList '--update' -Verb RunAs -Wait -PassThru
+        if ($p.ExitCode -ne 0) { throw "wsl --update exited $($p.ExitCode)" }
+      }
+      try { & wsl.exe --version *> $null; $wslSystemd = ($LASTEXITCODE -eq 0) } catch { $wslSystemd = $false }
+      if ($wslSystemd) {
+        Write-Host "WSL2 updated - systemd is available"
+      } else {
+        Write-Warning "wsl --update ran but WSL still reports no systemd support"
+        Write-Host "your node will run without a local cluster until that is resolved."
+      }
+    } catch {
+      # Declining is an answer. The node still installs and still works on the
+      # network; it just cannot host its own inference yet.
+      Write-Warning "WSL2 was not updated: $($_.Exception.Message)"
+      Write-Host "your node will run without a local cluster (it can still use the network)."
+      Write-Host "to enable it later: open PowerShell as Administrator and run 'wsl --update'."
+    }
+  } elseif ($wslOK) {
+    Write-Host "WSL2 is available (systemd supported)"
   } else {
     Write-Host ""
     Write-Host "WSL2 is not installed. Your node needs it to run its own cluster."
@@ -123,6 +169,18 @@ try {
       }
       try { & wsl.exe --status *> $null; $wslOK = ($LASTEXITCODE -eq 0) } catch { $wslOK = $false }
       if ($wslOK) {
+        # A fresh `wsl --install` brings the Store build, which has systemd. Ask
+        # anyway rather than assume: this is the check that was missing before,
+        # and asserting the property is cheaper than shipping a node that fails
+        # four steps later with every earlier signal saying it was fine.
+        try { & wsl.exe --version *> $null; $wslSystemd = ($LASTEXITCODE -eq 0) } catch { $wslSystemd = $false }
+        if (-not $wslSystemd) {
+          try {
+            if ($isAdmin) { & wsl.exe --update *> $null }
+            else { Start-Process -FilePath 'wsl.exe' -ArgumentList '--update' -Verb RunAs -Wait | Out-Null }
+            try { & wsl.exe --version *> $null; $wslSystemd = ($LASTEXITCODE -eq 0) } catch { $wslSystemd = $false }
+          } catch { }
+        }
         Write-Host "WSL2 installed and active"
       } else {
         # Enabling the Windows features needs a reboot. Not a failure of this
