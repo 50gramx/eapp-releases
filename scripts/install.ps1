@@ -72,6 +72,73 @@ try {
 
   & (Join-Path $dest 'epnd.exe') version 2>$null
 
+  # -- WSL2 preflight -----------------------------------------------------------
+  # THE ONE PRIVILEGED STEP, DONE WHILE A HUMAN IS STILL HERE.
+  #
+  # The node hosts its cluster in a WSL2 VM, and enabling WSL needs
+  # administrator rights once. The service registered below deliberately runs
+  # -RunLevel Limited under -LogonType S4U: it is a background daemon and should
+  # not hold admin, and an S4U session has no desktop, so it cannot raise a UAC
+  # prompt even if it tried. That is the right shape for the daemon and it means
+  # the daemon can NEVER install WSL for itself -- it can only detect the gap and
+  # report it, which is what it does, into a log nobody is reading.
+  #
+  # An installer is the opposite situation: someone is at the keyboard, right
+  # now, having just chosen to install this. So the prerequisite is handled here,
+  # once, with a UAC prompt they are expecting, and the daemon then runs
+  # unprivileged forever after with everything it needs already in place.
+  #
+  # wsl.exe EXISTING proves nothing -- it ships in System32 on every Windows 10
+  # and 11 machine, installed or not, and is a stub whose job is to tell you WSL
+  # is missing. Ask it to do something and see whether it can.
+  $wslOK = $false
+  try { & wsl.exe --status *> $null; $wslOK = ($LASTEXITCODE -eq 0) } catch { $wslOK = $false }
+  if (-not $wslOK) {
+    # Older Windows has no `wsl --status`; fall back to a plain list before
+    # concluding anything. Only if BOTH fail is WSL genuinely unusable.
+    try { & wsl.exe --list --quiet *> $null; $wslOK = ($LASTEXITCODE -eq 0) } catch { $wslOK = $false }
+  }
+
+  $wslNeedsRestart = $false
+  if ($wslOK) {
+    Write-Host "WSL2 is available"
+  } else {
+    Write-Host ""
+    Write-Host "WSL2 is not installed. Your node needs it to run its own cluster."
+    Write-Host "Windows will ask you to approve this - it is a one-time step."
+    $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+    try {
+      if ($isAdmin) {
+        # --no-distribution: the daemon imports its OWN dedicated distro so a
+        # node never touches your Ubuntu. Older builds reject the flag, so a
+        # plain install is the fallback - a distro you did not ask for is a much
+        # smaller problem than no WSL at all.
+        & wsl.exe --install --no-distribution *> $null
+        if ($LASTEXITCODE -ne 0) { & wsl.exe --install *> $null }
+      } else {
+        $p = Start-Process -FilePath 'wsl.exe' -ArgumentList '--install','--no-distribution' -Verb RunAs -Wait -PassThru
+        if ($p.ExitCode -ne 0) {
+          $p = Start-Process -FilePath 'wsl.exe' -ArgumentList '--install' -Verb RunAs -Wait -PassThru
+        }
+      }
+      try { & wsl.exe --status *> $null; $wslOK = ($LASTEXITCODE -eq 0) } catch { $wslOK = $false }
+      if ($wslOK) {
+        Write-Host "WSL2 installed and active"
+      } else {
+        # Enabling the Windows features needs a reboot. Not a failure of this
+        # install, and the node runs fine without a cluster until then.
+        $wslNeedsRestart = $true
+        Write-Host "WSL2 installed - RESTART REQUIRED to activate it"
+      }
+    } catch {
+      # A declined UAC prompt is an answer, not an error. The node still
+      # installs and still works; it just cannot host its own inference yet.
+      Write-Warning "WSL2 was not installed: $($_.Exception.Message)"
+      Write-Host "your node will run without a local cluster (it can still use the network)."
+      Write-Host "to enable it later: open PowerShell as Administrator, run 'wsl --install', then restart."
+    }
+  }
+
   # -- register as a background service (Task Scheduler) ------------------------
   # Two separate concerns, both best-effort so a failure in either never aborts
   # an otherwise-successful install:
@@ -138,13 +205,22 @@ try {
       $serviceRegistered = $true
     } catch {
       Write-Warning "could not add login-startup entry either: $($_.Exception.Message)"
-      Write-Host "you can still run the node manually: $exePath serve"
+      Write-Host "you can still run the node manually: $exePath serve --bootstrap"
     }
 
     # Start it now regardless, so this session has a running node -- hidden,
     # same as the Task Scheduler path, logs to the same file.
+    #
+    # --bootstrap, matching every other launch path in this script. This branch
+    # used to start a bare `serve`, so the ONE case that lands here -- a
+    # non-elevated install where Task Scheduler registration was denied -- got a
+    # node that never provisioned a cluster. The registered task and the HKCU Run
+    # key both carry the flag ($wrappedArg); only the immediate start did not, so
+    # the node ran clusterless until the next reboot picked up the Run key and
+    # silently behaved differently. Two launch paths for one install must not
+    # disagree about what the node is.
     try {
-      Start-Process -FilePath $exePath -ArgumentList 'serve' -WindowStyle Hidden -RedirectStandardOutput $logPath -RedirectStandardError "$logPath.err"
+      Start-Process -FilePath $exePath -ArgumentList 'serve','--bootstrap' -WindowStyle Hidden -RedirectStandardOutput $logPath -RedirectStandardError "$logPath.err"
       Write-Host "started Gram node for this session -- logs: $logPath"
     } catch {
       Write-Warning "could not start Gram node: $($_.Exception.Message)"
@@ -284,7 +360,17 @@ try {
     Write-Host "[ok] Gram node is installed and running for this session"
     Write-Host "  * re-run from an Administrator PowerShell for full auto-start/auto-update"
   }
-  Write-Host "  * run: epnd node list"
+  Write-Host "  * run: epnd status"
+  # LAST LINE, and deliberately last: it is the only thing left for a person to
+  # do, and burying it above the summary is how it gets missed. The node is
+  # genuinely installed and running either way -- it just cannot host its own
+  # cluster until Windows comes back up.
+  if ($wslNeedsRestart) {
+    Write-Host ""
+    Write-Host "RESTART THIS COMPUTER to finish enabling WSL2." -ForegroundColor Yellow
+    Write-Host "  until then your node runs without a local cluster (the network still works)"
+    Write-Host "  nothing else is needed after the restart - it provisions itself"
+  }
 } finally {
   Remove-Item -Recurse -Force $tmp -ErrorAction SilentlyContinue
 }
