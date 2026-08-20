@@ -608,11 +608,85 @@ function pickGreaterProof(prev, cur, field) {
   return cv >= pv ? cur : prev; // tie → the fresher (current) proof
 }
 
+/**
+ * Capability names that must be read PESSIMISTICALLY across nodes: if any node
+ * saw it fail, the network-level flag says so.
+ *
+ * A capability is normally optimistic — some machine proved it, and the
+ * per-machine table shows which. That is wrong for "the tool loop terminated",
+ * because a model that hangs on one machine will hang on another, and an
+ * optimistic reading would hide the one fact that predicts a specialist
+ * silently never returning.
+ */
+const PESSIMISTIC_CAPS = new Set(['tools_loop_terminated', 'tools.loop_ends']);
+
+/**
+ * The six legacy boolean capability names, and what they are called on the way
+ * out. `structured_out` is renamed because the site has always called it
+ * `structured_output`; the rest pass through unchanged.
+ */
+const LEGACY_CAP_KEYS = {
+  tools: 'tools',
+  tools_loop_terminated: 'tools_loop_terminated',
+  structured_out: 'structured_output',
+  thinking: 'thinking',
+  vision: 'vision',
+  audio: 'audio',
+  faithful_tool_result: 'faithful_tool_result',
+};
+
+/**
+ * Pulls every measured capability out of a signed probe payload.
+ *
+ * ── WHY THIS IS NOT A WHITELIST ANY MORE ────────────────────────────────────
+ *
+ * It used to be two hardcoded lists of six names. Everything the probe learned
+ * beyond those six was silently discarded on the way to the site — and the
+ * daemon had been signing a seventh, `faithful_tool_result`, for weeks. That is
+ * the capability that separates a model which calls a tool from one which
+ * understands the answer, and it is the exact failure that sent a specialist to
+ * report "I am unable to access real-time market data" about data it had just
+ * been handed. The evidence was published, verified, and thrown away here.
+ *
+ * The daemon now signs a `capabilities` array — the capability REGISTRY, whose
+ * whole point is that it grows (code, research, multi-hop tools, speech in both
+ * directions, dozens of languages) without anything downstream needing a
+ * release. A whitelist here would defeat that by construction, so this reads
+ * whatever the payload carries.
+ *
+ * `asked` is the mask: an entry that was not asked is OMITTED rather than
+ * recorded as false, because the site reads an absent capability as "nobody
+ * measured this" and a present false as "measured, and it cannot". Collapsing
+ * those two is how an engine that hiccuped once made a model permanently
+ * incapable in the eyes of the network.
+ */
+function capsFromProbe(extra) {
+  const out = [];
+  if (!extra || typeof extra !== 'object') return out;
+
+  // Registry form, when the node is new enough to publish it.
+  if (Array.isArray(extra.capabilities)) {
+    for (const c of extra.capabilities) {
+      if (!c || typeof c.id !== 'string' || c.asked !== true) continue;
+      out.push([c.id, c.passed === true]);
+    }
+  }
+  // Legacy booleans. Kept unconditionally, not as a fallback: a node that has
+  // not re-probed since the registry landed publishes only these, and dropping
+  // them would blank the page for every model measured before it. The site
+  // collapses a legacy name against its registry replacement when both arrive.
+  for (const [from, to] of Object.entries(LEGACY_CAP_KEYS)) {
+    if (typeof extra[from] === 'boolean') out.push([to, extra[from]]);
+  }
+
+  return out;
+}
+
 function mergeModelCaps(prev = {}, cur = {}) {
   const out = { ...prev };
   for (const [cap, val] of Object.entries(cur)) {
     if (typeof val !== 'boolean') continue;
-    if (cap === 'tools_loop_terminated') {
+    if (PESSIMISTIC_CAPS.has(cap)) {
       // Pessimistic: if ANY run saw the loop hang, the matrix says so.
       out[cap] = out[cap] === undefined ? val : out[cap] && val;
     } else {
@@ -638,6 +712,7 @@ function mergeOneModel(prev, cur) {
     provider_count: nodes.length,
     // Strictly greater PROVED value wins, carrying the DID + ts that proved it.
     effective_ctx: pickGreaterProof(prev.effective_ctx, cur.effective_ctx, 'value'),
+    served_ctx: pickGreaterProof(prev.served_ctx, cur.served_ctx, 'value'),
     best_throughput: pickGreaterProof(prev.best_throughput, cur.best_throughput, 'tokens_per_sec'),
     declared: cur.declared || prev.declared || null,
     capabilities: mergeModelCaps(prev.capabilities, cur.capabilities),
@@ -1562,6 +1637,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         providers: new Set(),
         capabilities: {},
         effective_ctx: null,
+        // Beside effective_ctx, never merged into it. See where it is set.
+        served_ctx: null,
         throughput: [],
         // Every VERIFIED batch-variant measurement across every node — one
         // per (node, slots, context) operating point. A model can carry
@@ -1630,9 +1707,7 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       // which is the whole point of listing machines separately.
       node.probe_signature = signed.signature;
       node.probe_signing_payload_b64 = v.payload_b64 || undefined;
-      for (const cap of ['tools', 'tools_loop_terminated', 'structured_out', 'thinking', 'vision', 'audio']) {
-        if (typeof extra[cap] === 'boolean') node.capabilities[cap === 'structured_out' ? 'structured_output' : cap] = extra[cap];
-      }
+      for (const [key, val] of capsFromProbe(extra)) node.capabilities[key] = val;
 
       const ctx = Number(extra.effective_ctx) || 0;
       if (ctx > 0 && (!m.effective_ctx || ctx > m.effective_ctx.value)) {
@@ -1647,21 +1722,18 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         };
       }
 
-      for (const cap of ['tools', 'tools_loop_terminated', 'vision', 'audio', 'thinking', 'structured_out']) {
+      for (const [key, val] of capsFromProbe(extra)) {
         // `false` is a measurement too: the node ran the probe and the model
         // could not do it. Only a capability nobody probed is absent.
         //
         // The network-level flag is the OPTIMISTIC one — some node proved it — and
         // the per-node table below is where a reader sees which. That is safe for a
-        // capability and dangerous for tools_loop_terminated, so that one is
-        // pessimistic: if any node saw the loop hang, the matrix says so.
-        if (typeof extra[cap] === 'boolean') {
-          const key = cap === 'structured_out' ? 'structured_output' : cap;
-          if (key === 'tools_loop_terminated') {
-            m.capabilities[key] = m.capabilities[key] === undefined ? extra[cap] : m.capabilities[key] && extra[cap];
-          } else if (extra[cap] || m.capabilities[key] === undefined) {
-            m.capabilities[key] = extra[cap];
-          }
+        // capability and dangerous for a loop that does not terminate, so those
+        // are pessimistic: if any node saw the loop hang, the matrix says so.
+        if (PESSIMISTIC_CAPS.has(key)) {
+          m.capabilities[key] = m.capabilities[key] === undefined ? val : m.capabilities[key] && val;
+        } else if (val || m.capabilities[key] === undefined) {
+          m.capabilities[key] = val;
         }
       }
     }
@@ -1744,6 +1816,38 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         const node = nodeEntry(m, signed.result.node_did);
         node.variants = node.variants || [];
         node.variants.push(variant);
+
+        // ── SERVED CONTEXT, from the variant that proved it ─────────────────
+        //
+        // Beside effective_ctx and NEVER merged into it. Recall says the model
+        // still found tokens planted throughout a prompt that long; served says
+        // only that a machine allocated a cache that size and answered. A model
+        // can do the second and not the first — this gram proved gemma4:e2b at
+        // 32768 single-stream while its recall held to a fraction of that — and
+        // publishing the larger number under the smaller one's name is exactly
+        // the misreading this separation exists to prevent.
+        //
+        // SINGLE-STREAM ONLY. A context that fit with four slots sharing it also
+        // fits with one, but the reverse is not true, and the question a reader
+        // is asking is how much context ONE of them can have.
+        //
+        // It comes from the variant rather than the probe payload because the
+        // sweep runs after the capability probe: at signing time the probe could
+        // not yet know what the engine would go on to serve.
+        if (variant.slots === 1 && variant.context_tokens > 0) {
+          if (!m.served_ctx || variant.context_tokens > m.served_ctx.value) {
+            m.served_ctx = {
+              value: variant.context_tokens,
+              node_did: signed.result.node_did,
+              ts: signed.result.ts,
+              payload_sha256: v.payload_sha256,
+              signature: signed.signature,
+              signing_payload_b64: v.payload_b64 || undefined,
+              probe_version: null,
+              recall_verified: extra.recall_verified === true,
+            };
+          }
+        }
       });
     }
   }
@@ -1754,6 +1858,7 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       slug: modelSlug(m.name),
       provider_count: m.providers.size,
       effective_ctx: m.effective_ctx,
+      served_ctx: m.served_ctx,
       declared: m.declared,
       capabilities: m.capabilities,
       best_throughput: m.throughput.reduce((top, t) => (!top || t.tokens_per_sec > top.tokens_per_sec ? t : top), null),
