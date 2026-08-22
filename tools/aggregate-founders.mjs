@@ -713,6 +713,8 @@ function mergeOneModel(prev, cur) {
     // Strictly greater PROVED value wins, carrying the DID + ts that proved it.
     effective_ctx: pickGreaterProof(prev.effective_ctx, cur.effective_ctx, 'value'),
     served_ctx: pickGreaterProof(prev.served_ctx, cur.served_ctx, 'value'),
+    family: prev.family || cur.family || null,
+    member: prev.member || cur.member || null,
     best_throughput: pickGreaterProof(prev.best_throughput, cur.best_throughput, 'tokens_per_sec'),
     declared: cur.declared || prev.declared || null,
     capabilities: mergeModelCaps(prev.capabilities, cur.capabilities),
@@ -1620,6 +1622,10 @@ function nodeEntry(m, nodeDid) {
 }
 
 export function buildModels(nodes, generatedAt = new Date().toISOString(), meshViews = []) {
+  // The declared catalog, collected from every reporting node. Kept apart from
+  // `models` below because they answer different questions: one is what the
+  // world publishes, the other is what machines here measured.
+  const catalogFamilies = collectCatalog([...(nodes || []), ...(meshViews || []).flatMap((v) => v?.nodes || [])]);
   const entries = [
     ...nodes.map((n) => ({ name: n.name, proof_snapshot: proofSnapshotOf(n) })),
     ...meshViews
@@ -1639,6 +1645,11 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         effective_ctx: null,
         // Beside effective_ctx, never merged into it. See where it is set.
         served_ctx: null,
+        // Catalog placement: /inferences/<family>/<member>. Null means no family
+        // claims this ref, which is the common case and a real answer — the model
+        // keeps its own page rather than being filed under a guess.
+        family: null,
+        member: null,
         throughput: [],
         // Every VERIFIED batch-variant measurement across every node — one
         // per (node, slots, context) operating point. A model can carry
@@ -1708,6 +1719,15 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       node.probe_signature = signed.signature;
       node.probe_signing_payload_b64 = v.payload_b64 || undefined;
       for (const [key, val] of capsFromProbe(extra)) node.capabilities[key] = val;
+
+      // FAMILY, FROM THE SIGNED PAYLOAD. Attested rather than inferred here: the
+      // node's catalog placed the ref, and re-deriving it from the name at this
+      // end would split one model across two families the moment two engines
+      // called the same weights different things.
+      if (typeof extra.family === 'string' && extra.family) {
+        m.family = m.family || extra.family;
+        if (typeof extra.member === 'string' && extra.member) m.member = m.member || extra.member;
+      }
 
       const ctx = Number(extra.effective_ctx) || 0;
       if (ctx > 0 && (!m.effective_ctx || ctx > m.effective_ctx.value)) {
@@ -1859,6 +1879,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       provider_count: m.providers.size,
       effective_ctx: m.effective_ctx,
       served_ctx: m.served_ctx,
+      family: m.family,
+      member: m.member,
       declared: m.declared,
       capabilities: m.capabilities,
       best_throughput: m.throughput.reduce((top, t) => (!top || t.tokens_per_sec > top.tokens_per_sec ? t : top), null),
@@ -1904,8 +1926,73 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       'every field verified against the signature of the node that produced it, and re-verifiable by you: each signed figure carries the exact bytes the node signed (signing_payload_b64) and the signature over them, and the ed25519 public key is embedded in node_did. effective_ctx is the context length a node PROVED by recall, never the length a model card advertises',
     model_count: models.length,
     models,
+    // ── THE CATALOG ─────────────────────────────────────────────────────────
+    //
+    // DECLARED, NOT MEASURED, and it carries no signature for exactly that
+    // reason: every other field here is a claim about what a machine observed,
+    // while this is a claim about what the world publishes.
+    //
+    // It is published because an index cannot be built only from what has been
+    // measured. A family nobody has probed yet still needs a page — one saying
+    // plainly that nothing has been measured — or the site can only show the
+    // handful of models that happen to have been run, and the first gram to
+    // probe a new family has nowhere to put the result.
+    families: catalogFamilies,
     rejected_results: rejected,
   };
+}
+
+/**
+ * Collects the model catalog every reporting node published.
+ *
+ * Merged by family id, then by member, then by artifact ref, so two nodes that
+ * have resolved different parts of the same family produce one complete entry
+ * rather than two partial ones. First writer wins on labels: they are all
+ * saying the same thing, and a tie-break that preferred the newest would make
+ * the file churn for no reason.
+ */
+function collectCatalog(nodes) {
+  const byFamily = new Map();
+  for (const n of nodes || []) {
+    for (const f of n?.proof_snapshot?.families || []) {
+      if (!f?.id) continue;
+      const fam = byFamily.get(f.id) || {
+        id: f.id, display_name: f.display_name || f.id, vendor: f.vendor || null,
+        purpose: f.purpose || [], members: new Map(),
+      };
+      if (!fam.vendor && f.vendor) fam.vendor = f.vendor;
+      if ((!fam.purpose || fam.purpose.length === 0) && f.purpose) fam.purpose = f.purpose;
+      for (const m of f.members || []) {
+        if (!m?.id) continue;
+        const mem = fam.members.get(m.id) || {
+          id: m.id, display_name: m.display_name || m.id, params: m.params || null, artifacts: new Map(),
+        };
+        for (const a of m.artifacts || []) {
+          if (!a?.ref || mem.artifacts.has(a.ref)) continue;
+          mem.artifacts.set(a.ref, a);
+        }
+        fam.members.set(m.id, mem);
+      }
+      byFamily.set(f.id, fam);
+    }
+  }
+
+  return [...byFamily.values()]
+    .map((f) => ({
+      id: f.id,
+      display_name: f.display_name,
+      vendor: f.vendor,
+      purpose: f.purpose,
+      members: [...f.members.values()]
+        .map((m) => ({
+          id: m.id,
+          display_name: m.display_name,
+          params: m.params,
+          artifacts: [...m.artifacts.values()].sort((a, b) => (a.disk_mib || 0) - (b.disk_mib || 0)),
+        }))
+        .sort((a, b) => a.id.localeCompare(b.id)),
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id));
 }
 
 /**
