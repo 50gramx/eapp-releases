@@ -1941,6 +1941,19 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       }
     }
   }
+  // Aliases second, so an obtainable ARTIFACT always answers before an engine's
+  // own tag for the same weights. An alias is an identity claim the catalog
+  // makes ("this tag is that member") and carries no size or attribution — it
+  // exists because a gram that ran `ollama pull llama3.2:1b` has no artifact ref
+  // to be filed under, and without it that measurement appears on no family page.
+  for (const fam of catalogFamilies || []) {
+    for (const mem of fam.members || []) {
+      for (const alias of mem.aliases || []) {
+        const key = String(alias || '').trim().toLowerCase();
+        if (key && !catalogPlacement.has(key)) catalogPlacement.set(key, { family: fam.id, member: mem.id });
+      }
+    }
+  }
   let placedFromCatalog = 0;
   for (const m of models) {
     if (m.family) continue;
@@ -2006,11 +2019,18 @@ function collectCatalog(nodes) {
       for (const m of f.members || []) {
         if (!m?.id) continue;
         const mem = fam.members.get(m.id) || {
-          id: m.id, display_name: m.display_name || m.id, params: m.params || null, artifacts: new Map(),
+          id: m.id, display_name: m.display_name || m.id, params: m.params || null,
+          artifacts: new Map(), aliases: new Set(),
         };
+        if (!mem.aliases) mem.aliases = new Set();
         for (const a of m.artifacts || []) {
           if (!a?.ref || mem.artifacts.has(a.ref)) continue;
           mem.artifacts.set(a.ref, a);
+        }
+        // Other names for the same weights, unioned across reporting nodes. An
+        // identity claim and never a cost claim — no size, no attribution.
+        for (const alias of m.aliases || []) {
+          if (typeof alias === 'string' && alias.trim()) mem.aliases.add(alias.trim());
         }
         fam.members.set(m.id, mem);
       }
@@ -2030,6 +2050,7 @@ function collectCatalog(nodes) {
           display_name: m.display_name,
           params: m.params,
           artifacts: [...m.artifacts.values()].sort((a, b) => (a.disk_mib || 0) - (b.disk_mib || 0)),
+          aliases: m.aliases && m.aliases.size ? [...m.aliases].sort() : undefined,
         }))
         .sort((a, b) => a.id.localeCompare(b.id)),
     }))

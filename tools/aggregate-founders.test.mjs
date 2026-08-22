@@ -1498,3 +1498,28 @@ test('unfiled models are placed by exact catalog ref, never by name shape', () =
   // the name-shape guessing this refuses.
   assert.equal(placement.get('kokoro-v2-custom'), undefined);
 });
+
+// An engine's own tag ("llama3.2:1b") has no artifact ref to be filed under, so
+// without aliases a gram's measurement of it appears on no family page. The
+// catalog publishes the identity; the join uses it; the artifact still wins.
+test('catalog aliases travel and place engine tags', () => {
+  const snapshot = {
+    node_did: 'did:epn:testnode',
+    families: [
+      {
+        id: 'llama-3-2',
+        display_name: 'Llama 3.2',
+        members: [{ id: '1b', display_name: 'Llama 3.2 1B', aliases: ['llama3.2:1b'] }],
+      },
+    ],
+    resources: {},
+  };
+
+  const out = buildModels([{ name: 'n1', proof_snapshot: snapshot }], new Date().toISOString(), []);
+  const fam = (out.families || []).find((f) => f.id === 'llama-3-2');
+  assert.ok(fam, 'the family must survive collection');
+  const mem = fam.members.find((m) => m.id === '1b');
+  assert.deepEqual(mem.aliases, ['llama3.2:1b'], 'aliases must be published, or the join has nothing to use');
+  // And an alias carries no cost claim.
+  assert.equal(mem.artifacts?.length ?? 0, 0);
+});
