@@ -1464,3 +1464,37 @@ test('a region keeps its address through a run in which nobody could see it', ()
   const out = mergeCommunityLedger(first, runAt('2026-07-11T00:00:00Z', []));
   assert.equal(out.communities[0].url_slug, 'bihar-patna');
 });
+
+// A model whose family the signed probe never carried — because it was measured
+// before its family entered the catalog, or because it arrived through the
+// throughput path — must still be filed under the family whose CATALOG claims
+// its exact ref. 17 of 36 published models were unfiled and therefore appeared
+// on no family page at all.
+test('unfiled models are placed by exact catalog ref, never by name shape', () => {
+  const snapshot = {
+    node_did: 'did:epn:testnode',
+    families: [
+      {
+        id: 'kokoro',
+        display_name: 'Kokoro',
+        members: [{ id: 'base', artifacts: [{ engine: 'speech-pod', ref: 'kokoro' }] }],
+      },
+    ],
+    resources: {},
+  };
+  const nodes = [{ name: 'n1', proof_snapshot: snapshot }];
+
+  const out = buildModels(nodes, new Date().toISOString(), []);
+  const placement = new Map();
+  for (const fam of out.families || []) {
+    for (const mem of fam.members || []) {
+      for (const art of mem.artifacts || []) placement.set(art.ref.toLowerCase(), fam.id);
+    }
+  }
+  assert.equal(placement.get('kokoro'), 'kokoro', 'the catalog itself must publish the ref the join uses');
+
+  // A name the catalog does not claim stays unclaimed — the join is on an
+  // identifier, and inventing a family for "kokoro-v2-custom" would be exactly
+  // the name-shape guessing this refuses.
+  assert.equal(placement.get('kokoro-v2-custom'), undefined);
+});

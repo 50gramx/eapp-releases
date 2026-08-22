@@ -1914,6 +1914,47 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
     )
     .sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
 
+  // ── FILE WHAT THE CATALOG ALREADY CLAIMS ────────────────────────────────
+  //
+  // A model's family normally rides in the signed probe payload, placed by the
+  // node that ran it. Two things leave it empty anyway: a probe taken before
+  // its family entered the catalog, and a measurement that arrives through the
+  // inference-throughput path rather than the capability probe. Either way the
+  // model lands at /inferences/model/<slug> and appears on no family page —
+  // 17 of 36 published models were in that state.
+  //
+  // This is a JOIN ON AN IDENTIFIER, not a guess. It matches the model's name
+  // against the artifact REFS the catalog itself publishes, which is the same
+  // exact-string rule the node applies (builtin.FamilyOfIn); it never infers a
+  // family from a name's shape. A model whose ref no family claims stays
+  // unclaimed, which is the honest state for something pulled outside the
+  // catalog — a bare engine tag, or a remote seat that is not a downloadable
+  // artifact at all.
+  //
+  // The signed placement always wins: this only fills a blank.
+  const catalogPlacement = new Map();
+  for (const fam of catalogFamilies || []) {
+    for (const mem of fam.members || []) {
+      for (const art of mem.artifacts || []) {
+        const ref = String(art.ref || '').trim().toLowerCase();
+        if (ref && !catalogPlacement.has(ref)) catalogPlacement.set(ref, { family: fam.id, member: mem.id });
+      }
+    }
+  }
+  let placedFromCatalog = 0;
+  for (const m of models) {
+    if (m.family) continue;
+    const hit = catalogPlacement.get(String(m.name || '').trim().toLowerCase());
+    if (!hit) continue;
+    m.family = hit.family;
+    m.member = m.member || hit.member;
+    m.family_source = 'catalog_ref';
+    placedFromCatalog += 1;
+  }
+  if (placedFromCatalog > 0) {
+    console.log(`[models] filed ${placedFromCatalog} model(s) under a family by exact catalog ref`);
+  }
+
   return {
     generated_at: generatedAt,
     // Says what a reader can check, not what we promise. Until this file carried
