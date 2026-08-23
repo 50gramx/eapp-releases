@@ -1,40 +1,40 @@
 {
-  "generated_at": "2026-08-23T17:09:54.658Z",
+  "generated_at": "2026-08-23T17:12:48.239Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
   "node_count": 4,
-  "online_count": 4,
-  "away_count": 0,
+  "online_count": 3,
+  "away_count": 1,
   "totals": {
     "vram_gib": 2,
-    "ram_pool_gib": 2.561,
-    "vcpu_seconds": 64800,
-    "storage_block_gib": 5.551,
-    "storage_object_gib": 3.331,
-    "egress_gbps": 4
+    "ram_pool_gib": 0,
+    "vcpu_seconds": 54000,
+    "storage_block_gib": 10.172,
+    "storage_object_gib": 6.103,
+    "egress_gbps": 3
   },
   "activity": {
-    "inferences_served": 1345,
-    "tokens_served": 312753,
-    "receipts_verified": 53,
+    "inferences_served": 1306,
+    "tokens_served": 309347,
+    "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 3.13,
+    "displaced_cloud_usd": 3.09,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
     "vram_gib": 2,
-    "vcpu_seconds": 64800,
-    "est_tflops": 34.9,
-    "est_pflops": 0.0349
+    "vcpu_seconds": 54000,
+    "est_tflops": 19.75,
+    "est_pflops": 0.0198
   },
   "top500": {
     "as_of": "TOP500 November 2024 (HPL/LINPACK Rmax)",
     "source": "https://top500.org/lists/top500/2024/11/",
-    "est_network_tflops": 34.9,
-    "est_network_pflops": 0.0349,
-    "pct_of_rank_1": 0.002,
-    "pct_of_list_sum": 0.0003,
+    "est_network_tflops": 19.75,
+    "est_network_pflops": 0.0198,
+    "pct_of_rank_1": 0.0011,
+    "pct_of_list_sum": 0.0002,
     "would_enter_top500": false,
     "rank_1": {
       "name": "El Capitan",
@@ -45,25 +45,6 @@
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
   "models": [
-    {
-      "name": "llama3.2:1b",
-      "providers": 2,
-      "provider_count": 2,
-      "total_free_slots": 0,
-      "best_effective_ctx": 4096,
-      "best_declared_ctx": 131072,
-      "max_vram_gib": 1.46,
-      "quants": [
-        "Q8_0"
-      ],
-      "caps": {
-        "tools": "measured",
-        "structured_output": "measured"
-      },
-      "verified": true,
-      "best_tokens_per_sec": 37.64,
-      "median_tokens_per_sec": 21.63
-    },
     {
       "name": "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M",
       "providers": 2,
@@ -106,9 +87,11 @@
       "provider_count": 1,
       "total_free_slots": 0,
       "best_effective_ctx": 16384,
-      "best_declared_ctx": 0,
-      "max_vram_gib": 0,
-      "quants": [],
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 0.77,
+      "quants": [
+        "Q4_K_M"
+      ],
       "caps": {
         "tools": "measured",
         "structured_output": "measured"
@@ -116,6 +99,25 @@
       "verified": true,
       "best_tokens_per_sec": 23.66,
       "median_tokens_per_sec": 23.66
+    },
+    {
+      "name": "llama3.2:1b",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 4096,
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 1.46,
+      "quants": [
+        "Q8_0"
+      ],
+      "caps": {
+        "tools": "measured",
+        "structured_output": "measured"
+      },
+      "verified": true,
+      "best_tokens_per_sec": 37.64,
+      "median_tokens_per_sec": 37.64
     },
     {
       "name": "claude-sonnet-5",
@@ -152,26 +154,6 @@
       "median_tokens_per_sec": 78.28
     },
     {
-      "name": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
-      "providers": 1,
-      "provider_count": 1,
-      "total_free_slots": 0,
-      "best_effective_ctx": 4096,
-      "best_declared_ctx": 131072,
-      "max_vram_gib": 2.91,
-      "quants": [
-        "Q4_K_M"
-      ],
-      "caps": {
-        "tools": "measured",
-        "vision": "declared",
-        "audio": "declared"
-      },
-      "verified": true,
-      "best_tokens_per_sec": 5.24,
-      "median_tokens_per_sec": 5.24
-    },
-    {
       "name": "gemma4:e2b",
       "providers": 1,
       "provider_count": 1,
@@ -198,9 +180,11 @@
       "provider_count": 1,
       "total_free_slots": 0,
       "best_effective_ctx": 0,
-      "best_declared_ctx": 0,
-      "max_vram_gib": 0,
-      "quants": [],
+      "best_declared_ctx": 262144,
+      "max_vram_gib": 2.52,
+      "quants": [
+        "IQ4_XS"
+      ],
       "caps": {
         "tools": "measured",
         "vision": "measured",
@@ -216,10 +200,14 @@
       "provider_count": 1,
       "total_free_slots": 0,
       "best_effective_ctx": 0,
-      "best_declared_ctx": 0,
-      "max_vram_gib": 0,
-      "quants": [],
-      "caps": {},
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 2.01,
+      "quants": [
+        "IQ1_S"
+      ],
+      "caps": {
+        "tools": "declared"
+      },
       "verified": false
     },
     {
@@ -228,10 +216,14 @@
       "provider_count": 1,
       "total_free_slots": 0,
       "best_effective_ctx": 0,
-      "best_declared_ctx": 0,
-      "max_vram_gib": 0,
-      "quants": [],
-      "caps": {},
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 0.77,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {
+        "tools": "declared"
+      },
       "verified": false
     },
     {
@@ -240,10 +232,14 @@
       "provider_count": 1,
       "total_free_slots": 0,
       "best_effective_ctx": 0,
-      "best_declared_ctx": 0,
-      "max_vram_gib": 0,
-      "quants": [],
-      "caps": {},
+      "best_declared_ctx": 131072,
+      "max_vram_gib": 2.4,
+      "quants": [
+        "IQ2_M"
+      ],
+      "caps": {
+        "tools": "declared"
+      },
       "verified": false
     },
     {
@@ -262,60 +258,6 @@
       "verified": true,
       "best_tokens_per_sec": 44.79,
       "median_tokens_per_sec": 44.79
-    },
-    {
-      "name": "hf.co/unsloth/Qwen3.5-2B-GGUF:Q4_K_M",
-      "providers": 1,
-      "provider_count": 1,
-      "total_free_slots": 0,
-      "best_effective_ctx": 0,
-      "best_declared_ctx": 262144,
-      "max_vram_gib": 1.18,
-      "quants": [
-        "Q4_K_M"
-      ],
-      "caps": {
-        "tools": "declared",
-        "vision": "declared",
-        "thinking": "declared"
-      },
-      "verified": false
-    },
-    {
-      "name": "hf.co/unsloth/Qwen3.5-0.8B-GGUF:Q4_K_M",
-      "providers": 1,
-      "provider_count": 1,
-      "total_free_slots": 0,
-      "best_effective_ctx": 0,
-      "best_declared_ctx": 262144,
-      "max_vram_gib": 0.47,
-      "quants": [
-        "Q4_K_M"
-      ],
-      "caps": {
-        "tools": "declared",
-        "vision": "declared",
-        "thinking": "declared"
-      },
-      "verified": false
-    },
-    {
-      "name": "qwen2.5:0.5b",
-      "providers": 1,
-      "provider_count": 1,
-      "total_free_slots": 0,
-      "best_effective_ctx": 0,
-      "best_declared_ctx": 32768,
-      "max_vram_gib": 0.31,
-      "quants": [
-        "Q4_K_M"
-      ],
-      "caps": {
-        "tools": "declared"
-      },
-      "verified": false,
-      "best_tokens_per_sec": 4.41,
-      "median_tokens_per_sec": 4.41
     }
   ],
   "nodes": [
@@ -429,7 +371,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-08-23T16:52:47Z",
+        "generated_at": "2026-08-23T17:07:47Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -860,32 +802,7 @@
               {
                 "id": "e2b",
                 "display_name": "Gemma 4 E2B",
-                "params": "5.1B",
                 "artifacts": [
-                  {
-                    "engine": "ollama",
-                    "ref": "gemma4:e2b",
-                    "quant": "Q4_K_M",
-                    "disk_mib": 7162,
-                    "attribution": "vendor",
-                    "by": "google"
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
-                    "quant": "Q4_K_M",
-                    "disk_mib": 3902,
-                    "attribution": "quantizer",
-                    "by": "unsloth"
-                  },
-                  {
-                    "engine": "llamacpp",
-                    "ref": "unsloth/gemma-4-E2B-it-GGUF:gemma-4-E2B-it-Q4_K_M.gguf",
-                    "quant": "Q4_K_M",
-                    "disk_mib": 3902,
-                    "attribution": "quantizer",
-                    "by": "unsloth"
-                  },
                   {
                     "engine": "ollama",
                     "ref": "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ2_M",
@@ -1059,7 +976,6 @@
               {
                 "id": "1b",
                 "display_name": "Llama 3.2 1B",
-                "params": "1.2B",
                 "artifacts": [
                   {
                     "engine": "ollama",
@@ -2376,7 +2292,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112207af079ace316148c9f3e619516325fab90344cf43a0c960cca42eb304a0c5265",
-        "generated_at": "2026-08-23T16:54:10Z",
+        "generated_at": "2026-08-23T17:09:11Z",
         "metrics": {
           "agent_work": {
             "turns": 19,
@@ -2487,7 +2403,7 @@
                   "metric": "inference.tokens_per_sec",
                   "value": 19.317563882923384,
                   "unit": "tokens/s",
-                  "ts": 1787504050957069000,
+                  "ts": 1787504951000383000,
                   "node_did": "did:epn:0024080112207af079ace316148c9f3e619516325fab90344cf43a0c960cca42eb304a0c5265",
                   "extra": {
                     "model": "gemma4:e2b",
@@ -2499,15 +2415,15 @@
                     "total_tokens": 6394
                   }
                 },
-                "signature": "L1VthhOZso1Wrq9lBAVd8NPB+f5XmwQY/r+cNQQK35jzarwjPPgOTB0usoK6dbNOolb9X08f7GtQoHwtQ4shBg==",
-                "hash": "vZ6rGhzsczUQ7Vd/e9/JmCb8+0q60eZ1uM9l5pehIYw="
+                "signature": "hUieTFJLVhC95ZCfwjVY2fac9DYXb3Nr8PIq07Vwrf8XyEMyztG9uxDSbON6WsPW8USbWJHIr+GtbhH8zSDIBw==",
+                "hash": "S+7vMuEnDlDR+0dkRX2zLs5pR9lQVLeMUIJd6VmDyLQ="
               },
               "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 17.814002245779246,
                   "unit": "tokens/s",
-                  "ts": 1787504050957069000,
+                  "ts": 1787504951000383000,
                   "node_did": "did:epn:0024080112207af079ace316148c9f3e619516325fab90344cf43a0c960cca42eb304a0c5265",
                   "extra": {
                     "model": "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S",
@@ -2519,15 +2435,15 @@
                     "total_tokens": 3255
                   }
                 },
-                "signature": "AhmD2dfVVQpwDtBZFS3OHh9s7LGBHblM4mqIvNTLaTE0igfzPI2iavflxy5DwsMwQKe5HPeolagCv3/RzS4jAw==",
-                "hash": "wXEoLmzNEGApf5OlbRN3+713FjRcwSZZq8rE3M1Xnsk="
+                "signature": "4c46Mx0KXVupKOCQolCwMuLO6JGAg6u+o5/m6ryguFpZKebHXSaixFqIX6Yf5ZoGX+AppaO2VXdwmtQez2VmAw==",
+                "hash": "+vjal7LKP4GloXf27OtgZQzhXm6HfCZimuMg2+T68kI="
               },
               "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 20.154124517871846,
                   "unit": "tokens/s",
-                  "ts": 1787504050957069000,
+                  "ts": 1787504951000383000,
                   "node_did": "did:epn:0024080112207af079ace316148c9f3e619516325fab90344cf43a0c960cca42eb304a0c5265",
                   "extra": {
                     "model": "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M",
@@ -2539,15 +2455,15 @@
                     "total_tokens": 85
                   }
                 },
-                "signature": "Pnsuv0kKUHfrHW2Sy5QsPmim32xEPQ4gpMscfwmoUts5GPA7eO0jMf0sMjGIMWVuM5krWqXKQHI1xA9Hf//zBA==",
-                "hash": "x0p6QMZFr7kGNcFiVpPATcmkkZNmMsG9ALbU0ezv2ew="
+                "signature": "EhFXCOH3kg/DmW/NmmytzOuNcG58onv+UcDrAAEoblDD8P2cs39UacaX0e9AafgawJN84TSNTt9RcoPyOMtKAg==",
+                "hash": "+/eQk9tLzL/J+IeAIxA+tkOHByiRBzGd7fsEh2ZtTGc="
               },
               "llama3.2:1b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 27.752568245965964,
                   "unit": "tokens/s",
-                  "ts": 1787504050957069000,
+                  "ts": 1787504951000383000,
                   "node_did": "did:epn:0024080112207af079ace316148c9f3e619516325fab90344cf43a0c960cca42eb304a0c5265",
                   "extra": {
                     "model": "llama3.2:1b",
@@ -2559,15 +2475,15 @@
                     "total_tokens": 974
                   }
                 },
-                "signature": "sZyXMmjzGPaKNjTSpzT3Y1kvbHxRmFTAQYBJFS2BhRs+p0Zk95I29/eGg5Fc6UupE20c3J4zDcZ2lRxVDYIGAQ==",
-                "hash": "8I7GFYiiJBCI7qwS8MdOOGoSCs9UU24EG8o7xARGT50="
+                "signature": "mM7kb4KiIb7wdigakYz+6XqqIDkWaKFguS2nNuklij/XkjaiLZeupWfD+zi9t8ol77QLqsXOgIiJlEi7sl++AQ==",
+                "hash": "MX+NTnS2kanNZXrH9tFllfNgs2p5L1rHtgsRG+eDH9I="
               }
             },
             "model_signing_payloads": {
-              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTkuMzE3NTYzODgyOTIzMzg0LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDA1MDk1NzA2OTAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImdlbW1hNDplMmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MzEsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzMwLjk5NDExNjk5OSwidG90YWxfdG9rZW5zIjo2Mzk0fX0=",
-              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTcuODE0MDAyMjQ1Nzc5MjQ2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDA1MDk1NzA2OTAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUGhpLTQtbWluaS1yZWFzb25pbmctR0dVRjpJUTFfUyIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjE4Mi43MjE0MzIsInRvdGFsX3Rva2VucyI6MzI1NX19",
-              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjAuMTU0MTI0NTE3ODcxODQ2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDA1MDk1NzA2OTAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUGhpLTQtbWluaS1yZWFzb25pbmctR0dVRjpRM19LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo0LjIxNzQ5OSwidG90YWxfdG9rZW5zIjo4NX19",
-              "llama3.2:1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjcuNzUyNTY4MjQ1OTY1OTY0LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDA1MDk1NzA2OTAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImxsYW1hMy4yOjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hLWhvc3QiLCJzYW1wbGVfY291bnQiOjIxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM1LjA5NTg1MDk5ODk5OTk5LCJ0b3RhbF90b2tlbnMiOjk3NH19"
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTkuMzE3NTYzODgyOTIzMzg0LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDk1MTAwMDM4MzAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImdlbW1hNDplMmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MzEsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzMwLjk5NDExNjk5OSwidG90YWxfdG9rZW5zIjo2Mzk0fX0=",
+              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTcuODE0MDAyMjQ1Nzc5MjQ2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDk1MTAwMDM4MzAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUGhpLTQtbWluaS1yZWFzb25pbmctR0dVRjpJUTFfUyIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjE4Mi43MjE0MzIsInRvdGFsX3Rva2VucyI6MzI1NX19",
+              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjAuMTU0MTI0NTE3ODcxODQ2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDk1MTAwMDM4MzAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUGhpLTQtbWluaS1yZWFzb25pbmctR0dVRjpRM19LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo0LjIxNzQ5OSwidG90YWxfdG9rZW5zIjo4NX19",
+              "llama3.2:1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjcuNzUyNTY4MjQ1OTY1OTY0LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDk1MTAwMDM4MzAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDdhZjA3OWFjZTMxNjE0OGM5ZjNlNjE5NTE2MzI1ZmFiOTAzNDRjZjQzYTBjOTYwY2NhNDJlYjMwNGEwYzUyNjUiLCJleHRyYSI6eyJtb2RlbCI6ImxsYW1hMy4yOjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hLWhvc3QiLCJzYW1wbGVfY291bnQiOjIxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM1LjA5NTg1MDk5ODk5OTk5LCJ0b3RhbF90b2tlbnMiOjk3NH19"
             }
           },
           "mem": {
@@ -4811,9 +4727,9 @@
           "tools": [
             "echo_probe"
           ],
-          "generated_at": 1787503446,
-          "sig": "cxBlc+DHY9LsEBTNolVRmm38jLUbqWFLWDrk8NsYqhCz4LT7AHxskCT7KZ2ZijiOkQlaSZXN795bHNGylTuUBg==",
-          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwN2FmMDc5YWNlMzE2MTQ4YzlmM2U2MTk1MTYzMjVmYWI5MDM0NGNmNDNhMGM5NjBjY2E0MmViMzA0YTBjNTI2NSIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3ODc0OTcyMDAsImVwb2NoX2VuZCI6MTc4NzUwMDgwMCwidHVybnMiOjMsInRvb2xfY2FsbHMiOjEsImhlbGQiOjMsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjI5MCwib3V0cHV0X3Rva2VucyI6MzM1MSwidmNwdV9zZWNvbmRzIjoxMzE2LjE4MjgwNDEzMiwiZ3B1X3NlY29uZHMiOjE4OC4wMjYxMTQ4NzYsImVuZXJneV9rd2giOjAuMDEyNzk2MjIxNzA2ODM4ODksImNhcmJvbl9ncmFtcyI6Ni4wNzgyMDUzMTA3NDg0NzMsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL1BoaS00LW1pbmktcmVhc29uaW5nLUdHVUY6SVExX1MiLCJsbGFtYTMuMjoxYiJdLCJ0b29scyI6WyJlY2hvX3Byb2JlIl0sImdlbmVyYXRlZF9hdCI6MTc4NzUwMzQ0Nn0="
+          "generated_at": 1787504346,
+          "sig": "k+TjgB+92DiJmzhZGDbHU6EWwH7xYmVwG1HuO0LPH6fGfdyuPmT5061qbAmrLd6kICuj8n1bjxrlxOFaN6IFCw==",
+          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwN2FmMDc5YWNlMzE2MTQ4YzlmM2U2MTk1MTYzMjVmYWI5MDM0NGNmNDNhMGM5NjBjY2E0MmViMzA0YTBjNTI2NSIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3ODc0OTcyMDAsImVwb2NoX2VuZCI6MTc4NzUwMDgwMCwidHVybnMiOjMsInRvb2xfY2FsbHMiOjEsImhlbGQiOjMsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjI5MCwib3V0cHV0X3Rva2VucyI6MzM1MSwidmNwdV9zZWNvbmRzIjoxMzE2LjE4MjgwNDEzMiwiZ3B1X3NlY29uZHMiOjE4OC4wMjYxMTQ4NzYsImVuZXJneV9rd2giOjAuMDEyNzk2MjIxNzA2ODM4ODksImNhcmJvbl9ncmFtcyI6Ni4wNzgyMDUzMTA3NDg0NzMsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL1BoaS00LW1pbmktcmVhc29uaW5nLUdHVUY6SVExX1MiLCJsbGFtYTMuMjoxYiJdLCJ0b29scyI6WyJlY2hvX3Byb2JlIl0sImdlbmVyYXRlZF9hdCI6MTc4NzUwNDM0Nn0="
         },
         {
           "node_did": "did:epn:0024080112207af079ace316148c9f3e619516325fab90344cf43a0c960cca42eb304a0c5265",
@@ -4835,9 +4751,9 @@
           "models": [
             "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M"
           ],
-          "generated_at": 1787503446,
-          "sig": "Fn3PC6SHf2ZIvn3uGwvfANdVQ/6jXHINSQZjH4uMzDDXiT6QUPsj9JIp+3OxM8vJuzBRqlBWlbfiU6PvmHbRCQ==",
-          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwN2FmMDc5YWNlMzE2MTQ4YzlmM2U2MTk1MTYzMjVmYWI5MDM0NGNmNDNhMGM5NjBjY2E0MmViMzA0YTBjNTI2NSIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3ODc1MDA4MDAsImVwb2NoX2VuZCI6MTc4NzUwNDQwMCwidHVybnMiOjEsInRvb2xfY2FsbHMiOjAsImhlbGQiOjEsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjg3LCJvdXRwdXRfdG9rZW5zIjo4NSwidmNwdV9zZWNvbmRzIjozMy4wODI1OTc2MjUwMDAwMDUsImdwdV9zZWNvbmRzIjo0LjcyNjA4NTM3NSwiZW5lcmd5X2t3aCI6MC4wMDAzMjE2MzYzNjU3OTg2MTExNiwiY2FyYm9uX2dyYW1zIjowLjE1Mjc3NzI3Mzc1NDM0MDMsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL1BoaS00LW1pbmktcmVhc29uaW5nLUdHVUY6UTNfS19NIl0sImdlbmVyYXRlZF9hdCI6MTc4NzUwMzQ0Nn0="
+          "generated_at": 1787504346,
+          "sig": "/MImfHm3mUy9h0oWMiwfO6q+BLCNleVxZU5y0/Ze/o2Ggm4PXIHiHL2UNUPEwrB1z5ne++21ZTToo5hrpYZwAQ==",
+          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwN2FmMDc5YWNlMzE2MTQ4YzlmM2U2MTk1MTYzMjVmYWI5MDM0NGNmNDNhMGM5NjBjY2E0MmViMzA0YTBjNTI2NSIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3ODc1MDA4MDAsImVwb2NoX2VuZCI6MTc4NzUwNDQwMCwidHVybnMiOjEsInRvb2xfY2FsbHMiOjAsImhlbGQiOjEsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjg3LCJvdXRwdXRfdG9rZW5zIjo4NSwidmNwdV9zZWNvbmRzIjozMy4wODI1OTc2MjUwMDAwMDUsImdwdV9zZWNvbmRzIjo0LjcyNjA4NTM3NSwiZW5lcmd5X2t3aCI6MC4wMDAzMjE2MzYzNjU3OTg2MTExNiwiY2FyYm9uX2dyYW1zIjowLjE1Mjc3NzI3Mzc1NDM0MDMsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL1BoaS00LW1pbmktcmVhc29uaW5nLUdHVUY6UTNfS19NIl0sImdlbmVyYXRlZF9hdCI6MTc4NzUwNDM0Nn0="
         }
       ],
       "class": "community",
@@ -4849,19 +4765,19 @@
       "addrs": [
         "/ip4/172.19.224.1/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip4/172.19.224.1/tcp/53591/ws/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
-        "/ip4/172.19.224.1/udp/53591/webrtc-direct/certhash/uEiCNpkQNU0zhp_gbpe7lqIjk_UBxZ-1qMtW5DklLf1lVeA/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip4/172.19.224.1/udp/53591/webrtc-direct/certhash/uEiBD0e94sa6ZeloMZMBasbeCaWTKg0vNbI6iMVVFSVkflQ/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip4/172.28.192.1/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip4/172.28.192.1/tcp/53591/ws/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
-        "/ip4/172.28.192.1/udp/53591/webrtc-direct/certhash/uEiCNpkQNU0zhp_gbpe7lqIjk_UBxZ-1qMtW5DklLf1lVeA/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip4/172.28.192.1/udp/53591/webrtc-direct/certhash/uEiBD0e94sa6ZeloMZMBasbeCaWTKg0vNbI6iMVVFSVkflQ/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip4/192.168.1.11/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip4/192.168.1.11/tcp/53591/ws/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
-        "/ip4/192.168.1.11/udp/53591/webrtc-direct/certhash/uEiCNpkQNU0zhp_gbpe7lqIjk_UBxZ-1qMtW5DklLf1lVeA/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip4/192.168.1.11/udp/53591/webrtc-direct/certhash/uEiBD0e94sa6ZeloMZMBasbeCaWTKg0vNbI6iMVVFSVkflQ/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip6/2401:4900:1cb9:eff8:7002:3f2f:1073:6bb7/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip6/2401:4900:1cb9:eff8:7002:3f2f:1073:6bb7/tcp/53591/ws/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
-        "/ip6/2401:4900:1cb9:eff8:7002:3f2f:1073:6bb7/udp/53591/webrtc-direct/certhash/uEiCNpkQNU0zhp_gbpe7lqIjk_UBxZ-1qMtW5DklLf1lVeA/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
+        "/ip6/2401:4900:1cb9:eff8:7002:3f2f:1073:6bb7/udp/53591/webrtc-direct/certhash/uEiBD0e94sa6ZeloMZMBasbeCaWTKg0vNbI6iMVVFSVkflQ/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip6/2401:4900:1cb9:eff8:7c96:8ff1:ecec:fc64/tcp/53590/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
         "/ip6/2401:4900:1cb9:eff8:7c96:8ff1:ecec:fc64/tcp/53591/ws/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv",
-        "/ip6/2401:4900:1cb9:eff8:7c96:8ff1:ecec:fc64/udp/53591/webrtc-direct/certhash/uEiCNpkQNU0zhp_gbpe7lqIjk_UBxZ-1qMtW5DklLf1lVeA/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv"
+        "/ip6/2401:4900:1cb9:eff8:7c96:8ff1:ecec:fc64/udp/53591/webrtc-direct/certhash/uEiBD0e94sa6ZeloMZMBasbeCaWTKg0vNbI6iMVVFSVkflQ/p2p/12D3KooWE7oosZcbCZJSETZYM2hoTnbLSQQFezoHzfpcWNT93cMv"
       ],
       "operator_ids": [
         "epn.batch.v1",
@@ -4977,9 +4893,9 @@
         "device_did": "did:epn:device:0024080112201d011f0e0dde8743a6d47d45934f7815be0e74f98bfd798b915c16b05e1b93cd",
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
         "role": "primary",
-        "issued_at": 1787502898,
-        "expires_at": 1819038898,
-        "signature": "Wh+Df4JQM/37xnMJ0ENztf2v+dpYBhoEQVkPTN0MF4QwCoQa+TR58d2Gtxsrhi561VQjS6yDwJvgjuz2a1KICA=="
+        "issued_at": 1787504675,
+        "expires_at": 1819040675,
+        "signature": "OR039tZcAs/b3U1iIOkNMIo4LZH9tv6ZxbGSmF31ZLKuskSOWan3342EQNgPxpCunxmFAYO/20OSy19WCai9CA=="
       },
       "price_per_unit": {
         "egress_gb": 50000,
@@ -4996,9 +4912,9 @@
       "vcpu_seconds": 25200,
       "arch": "x86_64",
       "simd": "avx2",
-      "storage_block_gib": 5.550838470458984,
-      "storage_object_gib": 3.3305030822753907,
-      "storage_archival_gib": 2.2203353881835937,
+      "storage_block_gib": 10.171825408935547,
+      "storage_object_gib": 6.103095245361328,
+      "storage_archival_gib": 4.068730163574219,
       "redundancy": "none",
       "egress_gbps": 1,
       "region": {
@@ -5017,8 +4933,14 @@
       "models": [
         {
           "name": "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:IQ4_XS",
+          "quant": "IQ4_XS",
+          "ctx": 262144,
+          "vram_needed_gib": 2.52,
           "pulled": true,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true,
+            "vision": true
+          },
           "measured_caps": {
             "tools": true,
             "vision": true,
@@ -5054,8 +4976,13 @@
         },
         {
           "name": "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M",
+          "quant": "Q3_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 1.84,
           "pulled": true,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true
+          },
           "measured_caps": {},
           "caps_measured": {},
           "family": "phi-4",
@@ -5065,8 +4992,13 @@
         },
         {
           "name": "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:IQ1_S",
+          "quant": "IQ1_S",
+          "ctx": 131072,
+          "vram_needed_gib": 2.01,
           "pulled": true,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true
+          },
           "measured_caps": {},
           "caps_measured": {},
           "family": "llama-3-2",
@@ -5076,8 +5008,13 @@
         },
         {
           "name": "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:Q4_K_M",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 0.77,
           "pulled": true,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true
+          },
           "measured_caps": {},
           "caps_measured": {},
           "family": "llama-3-2",
@@ -5087,8 +5024,13 @@
         },
         {
           "name": "hf.co/bartowski/microsoft_Phi-4-mini-instruct-GGUF:IQ2_M",
+          "quant": "IQ2_M",
+          "ctx": 131072,
+          "vram_needed_gib": 2.4,
           "pulled": true,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true
+          },
           "measured_caps": {},
           "caps_measured": {},
           "family": "phi-4",
@@ -5098,8 +5040,13 @@
         },
         {
           "name": "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S",
+          "quant": "IQ1_S",
+          "ctx": 131072,
+          "vram_needed_gib": 2.4,
           "pulled": true,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true
+          },
           "measured_caps": {},
           "caps_measured": {},
           "family": "phi-4",
@@ -5109,9 +5056,14 @@
         },
         {
           "name": "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M",
+          "quant": "Q4_K_M",
+          "ctx": 131072,
+          "vram_needed_gib": 0.77,
           "pulled": true,
           "effective_ctx": 16384,
-          "declared_caps": {},
+          "declared_caps": {
+            "tools": true
+          },
           "measured_caps": {
             "tools": true,
             "structured_output": true,
@@ -5238,7 +5190,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
-        "generated_at": "2026-08-23T16:52:35Z",
+        "generated_at": "2026-08-23T17:02:35Z",
         "metrics": {
           "agent_work": {
             "turns": 372,
@@ -5463,7 +5415,7 @@
                   "metric": "inference.tokens_per_sec",
                   "value": 72.04166754885564,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "claude-haiku-4-5",
@@ -5475,15 +5427,15 @@
                     "total_tokens": 68052
                   }
                 },
-                "signature": "4T0gFhY4txjdSaKx0T/SqEOCA6/7SZF1uUSIObTm8vF1sxJQZ9kSshVFZbaCsP5SbB1QjxZNRvQ0iLMG4g6wAQ==",
-                "hash": "SrFqME2y/70LPlaAG7BOh9jVdBHXRrkkVHboVUkhWug="
+                "signature": "5aZdvJZcglV+BGYfTPMPPiAIKrO9NHLrk1OddroZIWUvyW7SfJq7zZ/soRNZ7shC4VnEKwNCswLiyOokZNLtAA==",
+                "hash": "4Dl4QK/rgcJtIoi6o261Q0/Km6SXF5M91Re/IO2TxT8="
               },
               "claude-opus-5": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 19.727520435967303,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "claude-opus-5",
@@ -5495,15 +5447,15 @@
                     "total_tokens": 543
                   }
                 },
-                "signature": "lUyC7SivBBfYMW0nSUDVffx7vxAtYdj732NqjfvXnENjvQ7UDsxwVFKqb14q3FfalPM1EVhyrUK1jwpo9H2oCQ==",
-                "hash": "l7/I4zwCdFg0sQkNxOFnx5Ms+b+PIC/NJCZG/9Yahos="
+                "signature": "aRPQNNpEe7k/2aaZ5WuJBV+OyUXK5O0aCWOV7Hclh6j4izyvap0xoTXCX3fZkGWnzUb3do2g//ra2JPsPZ/CAw==",
+                "hash": "OlcQ34EhnAkQLlQ0QftIZHKm/AOLwnwYDPnnUimm5S4="
               },
               "gemma4:e2b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 7.717472599953401,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "gemma4:e2b",
@@ -5515,15 +5467,15 @@
                     "total_tokens": 177843
                   }
                 },
-                "signature": "zdVf/V9GdxgaDR8wIbPexRkL9i5MUvfLEmG4lhsG+4qfhp8bPFuldVF8v1+dq6MgKGosprhIWzHcrP9RYNfgAQ==",
-                "hash": "IVbZTVmEFL8vez+TGpUEK78a9SKDWj9oHgP+1kJYieU="
+                "signature": "gxQeir1nIr5JqXsKwPvrApS9fxD9yXyMQGEqsImMgL9rd533bYv6TFoydqWmgIV5pBQotzBqKExOp1bUpjHoBA==",
+                "hash": "d7DjiMYsVHvSc4PkL/qJZElzHq480w3c7aVvJnv5GLM="
               },
               "gemma4:e2b-it-qat": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 8.928833401968776,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "gemma4:e2b-it-qat",
@@ -5535,15 +5487,15 @@
                     "total_tokens": 7826
                   }
                 },
-                "signature": "itq+nrq3+91rPRlEwejl8gr0F0LD+DUktO8uxA5ZdaqrZGpMDtqqZGybg2kzzi0qC+OPFh0eeDePTl2EX2scDA==",
-                "hash": "UGHqqMJdd8dtnZWAAlVaQ4Y1MEXbxChvrOrT21i9UFA="
+                "signature": "0bpjXI+DUFmJwpr7siYtnVql6P2AN/vp582ugyG7hd8nZw3faIlk6+Wg1wFYOfVzmqqZmoEPZGYnk6TAdIo3Cw==",
+                "hash": "RlPMhfvVoxKeKBAhf3NzceiL0MXiWl/eML30gQo56Og="
               },
               "google/gemma-4-E2B-it-qat-q4_0-gguf": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 1.9937339789233837,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "google/gemma-4-E2B-it-qat-q4_0-gguf",
@@ -5555,15 +5507,15 @@
                     "total_tokens": 84
                   }
                 },
-                "signature": "aIlaNwNsZuNmBs5iNPjZf8odM+W7Xew+tIgetXb2Df1joV6/cWgFWoBkseUe8rkYiBxS/kgoQuDtvGG1Ss0TDw==",
-                "hash": "xvL1yeE6882HLI6eVNUb1kR9qbBnuzvnLp3iJhIpsIs="
+                "signature": "DcHXV0JxJSiCAeFx+I+8k1GAsVT0QxJYghEGzHkxuhfB26hSSvRAzQBSVOFLJOKcKnpKSjnHzS6OC299L+mLAw==",
+                "hash": "UWYXblexYQ7cef+sO/Rbpyh8LNFceiaAW3x1uPa36i4="
               },
               "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ1_S": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 10.664094561894089,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ1_S",
@@ -5575,15 +5527,15 @@
                     "total_tokens": 152
                   }
                 },
-                "signature": "jpQzt40mypjFDvJtX8PYhh459XOQxWmOnfJaIAQLgLbt0I+waPtzYfjugCR+PIbi7NdUWs+vxy00pz/1979AAA==",
-                "hash": "Ba4H20MhGpxvHgvefxsbV5fBN5JRSTBKWDIwpefb21Y="
+                "signature": "TeexduWvBrjwvuDEUFQR4Qc0Kq/f1MuiDh+BxF7Tk6upfo+Esi91nKwQ3GEAwmfb0wLSNqzs7HPuq+jMsJsYCg==",
+                "hash": "DgLWEJxQKam0W3p3HpPCgRizxUxc4oEG9BnitinW4/U="
               },
               "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ3_XS": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 21.736597123644405,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ3_XS",
@@ -5595,15 +5547,15 @@
                     "total_tokens": 36
                   }
                 },
-                "signature": "faSE77rbGL4DGPrNpFPr3ZevmJKqpTvDvYM7dxhhmuIXAxgfDKbOPKIomgiQQgZD71VUgwKkcxwYzPcTmTHKAQ==",
-                "hash": "GNlQGhZzDF597BbDlU/umT4iH1DWhIoUwVKWLxQTLDg="
+                "signature": "0IajtIZjuH1fB5BaqA3+jEpmctWsu4kOytswxTRAivlTCzjiLYf/hg2T+XwGzzSw3z8yUM3bbFTywv+uXGMOCg==",
+                "hash": "p8ePSUiQkUshHgB9vLay1obn7F2II6TjTz4bKwKQp6w="
               },
               "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q2_K": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 16.018603147615348,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q2_K",
@@ -5615,15 +5567,15 @@
                     "total_tokens": 7736
                   }
                 },
-                "signature": "5D4nce61uYCX5Cg3sa5xb1f8vCKseuDuXkQNL/p2cIqXHDYkgCD5AHKRd6milEsppzec1GJ0VYRG1uOS9d1UDQ==",
-                "hash": "rYx63BjV4e6JEN24XT4xv7eqB9bEXULUp/kDSHE22dg="
+                "signature": "BiWqsiVd69hwBzrJAj+oCiB1FSedTcX15WonHwv/CzXEBrzVbM/5iWSlJkvLl55A4ZL/eOicSlKE9pAbWACdAA==",
+                "hash": "1V+T78QfIsDr9VmwjDDtaUYGTJqwrCafyceFcTwst2E="
               },
               "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q3_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 44.55934753417052,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q3_K_M",
@@ -5635,15 +5587,15 @@
                     "total_tokens": 1676
                   }
                 },
-                "signature": "O58+n9LUh78tkkhHCWBCXcRB59vpdRU7jxIqcY1VjSsQUHr2/jrJ4ZQYaKp9ZVX+cV9CUELCtG76GaBJs9hkCQ==",
-                "hash": "Gp8TUb9BChbOqYpRIK+OXPOkMj+I9kkHCmYZ/9sFmZY="
+                "signature": "tMgKURXobVKYyMTdFy/K+G139y5U1gxtCVqdeQfdXmx/lo2VepNWF+ToVGXYYDsW+H+aUP2r5ZCEjNqxxzs1Cw==",
+                "hash": "RTKu/7k6E8qWPEo1bhhnCxYsFFaniHhvIYuWya/NAjs="
               },
               "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q4_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 37.41322850612227,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q4_K_M",
@@ -5655,15 +5607,15 @@
                     "total_tokens": 2545
                   }
                 },
-                "signature": "l6FWYkAAeLj5gCrTnCiSRgBveUs4H06qrR/aw42UdA2GcddMqYWb2vavoAATeGNzex5QchBYD7hIRJ+Y2RepAw==",
-                "hash": "CHNDGkO4f9a6U1qDPYNQimX07reEiE7gRg3Vj5UYMeE="
+                "signature": "tY+kx+CPfkyDnMvzip1XO26VPYXoeK7d60ho/b3OZGrg5ka+nJVmcuxewrDHNk3PkKAU/Xo9s7+JVWVjTMjJBQ==",
+                "hash": "w49V4ph7Y2xM5bpxYupmL8nfdMbCYUqhZsSLXFCUn3s="
               },
               "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q5_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 23.93037312391514,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q5_K_M",
@@ -5675,15 +5627,15 @@
                     "total_tokens": 1899
                   }
                 },
-                "signature": "vPX4WAiqD3UVP6tNJCV5/VDqIvWQP4TVe4CHIr1Pa0CwYWXkp0VtcFy0F24lNPVE3f2ueGm03DdfkugD5U02Dg==",
-                "hash": "kypP6e5piElaZk0ltyOam5OS7+I/XMp+DT9Kdo9KePo="
+                "signature": "U+a660sF8AUJcy6DhOmwt17AtzX2AH/p9tG4xV4Y7ZgCxS6JdlaCzTfeJSuBdlG/nuLO3pePCvpntSqPYlr2Bg==",
+                "hash": "D0pSAgdwtf9xCeeuxkz8cV8AV6vm3+Q/XmvKytwUKsw="
               },
               "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 12.806090299916013,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M",
@@ -5695,15 +5647,15 @@
                     "total_tokens": 1074
                   }
                 },
-                "signature": "62ER7JzViKZL7GrxUmkbNSIofg0YleIoPq8FkIuluWnUQ79STzrcuzXdsocE+aDZdkhEWNUeJkqzk1sbD+v3Dg==",
-                "hash": "QOomVWZHzdhcHJ1NMG3EVVXfIeIqgMUJS79NoAhptSg="
+                "signature": "2uVx+iM+yKsfs15uNCHJSFEfS67CrB7UbPrV+hAH0g7e/HxaqZzoTaqW76W+nYBkHBo0tUFF5jXYBxejLpojCQ==",
+                "hash": "MQ+VA0A5TZKrZvHX2p50I98ms7tQhEqTGZ7QqjTXYcQ="
               },
               "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q2_K_L": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 6.822501136123989,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q2_K_L",
@@ -5715,15 +5667,15 @@
                     "total_tokens": 3881
                   }
                 },
-                "signature": "gYaqcsZ7e8Z9gmWWbrxUMu/DyuE4ylI+UAKGp2LhyZqvekV356s0lG7VM5MrOl7SuLA+V9rE5rTtrFyS56g0Ag==",
-                "hash": "Fl4yS1TiJBbTKZL48bsCaDoGsAlnvJaRNj/iBalw5pA="
+                "signature": "UQjobpscqWWewzgS8vSA6KMLPNpMcIjcNvSkn/LC84OjMyDYrxf9ybvPYMjT8a2E0X7l9eM84+lrPVZLFhQJBA==",
+                "hash": "z+LdRJn4jToX6vPCLmF2pL9U/ataTR5k9GtnODzMVOI="
               },
               "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:IQ4_XS": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 6.1355581503117556,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:IQ4_XS",
@@ -5735,15 +5687,15 @@
                     "total_tokens": 521
                   }
                 },
-                "signature": "yxg/PMUkZIkyvMihyPC2mauAZnBBACjCPC8nyVb9o5iiwAMKZkA488eE9NioKvp/9zPyxaDphGnzC6oP+40cAQ==",
-                "hash": "e4veas7CgoR5X8e076FZUPcUZUjfOXK46zoa4AFZ2qw="
+                "signature": "GqI9U0rRaSTWkbsFB8r9RelQXYh4FbVfUPCQCxeFJeFoLqXuDRC6lx7GDjwHDcN6xzbdQa0m0w93mtq5Lz1mDA==",
+                "hash": "8kfo35TqTAiyc3gmFKvopJLb+cvYAgEyMshTQdbmHeY="
               },
               "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q2_K": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 11.788487163215999,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q2_K",
@@ -5755,15 +5707,15 @@
                     "total_tokens": 577
                   }
                 },
-                "signature": "uAo6FozqUv6vpQRRCFVVGa22uWkc0rt6tUmI2SatIc5kr82LIPvkRwVAzIH9c/xSJDEyb7TA0OEd+dzItLiYCQ==",
-                "hash": "Kyt7s/oRLO4bj2HWmQnL+QKR3QyN0ncYl3jgdJLXOhE="
+                "signature": "DZtBiIGg0i1RGYiQlj06dlmfKDHLw5mCI6IuCYhlCWcuSCN4q6goDMat76i4YqtPV5EeGqGqnv0wyKIJSW/NBg==",
+                "hash": "Brm2rG9+f9yxmXB7MLt222GfE4shVvqTHhUinqVKslA="
               },
               "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_NL": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 9.974552243824753,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_NL",
@@ -5775,15 +5727,15 @@
                     "total_tokens": 2705
                   }
                 },
-                "signature": "Bp50Uh+YwANufd2P5khzYrxspmENcGsviPlympuNlogDumWzU4qR9u6l03aquAaK4sLSmh0w6XlorrEUzpbnCQ==",
-                "hash": "QvDmoeq5ijc0HBbWZbkJdiI3DW303jvepoROjP+K1oA="
+                "signature": "xf8WGgc8mygbycrMl7J02kh7DpSFcJzrEoA4xt82s3fzSKlFN+6PF5xWK3sGkxzgwnryGwvXjGPRRdegYd4UAw==",
+                "hash": "J6jJWOYzobS3vXFWSIuXyg1M7KwMYoamf55MfkI9KbQ="
               },
               "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q3_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 14.179825030954731,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q3_K_M",
@@ -5795,15 +5747,15 @@
                     "total_tokens": 1220
                   }
                 },
-                "signature": "LEP8rBvQ6wLXJi8WUu60ZogE7uufkqzYu52b3jwJW6dELqEGm+XY/bwGBAx0tcD/+sX8+p+IsLfhXJvjGz5IDw==",
-                "hash": "Y4mCxR8xkgcz65jkiZ0Gju2m/JuvyIS1vpVXtNI7y9w="
+                "signature": "9rbfjVW4IyG1qelnCo8GLaaLEbQrfEBL4iaULXt9vkzPYNUj17abp7b3O5KBA/ZUNQTtuIlU6WaaU8vGAmVbAg==",
+                "hash": "0ozAhyFaVtm2JAfJprfYbC4T3t2QkJ/Fg+i3H78iq3g="
               },
               "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_0": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 8.036783258420686,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_0",
@@ -5815,15 +5767,15 @@
                     "total_tokens": 1112
                   }
                 },
-                "signature": "Wxx7fDmiYnEpVeKjnoCqeYD3YffZe8/TN8mENupKWGrNueDKC8txDmLi53+2IAuB6KS7AMHhOPsZ/uVdMDxMAw==",
-                "hash": "d2mlpjmQF2ztPZg+ptDwqvu7Eb97dXEq/s0780p9wz8="
+                "signature": "q4QDAtouSmZWxtl+CnTusjHas5p0B+oVuAWyiN33qcJykrxp786LE7w9vTMu9EDqEvQdQ+wkBmOJd4Kkhh9xAQ==",
+                "hash": "u9azqPXNmhSNSgP83AMXjt5XyZmGzmD3A3kJh5pH0hw="
               },
               "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 6.366943610713964,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
@@ -5835,15 +5787,15 @@
                     "total_tokens": 5563
                   }
                 },
-                "signature": "D0csROr46pSyeL7ERmdxPrVgyzQ0h3oJwNRVemByodta06vfwIk4pIjq9rdlrApdfVW+yOMHEREVUFnSDYdICw==",
-                "hash": "8cFt0Yn6i9fMvR2/8ErVH5cFNr+HqoAh+dP4lHDaKdw="
+                "signature": "V2OZAYu4WPnco7hDOpcYN3GS3qKpkkUXCy74p8h4flcH8vw4B/J/jM2dnsEQ9IorgYDz4B6+XNib77zTBypzCg==",
+                "hash": "EqZmuQFyJ3NRWmKYQ0v8PxMM19mvqQpT6OmQwC0QK4I="
               },
               "lfm2.5-thinking:1.2b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 16.89770033938807,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "lfm2.5-thinking:1.2b",
@@ -5855,15 +5807,15 @@
                     "total_tokens": 5313
                   }
                 },
-                "signature": "uQSda7Hg8LcwGKTRaZuNO6PeeFKePULvWjfJ7byLF0CSkq/ffB+xWPLxM56EDXjCAYg4+3/JF4GfOFRfBlmcDg==",
-                "hash": "u4vjUYkCGU0zoxNqNzdK2pif4GeGBIMfJaYyDG/0FOM="
+                "signature": "9ME+B4y8aKdBxgIXntMiKBtc5i1KmQ4mLohGJHo/Iq7EdiFlGlVnHbeIiNKEkC9cJtEkZKL4bd87JUsG5kJaDA==",
+                "hash": "LnVnQv5Se9s0f6hxtxYwknkuU8KeVorB0TVawDfKTjs="
               },
               "llama3.2:1b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 9.734047316575428,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "llama3.2:1b",
@@ -5875,15 +5827,15 @@
                     "total_tokens": 6121
                   }
                 },
-                "signature": "v+pklPxtPU3XUsCxu0mYJLaGSfRrDmDsGftLF6ULTAuJBWllp8ANcACr9dDNCMbEgIqBQ7s7srlyEt8wcUCdCw==",
-                "hash": "yyPKeVnpaKOfgAhqNRUaVCeT+UFAp2eNkRwq3hIPdos="
+                "signature": "0uH6DLHkip3GAmVGGrFkrGKvnWaItQO1xRBF5I5vfRUu5sx+NSeeBHmp1xhrPifaAPL1dKdZ6MlRTLkwyIWgDA==",
+                "hash": "1Q1qVPSBhL3id+yz8Cg/SR2k8h/F/E4Lh90msoGSXEQ="
               },
               "phi3:3.8b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 7.725546680633756,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "phi3:3.8b",
@@ -5895,15 +5847,15 @@
                     "total_tokens": 295
                   }
                 },
-                "signature": "rF1HfIaBSTTssF8qCm6kG/w03kIE+2xa89xXUmmPiIBFAmSYkdDzz1tGxvPTs5O0pB4TRmpndKl1UpFy7JLYDA==",
-                "hash": "oaVV0kVXqS685eytGlZD6qM2F8tTsA8Bcb+gtp3r6pI="
+                "signature": "ti9W1NKYeeP4DIqziajgkarDLAHxKasOiFX+vJWDdViag7QHsXfFQBLgrw4JQGxU/nI7yPdYGuyfbFfSXwr5Bw==",
+                "hash": "6TBZqieT2jeCixZENHwuaS16CrY0v6sTqLuk1rdqtFo="
               },
               "qwen3:0.6b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 18.17466780256037,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "qwen3:0.6b",
@@ -5915,15 +5867,15 @@
                     "total_tokens": 10899
                   }
                 },
-                "signature": "A93yCe5oGQU/eFau7JOIA9KvrMYN3I8OAAVj1meINMmtDWE/woS2UWch9P4KscmnI1oieHcA2bGQfT89INBtBw==",
-                "hash": "7vtcJbDUQ96hKKS7LEX1DN3xQW38fJrJI6tj++yLqWQ="
+                "signature": "P+G4vEWsa2H7bqCpNfzBgRfRsTlGBQczwIEHYYoiKs4ZJztT4cg/j+Y+e6IPFuMSOKl1EeQY33E4D3Y+bv+UBQ==",
+                "hash": "uF5xqQK0E065P3Ge/fr9lGG7nkoYu/BIVynv1hMHskg="
               },
               "tinyllama:1.1b": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 29.913964262078096,
                   "unit": "tokens/s",
-                  "ts": 1787503955421756400,
+                  "ts": 1787504555184710400,
                   "node_did": "did:epn:0024080112203fe69ce44d7b1418dd426331a539f12c1de428a235017442d41ceab0a29e3c79",
                   "extra": {
                     "model": "tinyllama:1.1b",
@@ -5935,35 +5887,35 @@
                     "total_tokens": 226
                   }
                 },
-                "signature": "CIjwmgEpYeci11yhb7UwgmAgnrqtz73YZ0/o0xmxHRANpzU9EebW1pnSCt0WB3a30yaiLEJU8/g5jaupWx7kDA==",
-                "hash": "yhigT/wg2W8sE/spU+JC3TdGiRHGmvGvYy6IGN3FMKc="
+                "signature": "50tfI1eRYk1R1367b3tueNNwV2QM7duYNBup0zX9UGQYAFiJsyhiGPLYTUC7QuapV4SSWQNZtsvWGvIgLAJmCg==",
+                "hash": "RlDgmiSrteuG1zWsDeUPXJHIUdwPD/FCDDxYKbfSyhI="
               }
             },
             "model_signing_payloads": {
-              "claude-haiku-4-5": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NzIuMDQxNjY3NTQ4ODU1NjQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiY2xhdWRlLWhhaWt1LTQtNSIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MTIxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjk0NC42MTk5OTk5OTk5OTk4LCJ0b3RhbF90b2tlbnMiOjY4MDUyfX0=",
-              "claude-opus-5": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTkuNzI3NTIwNDM1OTY3MzAzLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImNsYXVkZS1vcHVzLTUiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjYsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjcuNTI1LCJ0b3RhbF90b2tlbnMiOjU0M319",
-              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MTc0NzI1OTk5NTM0MDEsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6Nzc4LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjIzMDQ0LjIwMjMyMDk4NzAzNSwidG90YWxfdG9rZW5zIjoxNzc4NDN9fQ==",
-              "gemma4:e2b-it-qat": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OC45Mjg4MzM0MDE5Njg3NzYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYi1pdC1xYXQiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjM2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjg3Ni40ODYyODI5OTgwMDAxLCJ0b3RhbF90b2tlbnMiOjc4MjZ9fQ==",
-              "google/gemma-4-E2B-it-qat-q4_0-gguf": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MS45OTM3MzM5Nzg5MjMzODM3LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6Imdvb2dsZS9nZW1tYS00LUUyQi1pdC1xYXQtcTRfMC1nZ3VmIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjQyLjEzMiwidG90YWxfdG9rZW5zIjo4NH19",
-              "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ1_S": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTAuNjY0MDk0NTYxODk0MDg5LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL01heml5YXJQYW5haGkvTGxhbWEtMy4yLTFCLUluc3RydWN0LUdHVUY6SVExX1MiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjEsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MTQuMjUzNDM3LCJ0b3RhbF90b2tlbnMiOjE1Mn19",
-              "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ3_XS": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjEuNzM2NTk3MTIzNjQ0NDA1LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL01heml5YXJQYW5haGkvTGxhbWEtMy4yLTFCLUluc3RydWN0LUdHVUY6SVEzX1hTIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjEuNjU2MTkzLCJ0b3RhbF90b2tlbnMiOjM2fX0=",
-              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q2_K": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuMDE4NjAzMTQ3NjE1MzQ4LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL01heml5YXJQYW5haGkvUXdlbjMtMC42Qi1HR1VGOlEyX0siLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjIsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NDgyLjkzODQ4OSwidG90YWxfdG9rZW5zIjo3NzM2fX0=",
-              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q3_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NDQuNTU5MzQ3NTM0MTcwNTIsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vTWF6aXlhclBhbmFoaS9Rd2VuMy0wLjZCLUdHVUY6UTNfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxMSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjozNy42MTI3NTksInRvdGFsX3Rva2VucyI6MTY3Nn19",
-              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MzcuNDEzMjI4NTA2MTIyMjcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vTWF6aXlhclBhbmFoaS9Rd2VuMy0wLjZCLUdHVUY6UTRfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxMywic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo2OC4wMjQwNjgsInRvdGFsX3Rva2VucyI6MjU0NX19",
-              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q5_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjMuOTMwMzczMTIzOTE1MTQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vTWF6aXlhclBhbmFoaS9Rd2VuMy0wLjZCLUdHVUY6UTVfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxNCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo3OS4zNTUyMTksInRvdGFsX3Rva2VucyI6MTg5OX19",
-              "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTIuODA2MDkwMjk5OTE2MDEzLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL2JhcnRvd3NraS9MbGFtYS0zLjItMUItSW5zdHJ1Y3QtR0dVRjpRNF9LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjI2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjgzLjg2NjM0NiwidG90YWxfdG9rZW5zIjoxMDc0fX0=",
-              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q2_K_L": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni44MjI1MDExMzYxMjM5ODksInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9QaGktNC1taW5pLXJlYXNvbmluZy1HR1VGOlEyX0tfTCIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo1NjguODUyOTY1LCJ0b3RhbF90b2tlbnMiOjM4ODF9fQ==",
-              "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:IQ4_XS": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni4xMzU1NTgxNTAzMTE3NTU2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUXdlbjMtVkwtNEItSW5zdHJ1Y3QtR0dVRjpJUTRfWFMiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjI2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjg0LjkxNDg0OTk5OTk5OTk3LCJ0b3RhbF90b2tlbnMiOjUyMX19",
-              "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q2_K": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTEuNzg4NDg3MTYzMjE1OTk5LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUXdlbjMtVkwtNEItSW5zdHJ1Y3QtR0dVRjpRMl9LIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxOCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo0OC45NDYwNTk5OTk5OTk5OTYsInRvdGFsX3Rva2VucyI6NTc3fX0=",
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_NL": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OS45NzQ1NTIyNDM4MjQ3NTMsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOklRNF9OTCIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MTcsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjcxLjE5MDExODAwMDAwMDA0LCJ0b3RhbF90b2tlbnMiOjI3MDV9fQ==",
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q3_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTQuMTc5ODI1MDMwOTU0NzMxLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvZ2VtbWEtNC1FMkItaXQtR0dVRjpRM19LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjcsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6ODYuMDM3NzMzLCJ0b3RhbF90b2tlbnMiOjEyMjB9fQ==",
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_0": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OC4wMzY3ODMyNTg0MjA2ODYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOlE0XzAiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjgsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MTM4LjM2MzgxNTk5OTk5OTk5LCJ0b3RhbF90b2tlbnMiOjExMTJ9fQ==",
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni4zNjY5NDM2MTA3MTM5NjQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOlE0X0tfTSIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NDAsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6ODczLjczMTYyNjk5OTAwMDEsInRvdGFsX3Rva2VucyI6NTU2M319",
-              "lfm2.5-thinking:1.2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuODk3NzAwMzM5Mzg4MDcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoibGZtMi41LXRoaW5raW5nOjEuMmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjYsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzE0LjQyMTQ4Mjk5OTk5OTk3LCJ0b3RhbF90b2tlbnMiOjUzMTN9fQ==",
-              "llama3.2:1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OS43MzQwNDczMTY1NzU0MjgsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoibGxhbWEzLjI6MWIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjk0LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjYyOC44MjM3MzU5OTksInRvdGFsX3Rva2VucyI6NjEyMX19",
-              "phi3:3.8b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MjU1NDY2ODA2MzM3NTYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicGhpMzozLjhiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM4LjE4NSwidG90YWxfdG9rZW5zIjoyOTV9fQ==",
-              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTguMTc0NjY3ODAyNTYwMzcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTAzOTU1NDIxNzU2NDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NTksInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NTk5LjY4MDgzNjk5Nzk5OTcsInRvdGFsX3Rva2VucyI6MTA4OTl9fQ==",
-              "tinyllama:1.1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjkuOTEzOTY0MjYyMDc4MDk2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwMzk1NTQyMTc1NjQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InRpbnlsbGFtYToxLjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjcuNTU1LCJ0b3RhbF90b2tlbnMiOjIyNn19"
+              "claude-haiku-4-5": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NzIuMDQxNjY3NTQ4ODU1NjQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiY2xhdWRlLWhhaWt1LTQtNSIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MTIxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjk0NC42MTk5OTk5OTk5OTk4LCJ0b3RhbF90b2tlbnMiOjY4MDUyfX0=",
+              "claude-opus-5": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTkuNzI3NTIwNDM1OTY3MzAzLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImNsYXVkZS1vcHVzLTUiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjYsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjcuNTI1LCJ0b3RhbF90b2tlbnMiOjU0M319",
+              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MTc0NzI1OTk5NTM0MDEsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6Nzc4LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjIzMDQ0LjIwMjMyMDk4NzAzNSwidG90YWxfdG9rZW5zIjoxNzc4NDN9fQ==",
+              "gemma4:e2b-it-qat": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OC45Mjg4MzM0MDE5Njg3NzYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYi1pdC1xYXQiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjM2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjg3Ni40ODYyODI5OTgwMDAxLCJ0b3RhbF90b2tlbnMiOjc4MjZ9fQ==",
+              "google/gemma-4-E2B-it-qat-q4_0-gguf": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MS45OTM3MzM5Nzg5MjMzODM3LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6Imdvb2dsZS9nZW1tYS00LUUyQi1pdC1xYXQtcTRfMC1nZ3VmIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjQyLjEzMiwidG90YWxfdG9rZW5zIjo4NH19",
+              "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ1_S": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTAuNjY0MDk0NTYxODk0MDg5LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL01heml5YXJQYW5haGkvTGxhbWEtMy4yLTFCLUluc3RydWN0LUdHVUY6SVExX1MiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjEsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MTQuMjUzNDM3LCJ0b3RhbF90b2tlbnMiOjE1Mn19",
+              "hf.co/MaziyarPanahi/Llama-3.2-1B-Instruct-GGUF:IQ3_XS": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjEuNzM2NTk3MTIzNjQ0NDA1LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL01heml5YXJQYW5haGkvTGxhbWEtMy4yLTFCLUluc3RydWN0LUdHVUY6SVEzX1hTIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjEuNjU2MTkzLCJ0b3RhbF90b2tlbnMiOjM2fX0=",
+              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q2_K": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuMDE4NjAzMTQ3NjE1MzQ4LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL01heml5YXJQYW5haGkvUXdlbjMtMC42Qi1HR1VGOlEyX0siLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjIsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NDgyLjkzODQ4OSwidG90YWxfdG9rZW5zIjo3NzM2fX0=",
+              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q3_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NDQuNTU5MzQ3NTM0MTcwNTIsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vTWF6aXlhclBhbmFoaS9Rd2VuMy0wLjZCLUdHVUY6UTNfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxMSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjozNy42MTI3NTksInRvdGFsX3Rva2VucyI6MTY3Nn19",
+              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MzcuNDEzMjI4NTA2MTIyMjcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vTWF6aXlhclBhbmFoaS9Rd2VuMy0wLjZCLUdHVUY6UTRfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxMywic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo2OC4wMjQwNjgsInRvdGFsX3Rva2VucyI6MjU0NX19",
+              "hf.co/MaziyarPanahi/Qwen3-0.6B-GGUF:Q5_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjMuOTMwMzczMTIzOTE1MTQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vTWF6aXlhclBhbmFoaS9Rd2VuMy0wLjZCLUdHVUY6UTVfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxNCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo3OS4zNTUyMTksInRvdGFsX3Rva2VucyI6MTg5OX19",
+              "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTIuODA2MDkwMjk5OTE2MDEzLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL2JhcnRvd3NraS9MbGFtYS0zLjItMUItSW5zdHJ1Y3QtR0dVRjpRNF9LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjI2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjgzLjg2NjM0NiwidG90YWxfdG9rZW5zIjoxMDc0fX0=",
+              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q2_K_L": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni44MjI1MDExMzYxMjM5ODksInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9QaGktNC1taW5pLXJlYXNvbmluZy1HR1VGOlEyX0tfTCIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo1NjguODUyOTY1LCJ0b3RhbF90b2tlbnMiOjM4ODF9fQ==",
+              "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:IQ4_XS": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni4xMzU1NTgxNTAzMTE3NTU2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUXdlbjMtVkwtNEItSW5zdHJ1Y3QtR0dVRjpJUTRfWFMiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjI2LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjg0LjkxNDg0OTk5OTk5OTk3LCJ0b3RhbF90b2tlbnMiOjUyMX19",
+              "hf.co/unsloth/Qwen3-VL-4B-Instruct-GGUF:Q2_K": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTEuNzg4NDg3MTYzMjE1OTk5LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvUXdlbjMtVkwtNEItSW5zdHJ1Y3QtR0dVRjpRMl9LIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoxOCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo0OC45NDYwNTk5OTk5OTk5OTYsInRvdGFsX3Rva2VucyI6NTc3fX0=",
+              "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_NL": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OS45NzQ1NTIyNDM4MjQ3NTMsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOklRNF9OTCIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6MTcsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjcxLjE5MDExODAwMDAwMDA0LCJ0b3RhbF90b2tlbnMiOjI3MDV9fQ==",
+              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q3_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTQuMTc5ODI1MDMwOTU0NzMxLCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6ImhmLmNvL3Vuc2xvdGgvZ2VtbWEtNC1FMkItaXQtR0dVRjpRM19LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjcsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6ODYuMDM3NzMzLCJ0b3RhbF90b2tlbnMiOjEyMjB9fQ==",
+              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_0": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OC4wMzY3ODMyNTg0MjA2ODYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOlE0XzAiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjgsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MTM4LjM2MzgxNTk5OTk5OTk5LCJ0b3RhbF90b2tlbnMiOjExMTJ9fQ==",
+              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni4zNjY5NDM2MTA3MTM5NjQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOlE0X0tfTSIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NDAsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6ODczLjczMTYyNjk5OTAwMDEsInRvdGFsX3Rva2VucyI6NTU2M319",
+              "lfm2.5-thinking:1.2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuODk3NzAwMzM5Mzg4MDcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoibGZtMi41LXRoaW5raW5nOjEuMmIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjYsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MzE0LjQyMTQ4Mjk5OTk5OTk3LCJ0b3RhbF90b2tlbnMiOjUzMTN9fQ==",
+              "llama3.2:1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6OS43MzQwNDczMTY1NzU0MjgsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoibGxhbWEzLjI6MWIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEiLCJzYW1wbGVfY291bnQiOjk0LCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjYyOC44MjM3MzU5OTksInRvdGFsX3Rva2VucyI6NjEyMX19",
+              "phi3:3.8b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ny43MjU1NDY2ODA2MzM3NTYsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicGhpMzozLjhiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjM4LjE4NSwidG90YWxfdG9rZW5zIjoyOTV9fQ==",
+              "qwen3:0.6b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTguMTc0NjY3ODAyNTYwMzcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0NTU1MTg0NzEwNDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwM2ZlNjljZTQ0ZDdiMTQxOGRkNDI2MzMxYTUzOWYxMmMxZGU0MjhhMjM1MDE3NDQyZDQxY2VhYjBhMjllM2M3OSIsImV4dHJhIjp7Im1vZGVsIjoicXdlbjM6MC42YiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYSIsInNhbXBsZV9jb3VudCI6NTksInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6NTk5LjY4MDgzNjk5Nzk5OTcsInRvdGFsX3Rva2VucyI6MTA4OTl9fQ==",
+              "tinyllama:1.1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjkuOTEzOTY0MjYyMDc4MDk2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc4NzUwNDU1NTE4NDcxMDQwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDNmZTY5Y2U0NGQ3YjE0MThkZDQyNjMzMWE1MzlmMTJjMWRlNDI4YTIzNTAxNzQ0MmQ0MWNlYWIwYTI5ZTNjNzkiLCJleHRyYSI6eyJtb2RlbCI6InRpbnlsbGFtYToxLjFiIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hIiwic2FtcGxlX2NvdW50IjoyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjcuNTU1LCJ0b3RhbF90b2tlbnMiOjIyNn19"
             },
             "variants": {
               "gemma4:e2b": [
@@ -14754,531 +14706,9 @@
       "energy_kwh_rate": 0.05,
       "energy_source": "unknown",
       "carbon_intensity": 475,
-      "online": true,
-      "models": [
-        {
-          "name": "llama3.2:1b",
-          "quant": "Q8_0",
-          "ctx": 131072,
-          "vram_needed_gib": 1.46,
-          "pulled": true,
-          "effective_ctx": 4096,
-          "declared_caps": {
-            "tools": true
-          },
-          "measured_caps": {
-            "tools": true
-          },
-          "caps_measured": {},
-          "bench_digest": "+FhVcbBlk98FSEBZF0HVRYeUPi48iAiecjPk+jtulBk=",
-          "benched_at": "2026-08-19T23:37:33.856104Z",
-          "tokens_per_sec": 5.615962512327037,
-          "probe_version": 4,
-          "engine": "ollama-host",
-          "warm": true
-        },
-        {
-          "name": "hf.co/unsloth/Qwen3.5-2B-GGUF:Q4_K_M",
-          "quant": "Q4_K_M",
-          "ctx": 262144,
-          "vram_needed_gib": 1.18,
-          "pulled": true,
-          "declared_caps": {
-            "tools": true,
-            "vision": true,
-            "thinking": true
-          },
-          "measured_caps": {},
-          "caps_measured": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "warm": true
-        },
-        {
-          "name": "hf.co/unsloth/Qwen3.5-0.8B-GGUF:Q4_K_M",
-          "quant": "Q4_K_M",
-          "ctx": 262144,
-          "vram_needed_gib": 0.47,
-          "pulled": true,
-          "declared_caps": {
-            "tools": true,
-            "vision": true,
-            "thinking": true
-          },
-          "measured_caps": {},
-          "caps_measured": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "warm": true
-        },
-        {
-          "name": "qwen2.5:0.5b",
-          "quant": "Q4_K_M",
-          "ctx": 32768,
-          "vram_needed_gib": 0.31,
-          "pulled": true,
-          "declared_caps": {
-            "tools": true
-          },
-          "measured_caps": {},
-          "caps_measured": {},
-          "benched_at": "0001-01-01T00:00:00Z",
-          "tokens_per_sec": 4.40844184103378,
-          "warm": true
-        },
-        {
-          "name": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
-          "quant": "Q4_K_M",
-          "ctx": 131072,
-          "vram_needed_gib": 2.91,
-          "pulled": true,
-          "effective_ctx": 4096,
-          "declared_caps": {
-            "tools": true,
-            "vision": true,
-            "audio": true
-          },
-          "measured_caps": {
-            "tools": true
-          },
-          "caps_measured": {},
-          "bench_digest": "OSHIH9VtW+VkBdFfUWGKMRvB5ZVAsoPao+X+ZTrP9ao=",
-          "benched_at": "2026-08-19T17:15:44.470788Z",
-          "tokens_per_sec": 5.23981072880156,
-          "probe_version": 4,
-          "engine": "ollama-host",
-          "warm": true
-        }
-      ],
-      "proof_snapshot": {
-        "schema_version": "epn.proof.snapshot.v1",
-        "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-        "generated_at": "2026-08-23T16:56:26Z",
-        "metrics": {
-          "agent_work": {
-            "turns": 18,
-            "tool_calls": 9,
-            "prompt_tokens": 10965,
-            "output_tokens": 2309,
-            "vcpu_seconds": 7448.301845165999,
-            "gpu_seconds": 2482.7672817220005,
-            "energy_kwh": 0.07241404571689167,
-            "energy_joules": 260690.56458080997,
-            "carbon_grams": 34.396671715523546,
-            "measured_energy_turns": 0
-          },
-          "disputes_resolved": 0,
-          "inference_engine": "ollama-host",
-          "inferences_served": 39,
-          "models_bench_detail": {
-            "gemma4:e2b": {
-              "sample_count": 20,
-              "total_seconds": 474.0487169999999,
-              "total_tokens": 1923
-            },
-            "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
-              "sample_count": 8,
-              "total_seconds": 199.243838,
-              "total_tokens": 1044
-            },
-            "llama3.2:1b": {
-              "sample_count": 4,
-              "total_seconds": 32.051496,
-              "total_tokens": 180
-            },
-            "qwen2.5:0.5b": {
-              "sample_count": 8,
-              "total_seconds": 81.20783099999998,
-              "total_tokens": 358
-            }
-          },
-          "models_tokens_per_sec": {
-            "gemma4:e2b": 4.056545099772943,
-            "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": 5.23981072880156,
-            "llama3.2:1b": 5.615962512327037,
-            "qwen2.5:0.5b": 4.40844184103378
-          },
-          "proofs_issued": 0,
-          "receipts_verified": 53,
-          "since": "2026-07-05T04:48:31Z",
-          "tokens_served": 3406
-        },
-        "resources": {
-          "cpu": {
-            "resource_type": "cpu",
-            "status": "signed",
-            "metric": "cpu.throughput",
-            "unit": "hashes/s",
-            "result": {
-              "result": {
-                "metric": "cpu.throughput",
-                "value": 29.07031410648814,
-                "unit": "hashes/s",
-                "ts": 1787503939099344000,
-                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                "extra": {
-                  "arch": "amd64",
-                  "cache_l1_data_kb": 32,
-                  "cache_l1_instruction_kb": 32,
-                  "cache_l2_unified_kb": 256,
-                  "cache_l3_unified_kb": 3072,
-                  "cores_logical": 4,
-                  "cores_physical": 2,
-                  "cpu_model": "Intel(R) Core(TM) i5-5350U CPU @ 1.80GHz",
-                  "cpu_sockets": 1,
-                  "duration_ms": 619,
-                  "multicore_hashes_per_sec": 62.99016005854149,
-                  "os": "darwin",
-                  "payload": "sha256(1MB) single-threaded",
-                  "scaling_efficiency": 0.541705189594794,
-                  "sustained_ratio": 0.5260428526176736,
-                  "threads_per_core": 2
-                }
-              },
-              "signature": "JgoS1/cGjCF3pYH48UBNbiOLb8VxZpiZnXXL/HCHWdyx5RIs7WQGPTpA4K+1uQydGgZ3wvQqCXNC7o/SIZkrAQ==",
-              "hash": "gsbJGnwTKBWjqKgWWEkTnUIktO6r/euWo3cPgB9Rjck="
-            },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJjcHUudGhyb3VnaHB1dCIsInZhbHVlIjoyOS4wNzAzMTQxMDY0ODgxNCwidW5pdCI6Imhhc2hlcy9zIiwidHMiOjE3ODc1MDM5MzkwOTkzNDQwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsiYXJjaCI6ImFtZDY0IiwiY2FjaGVfbDFfZGF0YV9rYiI6MzIsImNhY2hlX2wxX2luc3RydWN0aW9uX2tiIjozMiwiY2FjaGVfbDJfdW5pZmllZF9rYiI6MjU2LCJjYWNoZV9sM191bmlmaWVkX2tiIjozMDcyLCJjb3Jlc19sb2dpY2FsIjo0LCJjb3Jlc19waHlzaWNhbCI6MiwiY3B1X21vZGVsIjoiSW50ZWwoUikgQ29yZShUTSkgaTUtNTM1MFUgQ1BVIEAgMS44MEdIeiIsImNwdV9zb2NrZXRzIjoxLCJkdXJhdGlvbl9tcyI6NjE5LCJtdWx0aWNvcmVfaGFzaGVzX3Blcl9zZWMiOjYyLjk5MDE2MDA1ODU0MTQ5LCJvcyI6ImRhcndpbiIsInBheWxvYWQiOiJzaGEyNTYoMU1CKSBzaW5nbGUtdGhyZWFkZWQiLCJzY2FsaW5nX2VmZmljaWVuY3kiOjAuNTQxNzA1MTg5NTk0Nzk0LCJzdXN0YWluZWRfcmF0aW8iOjAuNTI2MDQyODUyNjE3NjczNiwidGhyZWFkc19wZXJfY29yZSI6Mn19"
-          },
-          "energy": {
-            "resource_type": "energy",
-            "status": "configured_not_yet_benchmarked",
-            "label": "configured, not-yet-benchmarked",
-            "metric": "energy.joules_per_token",
-            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
-          },
-          "gpu": {
-            "resource_type": "gpu",
-            "status": "configured_not_yet_benchmarked",
-            "label": "configured, not-yet-benchmarked",
-            "metric": "gpu.throughput",
-            "note": "configured, not-yet-benchmarked; no fake benchmark is emitted"
-          },
-          "inference": {
-            "resource_type": "inference",
-            "status": "signed",
-            "metric": "inference.tokens_per_sec",
-            "unit": "tokens/s",
-            "models": {
-              "gemma4:e2b": {
-                "result": {
-                  "metric": "inference.tokens_per_sec",
-                  "value": 4.056545099772943,
-                  "unit": "tokens/s",
-                  "ts": 1787504186797047000,
-                  "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                  "extra": {
-                    "model": "gemma4:e2b",
-                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
-                    "runtime": "ollama-host",
-                    "sample_count": 20,
-                    "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 474.0487169999999,
-                    "total_tokens": 1923
-                  }
-                },
-                "signature": "Rg24djNFa4SUVqM0UdcPSokch7alQdf5WaL71iS63EOcBdzoexjkUyS7JwAcpr+7JrKfYNIkQgl6SgBg46K+BQ==",
-                "hash": "9DtiKGrwr1ZgI++SVaEdMIgp6dcJA3S/VflVUgPTLas="
-              },
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
-                "result": {
-                  "metric": "inference.tokens_per_sec",
-                  "value": 5.23981072880156,
-                  "unit": "tokens/s",
-                  "ts": 1787504186797047000,
-                  "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                  "extra": {
-                    "model": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
-                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
-                    "runtime": "ollama-host",
-                    "sample_count": 8,
-                    "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 199.243838,
-                    "total_tokens": 1044
-                  }
-                },
-                "signature": "HQ2WW0EKgacNJFz9K2hdPmL5dHabKzCRQ5+pbMfAusEchcpuLK2Ff7dmkWuCtO/BrzhFtHvmRT8Z68XRgbsxCg==",
-                "hash": "ETc2nkhvYIPkJTlzXs+ZuHLVATHSxluXhZKJX7C/O5g="
-              },
-              "llama3.2:1b": {
-                "result": {
-                  "metric": "inference.tokens_per_sec",
-                  "value": 5.615962512327037,
-                  "unit": "tokens/s",
-                  "ts": 1787504186797047000,
-                  "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                  "extra": {
-                    "model": "llama3.2:1b",
-                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
-                    "runtime": "ollama-host",
-                    "sample_count": 4,
-                    "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 32.051496,
-                    "total_tokens": 180
-                  }
-                },
-                "signature": "TWd9CQktrMko2qswhJWbnScVHVWUc6lg/g2kvMrOYYuBEYI4Ci7iZzQ0ri9CnpfR9PemYFSuutxPpiedfkBbCg==",
-                "hash": "NY/43iAXIqEKt8eh4in2jb6nTuy37/SH3GmsDlUuRGE="
-              },
-              "qwen2.5:0.5b": {
-                "result": {
-                  "metric": "inference.tokens_per_sec",
-                  "value": 4.40844184103378,
-                  "unit": "tokens/s",
-                  "ts": 1787504186797047000,
-                  "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                  "extra": {
-                    "model": "qwen2.5:0.5b",
-                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
-                    "runtime": "ollama-host",
-                    "sample_count": 8,
-                    "source": "metrics.models_tokens_per_sec",
-                    "total_seconds": 81.20783099999998,
-                    "total_tokens": 358
-                  }
-                },
-                "signature": "OpzplVDZ7ZtJhINyEeIq2bcw8j0EiYXnOQIW3Rlp6V3kb4nAlaAmD2DTHcb/1zSNnlEZAQjSS+ObqrHzKO7WBA==",
-                "hash": "PrXvwyDwxTvi3kCz4IdAePpCjqtZCG3QRYVkURfyou0="
-              }
-            },
-            "model_signing_payloads": {
-              "gemma4:e2b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NC4wNTY1NDUwOTk3NzI5NDMsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0MTg2Nzk3MDQ3MDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7Im1vZGVsIjoiZ2VtbWE0OmUyYiIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoyMCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo0NzQuMDQ4NzE2OTk5OTk5OSwidG90YWxfdG9rZW5zIjoxOTIzfX0=",
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NS4yMzk4MTA3Mjg4MDE1NiwidW5pdCI6InRva2Vucy9zIiwidHMiOjE3ODc1MDQxODY3OTcwNDcwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsibW9kZWwiOiJoZi5jby91bnNsb3RoL2dlbW1hLTQtRTJCLWl0LUdHVUY6UTRfS19NIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hLWhvc3QiLCJzYW1wbGVfY291bnQiOjgsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MTk5LjI0MzgzOCwidG90YWxfdG9rZW5zIjoxMDQ0fX0=",
-              "llama3.2:1b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NS42MTU5NjI1MTIzMjcwMzcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzg3NTA0MTg2Nzk3MDQ3MDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7Im1vZGVsIjoibGxhbWEzLjI6MWIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6NCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjozMi4wNTE0OTYsInRvdGFsX3Rva2VucyI6MTgwfX0=",
-              "qwen2.5:0.5b": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NC40MDg0NDE4NDEwMzM3OCwidW5pdCI6InRva2Vucy9zIiwidHMiOjE3ODc1MDQxODY3OTcwNDcwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsibW9kZWwiOiJxd2VuMi41OjAuNWIiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6OCwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo4MS4yMDc4MzA5OTk5OTk5OCwidG90YWxfdG9rZW5zIjozNTh9fQ=="
-            }
-          },
-          "mem": {
-            "resource_type": "mem",
-            "status": "signed",
-            "metric": "mem.bandwidth",
-            "unit": "MB/s",
-            "result": {
-              "result": {
-                "metric": "mem.bandwidth",
-                "value": 58.979663379856284,
-                "unit": "MB/s",
-                "ts": 1787503941607110000,
-                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                "extra": {
-                  "method": "sequential memcpy for bandwidth; dependent pointer chase over a buffer larger than cache for latency",
-                  "payload_mb": 64,
-                  "random_access_ns": 384.10662937164307,
-                  "total_mb": 8192
-                }
-              },
-              "signature": "a7hWgvo4lYDcgXASmJEcf7j/tv/p9u8YYISJtHXGEYPEaZ6e11JMnVymUTna2aZd2O7B9H1qijmHmGmwPH5NCQ==",
-              "hash": "0hIcNDv6OCKzP+gW6Uj64mlsElf8ZYjbEKRC+JQrrz8="
-            },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJtZW0uYmFuZHdpZHRoIiwidmFsdWUiOjU4Ljk3OTY2MzM3OTg1NjI4NCwidW5pdCI6Ik1CL3MiLCJ0cyI6MTc4NzUwMzk0MTYwNzExMDAwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDg0MTQ2NGE0YTZkNDVhOGJkNzI5ZTAzMmI0YzFiMDNkOWFkNjlhNThjNzZlMGE1YzUxYmQwMjRiZmRkNjg2NzIiLCJleHRyYSI6eyJtZXRob2QiOiJzZXF1ZW50aWFsIG1lbWNweSBmb3IgYmFuZHdpZHRoOyBkZXBlbmRlbnQgcG9pbnRlciBjaGFzZSBvdmVyIGEgYnVmZmVyIGxhcmdlciB0aGFuIGNhY2hlIGZvciBsYXRlbmN5IiwicGF5bG9hZF9tYiI6NjQsInJhbmRvbV9hY2Nlc3NfbnMiOjM4NC4xMDY2MjkzNzE2NDMwNywidG90YWxfbWIiOjgxOTJ9fQ=="
-          },
-          "network": {
-            "resource_type": "network",
-            "status": "signed",
-            "metric": "tunnel.throughput",
-            "unit": "MB/s",
-            "result": {
-              "result": {
-                "metric": "tunnel.throughput",
-                "value": 139.85325477682778,
-                "unit": "MB/s",
-                "ts": 1787503943500735000,
-                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                "extra": {
-                  "direct_rtt_ms": 0.08985134,
-                  "direct_throughput_mbps": 338.725648060495,
-                  "interface": "en0",
-                  "mode": "loopback",
-                  "mtu_bytes": 1500,
-                  "payload_mb": 8,
-                  "rtt_ms": 0.31158121,
-                  "setup_ms": 0.074168,
-                  "tunnel_overhead_pct": 58.711938237446205
-                }
-              },
-              "signature": "Uc2NfzIRZeMeCKpLwVP5Su/a6TaFv+YD7DzZ469hl2ZEre6donRg9eBwViawCexCdpgmUNBs3zo/dn8ETBwJCQ==",
-              "hash": "ZHMk+WEuAj+TEKZBJONtuRqFo2LPkIxjgdC6vMQahV0="
-            },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJ0dW5uZWwudGhyb3VnaHB1dCIsInZhbHVlIjoxMzkuODUzMjU0Nzc2ODI3NzgsInVuaXQiOiJNQi9zIiwidHMiOjE3ODc1MDM5NDM1MDA3MzUwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsiZGlyZWN0X3J0dF9tcyI6MC4wODk4NTEzNCwiZGlyZWN0X3Rocm91Z2hwdXRfbWJwcyI6MzM4LjcyNTY0ODA2MDQ5NSwiaW50ZXJmYWNlIjoiZW4wIiwibW9kZSI6Imxvb3BiYWNrIiwibXR1X2J5dGVzIjoxNTAwLCJwYXlsb2FkX21iIjo4LCJydHRfbXMiOjAuMzExNTgxMjEsInNldHVwX21zIjowLjA3NDE2OCwidHVubmVsX292ZXJoZWFkX3BjdCI6NTguNzExOTM4MjM3NDQ2MjA1fX0="
-          },
-          "storage": {
-            "resource_type": "storage",
-            "status": "signed",
-            "metric": "storage.throughput",
-            "unit": "MB/s",
-            "result": {
-              "result": {
-                "metric": "storage.throughput",
-                "value": 82.77374370237796,
-                "unit": "MB/s",
-                "ts": 1787503943236904000,
-                "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-                "extra": {
-                  "fs_free_gb": 8.262718200683594,
-                  "fs_total_gb": 233.5667953491211,
-                  "fs_used_pct": 96.46237463320375,
-                  "fsync_latency_ms": 52.08038,
-                  "iops_caveat": "4 KiB random reads against a file just written, so the page cache is warm; this measures the filesystem path, not a cold device",
-                  "payload_mb": 64,
-                  "random_read_4k_iops": 89605.6589610944,
-                  "read_mbps": 394.726810006527,
-                  "write_mbps": 82.77374370237796
-                }
-              },
-              "signature": "wIfT+ZiPjp6MhTWVvkdveE9Ez/vUu/G7zWMs+uTo+1IH7AARMLV/Opnv47l/Etcf7ha1ZxktB1/iMLU8GknGAg==",
-              "hash": "FLy2Na+1tElVkl2t0ldFswgCLFkBIrjeBKJgjmEOH4U="
-            },
-            "signing_payload_b64": "eyJtZXRyaWMiOiJzdG9yYWdlLnRocm91Z2hwdXQiLCJ2YWx1ZSI6ODIuNzczNzQzNzAyMzc3OTYsInVuaXQiOiJNQi9zIiwidHMiOjE3ODc1MDM5NDMyMzY5MDQwMDAsIm5vZGVfZGlkIjoiZGlkOmVwbjowMDI0MDgwMTEyMjA4NDE0NjRhNGE2ZDQ1YThiZDcyOWUwMzJiNGMxYjAzZDlhZDY5YTU4Yzc2ZTBhNWM1MWJkMDI0YmZkZDY4NjcyIiwiZXh0cmEiOnsiZnNfZnJlZV9nYiI6OC4yNjI3MTgyMDA2ODM1OTQsImZzX3RvdGFsX2diIjoyMzMuNTY2Nzk1MzQ5MTIxMSwiZnNfdXNlZF9wY3QiOjk2LjQ2MjM3NDYzMzIwMzc1LCJmc3luY19sYXRlbmN5X21zIjo1Mi4wODAzOCwiaW9wc19jYXZlYXQiOiI0IEtpQiByYW5kb20gcmVhZHMgYWdhaW5zdCBhIGZpbGUganVzdCB3cml0dGVuLCBzbyB0aGUgcGFnZSBjYWNoZSBpcyB3YXJtOyB0aGlzIG1lYXN1cmVzIHRoZSBmaWxlc3lzdGVtIHBhdGgsIG5vdCBhIGNvbGQgZGV2aWNlIiwicGF5bG9hZF9tYiI6NjQsInJhbmRvbV9yZWFkXzRrX2lvcHMiOjg5NjA1LjY1ODk2MTA5NDQsInJlYWRfbWJwcyI6Mzk0LjcyNjgxMDAwNjUyNywid3JpdGVfbWJwcyI6ODIuNzczNzQzNzAyMzc3OTZ9fQ=="
-          }
-        },
-        "region": {
-          "community_id": "IN_560001",
-          "country_code": "IN",
-          "region": "Karnataka",
-          "city": "Bengaluru",
-          "pincode": "560001",
-          "confidence": "verified",
-          "score": 0.9
-        },
-        "model_probes": {
-          "gemma4:e2b": {
-            "result": {
-              "metric": "model.probe",
-              "value": 1,
-              "unit": "pass",
-              "ts": 1785354655392103000,
-              "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-              "extra": {
-                "audio": false,
-                "effective_ctx": 4096,
-                "model": "gemma4:e2b",
-                "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
-                "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
-                "probe_version": 4,
-                "runtime": "ollama-host",
-                "structured_out": false,
-                "thinking": false,
-                "tools": true,
-                "tools_loop_terminated": true,
-                "vision": false
-              }
-            },
-            "signature": "0BVYoqx1WcMVWEciL7V5G23HaP5KNKmE1zezkaQcqEbdQCHb+LI3yET2TjPAhij71kL4TSdMbwGXV3rWxB1sCQ==",
-            "hash": "m3CV/hFfBjgZ+vS5n7mtZpmpWrOA9zoFlV1k6QgpPGo="
-          },
-          "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
-            "result": {
-              "metric": "model.probe",
-              "value": 1,
-              "unit": "pass",
-              "ts": 1787160528409767000,
-              "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-              "extra": {
-                "audio": false,
-                "effective_ctx": 4096,
-                "model": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
-                "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
-                "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
-                "probe_version": 4,
-                "runtime": "ollama-host",
-                "structured_out": false,
-                "thinking": false,
-                "tools": true,
-                "tools_loop_terminated": false,
-                "vision": false
-              }
-            },
-            "signature": "fj3zd7K8BYM2zkEmREqaCCA67pbtDNvGGo2cySFju4Txq8USvafB5qR2HGK1WdM83FhXFtDYlTht473smO0fCw==",
-            "hash": "OSHIH9VtW+VkBdFfUWGKMRvB5ZVAsoPao+X+ZTrP9ao="
-          },
-          "llama3.2:1b": {
-            "result": {
-              "metric": "model.probe",
-              "value": 1,
-              "unit": "pass",
-              "ts": 1787183253886955000,
-              "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-              "extra": {
-                "audio": false,
-                "effective_ctx": 4096,
-                "model": "llama3.2:1b",
-                "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
-                "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
-                "probe_version": 4,
-                "runtime": "ollama-host",
-                "structured_out": false,
-                "thinking": false,
-                "tools": true,
-                "tools_loop_terminated": false,
-                "vision": false
-              }
-            },
-            "signature": "rxAxBBDRSRj86ZhAMM/a/dRsYlQ6FG+Px0NLgYWR0MNhN/eZ7P7mCabND2AYaKUDPU5J4eEr278mc/GMYjLpBA==",
-            "hash": "+FhVcbBlk98FSEBZF0HVRYeUPi48iAiecjPk+jtulBk="
-          },
-          "qwen2.5:0.5b": {
-            "result": {
-              "metric": "model.probe",
-              "value": 1,
-              "unit": "pass",
-              "ts": 1785343523078753000,
-              "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-              "extra": {
-                "audio": false,
-                "effective_ctx": 0,
-                "model": "qwen2.5:0.5b",
-                "probe_ctx_ladder": "131072,65536,32768,16384,8192,4096",
-                "probe_method": "needle-in-haystack recall: a unique token is embedded near the start of a padded prompt and the model is asked to return it. The largest size it recalls is effective_ctx.",
-                "probe_version": 4,
-                "runtime": "ollama-host",
-                "runtime_version": "0.30.11",
-                "structured_out": true,
-                "thinking": false,
-                "tools": true,
-                "tools_loop_terminated": true,
-                "vision": false
-              }
-            },
-            "signature": "Uz6Lx2yLyqhxJf/kAB7cJnCyt+DV6RgWa5nMygeMd16sS3wiHeJnWhBXW4zu9kzMpwZNxcNXTkrNSzKio2r/Cg==",
-            "hash": "5vGgkbhvFsUEH9UghRNG+PmgAXA22sKVxP3h/7KyoSA="
-          }
-        },
-        "model_probe_signing_payloads": {
-          "gemma4:e2b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg1MzU0NjU1MzkyMTAzMDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJnZW1tYTQ6ZTJiIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjQsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInN0cnVjdHVyZWRfb3V0IjpmYWxzZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6dHJ1ZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjp0cnVlLCJ2aXNpb24iOmZhbHNlfX0=",
-          "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg3MTYwNTI4NDA5NzY3MDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJoZi5jby91bnNsb3RoL2dlbW1hLTQtRTJCLWl0LUdHVUY6UTRfS19NIiwicHJvYmVfY3R4X2xhZGRlciI6IjEzMTA3Miw2NTUzNiwzMjc2OCwxNjM4NCw4MTkyLDQwOTYiLCJwcm9iZV9tZXRob2QiOiJuZWVkbGUtaW4taGF5c3RhY2sgcmVjYWxsOiBhIHVuaXF1ZSB0b2tlbiBpcyBlbWJlZGRlZCBuZWFyIHRoZSBzdGFydCBvZiBhIHBhZGRlZCBwcm9tcHQgYW5kIHRoZSBtb2RlbCBpcyBhc2tlZCB0byByZXR1cm4gaXQuIFRoZSBsYXJnZXN0IHNpemUgaXQgcmVjYWxscyBpcyBlZmZlY3RpdmVfY3R4LiIsInByb2JlX3ZlcnNpb24iOjQsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInN0cnVjdHVyZWRfb3V0IjpmYWxzZSwidGhpbmtpbmciOmZhbHNlLCJ0b29scyI6dHJ1ZSwidG9vbHNfbG9vcF90ZXJtaW5hdGVkIjpmYWxzZSwidmlzaW9uIjpmYWxzZX19",
-          "llama3.2:1b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg3MTgzMjUzODg2OTU1MDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6NDA5NiwibW9kZWwiOiJsbGFtYTMuMjoxYiIsInByb2JlX2N0eF9sYWRkZXIiOiIxMzEwNzIsNjU1MzYsMzI3NjgsMTYzODQsODE5Miw0MDk2IiwicHJvYmVfbWV0aG9kIjoibmVlZGxlLWluLWhheXN0YWNrIHJlY2FsbDogYSB1bmlxdWUgdG9rZW4gaXMgZW1iZWRkZWQgbmVhciB0aGUgc3RhcnQgb2YgYSBwYWRkZWQgcHJvbXB0IGFuZCB0aGUgbW9kZWwgaXMgYXNrZWQgdG8gcmV0dXJuIGl0LiBUaGUgbGFyZ2VzdCBzaXplIGl0IHJlY2FsbHMgaXMgZWZmZWN0aXZlX2N0eC4iLCJwcm9iZV92ZXJzaW9uIjo0LCJydW50aW1lIjoib2xsYW1hLWhvc3QiLCJzdHJ1Y3R1cmVkX291dCI6ZmFsc2UsInRoaW5raW5nIjpmYWxzZSwidG9vbHMiOnRydWUsInRvb2xzX2xvb3BfdGVybWluYXRlZCI6ZmFsc2UsInZpc2lvbiI6ZmFsc2V9fQ==",
-          "qwen2.5:0.5b": "eyJtZXRyaWMiOiJtb2RlbC5wcm9iZSIsInZhbHVlIjoxLCJ1bml0IjoicGFzcyIsInRzIjoxNzg1MzQzNTIzMDc4NzUzMDAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsImV4dHJhIjp7ImF1ZGlvIjpmYWxzZSwiZWZmZWN0aXZlX2N0eCI6MCwibW9kZWwiOiJxd2VuMi41OjAuNWIiLCJwcm9iZV9jdHhfbGFkZGVyIjoiMTMxMDcyLDY1NTM2LDMyNzY4LDE2Mzg0LDgxOTIsNDA5NiIsInByb2JlX21ldGhvZCI6Im5lZWRsZS1pbi1oYXlzdGFjayByZWNhbGw6IGEgdW5pcXVlIHRva2VuIGlzIGVtYmVkZGVkIG5lYXIgdGhlIHN0YXJ0IG9mIGEgcGFkZGVkIHByb21wdCBhbmQgdGhlIG1vZGVsIGlzIGFza2VkIHRvIHJldHVybiBpdC4gVGhlIGxhcmdlc3Qgc2l6ZSBpdCByZWNhbGxzIGlzIGVmZmVjdGl2ZV9jdHguIiwicHJvYmVfdmVyc2lvbiI6NCwicnVudGltZSI6Im9sbGFtYS1ob3N0IiwicnVudGltZV92ZXJzaW9uIjoiMC4zMC4xMSIsInN0cnVjdHVyZWRfb3V0Ijp0cnVlLCJ0aGlua2luZyI6ZmFsc2UsInRvb2xzIjp0cnVlLCJ0b29sc19sb29wX3Rlcm1pbmF0ZWQiOnRydWUsInZpc2lvbiI6ZmFsc2V9fQ=="
-        }
-      },
-      "agent_turns": [
-        {
-          "node_did": "did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672",
-          "persona_id": "epn.concierge.v1",
-          "kind": "concierge_turn",
-          "epoch_start": 1787151600,
-          "epoch_end": 1787155200,
-          "turns": 1,
-          "tool_calls": 1,
-          "held": 1,
-          "failed": 0,
-          "gated": 0,
-          "prompt_tokens": 116,
-          "output_tokens": 369,
-          "vcpu_seconds": 541.623758796,
-          "gpu_seconds": 180.541252932,
-          "energy_kwh": 0.00526578654385,
-          "carbon_grams": 2.50124860832875,
-          "models": [
-            "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M"
-          ],
-          "tools": [
-            "echo_probe"
-          ],
-          "generated_at": 1787503885,
-          "sig": "86QhcYUSeNJhE20AN9kShLdsxfEihiZUzN4PRz5/22SITRU3FV/XTAs5IPWF1MKD6J8GomFiALWrzeuIZewIAA==",
-          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwODQxNDY0YTRhNmQ0NWE4YmQ3MjllMDMyYjRjMWIwM2Q5YWQ2OWE1OGM3NmUwYTVjNTFiZDAyNGJmZGQ2ODY3MiIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3ODcxNTE2MDAsImVwb2NoX2VuZCI6MTc4NzE1NTIwMCwidHVybnMiOjEsInRvb2xfY2FsbHMiOjEsImhlbGQiOjEsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjExNiwib3V0cHV0X3Rva2VucyI6MzY5LCJ2Y3B1X3NlY29uZHMiOjU0MS42MjM3NTg3OTYsImdwdV9zZWNvbmRzIjoxODAuNTQxMjUyOTMyLCJlbmVyZ3lfa3doIjowLjAwNTI2NTc4NjU0Mzg1LCJjYXJib25fZ3JhbXMiOjIuNTAxMjQ4NjA4MzI4NzUsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL2dlbW1hLTQtRTJCLWl0LUdHVUY6UTRfS19NIl0sInRvb2xzIjpbImVjaG9fcHJvYmUiXSwiZ2VuZXJhdGVkX2F0IjoxNzg3NTAzODg1fQ=="
-        }
-      ],
-      "class": "community",
-      "last_seen": null
+      "online": false,
+      "last_seen": "2026-08-23T17:04:11.810709033Z",
+      "class": "community"
     }
   ]
 }
