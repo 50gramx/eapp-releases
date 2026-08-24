@@ -1588,3 +1588,33 @@ test('catalog aliases travel and place engine tags', () => {
 }
 
 console.log('regions: ok');
+{
+  // THE POINT OF THE WHOLE THING: a gram that bakes never has to be
+  // provisioned with a reporter. It declares what it holds on its capability
+  // ad, that reaches a reporter as a mesh sighting, and the region appears.
+  const meshViews = [{
+    nodes: [{
+      did: 'did:epn:baker',
+      name: 'laptop-01',
+      addrs: [
+        '/ip4/10.0.0.2/tcp/53590/p2p/A',                                  // browsers cannot
+        '/ip4/13.2.3.4/udp/53591/webrtc-direct/certhash/uEiXX/p2p/R/p2p-circuit/p2p/A',
+        '/dns4/relay.example/tcp/443/wss/p2p/R/p2p-circuit/p2p/A',
+      ],
+      holds_regions: [{
+        pincode: '560100', root_cid: 'sha256:' + 'd'.repeat(64),
+        label: 'Electronic City', centre: [77.66, 12.85], bbox: [77.5, 12.7, 77.8, 12.9],
+      }],
+    }],
+  }];
+  const out = buildRegions([], '2026-01-01T00:00:00.000Z', meshViews);
+  assert.equal(out.region_count, 1, 'a gossiped region needs no reporter on its own box');
+  const r = out.regions[0];
+  assert.equal(r.label, 'Electronic City');
+  assert.equal(r.holders.length, 1);
+  assert.equal(r.holders[0].peers.length, 2,
+    'only the addresses a browser can open — tcp is dropped');
+  assert.ok(r.holders[0].peers.every((p) => p.includes('webrtc-direct') || p.includes('wss')));
+}
+
+console.log('regions via gossip: ok');

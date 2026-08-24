@@ -2739,9 +2739,44 @@ export function backfillCommunities(doc, exactDoc) {
 // bytes is a lead worth following, not somewhere to fetch from -- and it has no
 // geography to report, because the geography is in bytes it cannot read. Only
 // a holder contributes centre and bbox, and only a holder is somewhere to dial.
-export function buildRegions(nodes, generatedAt = new Date().toISOString()) {
+/**
+ * Only the addresses a browser can actually open.
+ *
+ * A gram advertises everything it listens on -- tcp, quic, ws. A browser can
+ * use none of those: it needs webrtc-direct WITH a certhash (the fingerprint is
+ * how it trusts a self-signed peer), or wss, and either of those may sit behind
+ * a /p2p-circuit for a gram with no reachable port. Publishing the rest would
+ * hand a visitor addresses that cannot be dialled and make the first seconds of
+ * every map a series of failures.
+ */
+function browserDialable(addrs) {
+  return (Array.isArray(addrs) ? addrs : []).filter(
+    (a) =>
+      typeof a === 'string' &&
+      ((a.includes('/webrtc-direct/') && a.includes('/certhash/')) || a.includes('/wss'))
+  );
+}
+
+export function buildRegions(nodes, generatedAt = new Date().toISOString(), meshViews = []) {
   const byPincode = new Map();
-  for (const n of nodes) {
+  // A gram DECLARES the regions it holds on its capability ad, which reaches
+  // every peer it talks to and lands in each reporter's mesh view. That is the
+  // whole reason no machine needs a reporter provisioned on it: the box that
+  // bakes and the box that publishes do not have to be the same box.
+  const fromMesh = [];
+  for (const view of meshViews) {
+    for (const n of view?.nodes || []) {
+      if (!Array.isArray(n?.holds_regions) || n.holds_regions.length === 0) continue;
+      fromMesh.push({
+        name: n.name || null,
+        proof_snapshot: { node_did: n.did || null },
+        region_peers: browserDialable(n.addrs),
+        // A gram only ever declares what it HOLDS, so everything here is held.
+        regions: n.holds_regions.map((r) => ({ ...r, held: true })),
+      });
+    }
+  }
+  for (const n of [...nodes, ...fromMesh]) {
     const list = Array.isArray(n?.regions) ? n.regions : [];
     const did = n?.proof_snapshot?.node_did || null;
     for (const r of list) {
@@ -2835,7 +2870,7 @@ function main() {
   // Which of those regions can actually be opened in 3D, and who to ask.
   const regions = mergeRegions(
     readPublished('data/regions.json'),
-    buildRegions(nodes, out.generated_at)
+    buildRegions(nodes, out.generated_at, meshViews)
   );
   writeFileSync('data/regions.json', JSON.stringify(regions, null, 2) + '\n');
 
