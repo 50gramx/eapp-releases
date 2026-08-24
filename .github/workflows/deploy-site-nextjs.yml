@@ -58,7 +58,12 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: 50gramx/epn-daemon
-          token: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          # CI_READ_TOKEN, not SITE_DISPATCH_TOKEN. The dispatch token is scoped
+          # to the site repo, so checking out epn-daemon with it fails as a bare
+          # "Not Found" from the repos API -- which reads like the repo is gone
+          # rather than like the token cannot see it. build-epnd.yml already
+          # uses CI_READ_TOKEN for exactly this checkout.
+          token: ${{ secrets.CI_READ_TOKEN }}
           path: .epn-daemon
 
       - name: Setup Go
@@ -72,7 +77,10 @@ jobs:
           set -euo pipefail
           cd .epn-daemon/web/shell
           npm install --no-audit --no-fund
-          ./build.sh dist
+          # Invoked through bash rather than as ./build.sh: the file mode of a
+          # script committed from a Windows checkout is not something this
+          # workflow should depend on.
+          bash build.sh dist
           # public/ is what `output: export` copies verbatim into out/, so the
           # viewer lands at /world/viewer/ with no route to declare.
           dest="$GITHUB_WORKSPACE/public/world/viewer"
