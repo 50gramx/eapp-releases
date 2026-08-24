@@ -45,6 +45,41 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
+      # ── THE VIEWER, BUILT FROM THE ONE PLACE IT IS DEFINED ────────────────
+      #
+      # /world loads the same page a gram serves at /v1/world, plus the shell
+      # that lets a browser dial a gram and verify what it gets back. Built
+      # here rather than committed, because epn.wasm is ~14 MB and a binary in
+      # git that must match a Go package is a binary that will not.
+      #
+      # Copied, never forked: two copies of this viewer is how a broken one
+      # shipped three times.
+      - name: Checkout epn-daemon (for the world viewer)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.SITE_DISPATCH_TOKEN }}
+          path: .epn-daemon
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: .epn-daemon/go.mod
+          cache-dependency-path: .epn-daemon/go.sum
+
+      - name: Build the world viewer
+        run: |
+          set -euo pipefail
+          cd .epn-daemon/web/shell
+          npm install --no-audit --no-fund
+          ./build.sh dist
+          # public/ is what `output: export` copies verbatim into out/, so the
+          # viewer lands at /world/viewer/ with no route to declare.
+          dest="$GITHUB_WORKSPACE/public/world/viewer"
+          mkdir -p "$dest"
+          cp dist/index.html dist/epn-shell.js dist/epn.wasm dist/wasm_exec.js "$dest/"
+          ls -la "$dest"
+
       - name: Install dependencies
         run: npm ci
 
