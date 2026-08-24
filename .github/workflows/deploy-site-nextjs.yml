@@ -75,7 +75,14 @@ jobs:
       - name: Build the world viewer
         run: |
           set -euo pipefail
-          cd .epn-daemon/web/shell
+          cd .epn-daemon
+          # The Go proxy drops a stream now and then, and it reads as a build
+          # failure rather than as a network one. Same retry as build-epnd.
+          for i in 1 2 3; do
+            if go mod download all; then break; fi
+            echo "module download failed (attempt $i) — retrying"; sleep 15
+          done
+          cd web/shell
           npm install --no-audit --no-fund
           # Invoked through bash rather than as ./build.sh: the file mode of a
           # script committed from a Windows checkout is not something this

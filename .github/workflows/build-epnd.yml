@@ -105,6 +105,30 @@ jobs:
       - name: Configure git for private Go deps
         run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
+      # Fetch the module graph before anything judges the code, and retry.
+      #
+      # proxy.golang.org drops a stream occasionally -- "INTERNAL_ERROR;
+      # received from peer" partway through a zip -- and go vet reports that as
+      # a build failure, which reads exactly like the code is broken. It bites
+      # hardest right after a dependency bump, because the setup-go cache is
+      # keyed on go.sum and a changed go.sum means every module is downloaded
+      # cold at once.
+      #
+      # Three tries with a pause. A proxy that is genuinely down still fails the
+      # build, and says so on its own line rather than inside a vet run.
+      - name: Download modules (retried — the proxy is not always up)
+        env:
+          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+        working-directory: epn-daemon
+        run: |
+          for i in 1 2 3; do
+            if go mod download all; then exit 0; fi
+            echo "module download failed (attempt $i) — retrying"
+            sleep 15
+          done
+          echo "module download failed three times; the proxy is not reachable" >&2
+          exit 1
+
       - name: Gate — vet must pass before we publish a public binary
         env:
           GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
