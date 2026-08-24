@@ -16,6 +16,8 @@ import {
   mergeBests,
   mergeModels,
   buildCommunities,
+  buildRegions,
+  mergeRegions,
   buildModels,
   backfillCommunities,
   buildGramxRooms,
@@ -1523,3 +1525,66 @@ test('catalog aliases travel and place engine tags', () => {
   // And an alias carries no cost claim.
   assert.equal(mem.artifacts?.length ?? 0, 0);
 });
+
+// ── regions with a map ──────────────────────────────────────────────────────
+
+{
+  // A holder contributes geography; a gram that only knows the name does not,
+  // because the geography lives in bytes it cannot read.
+  const nodes = [
+    {
+      name: 'laptop-01',
+      proof_snapshot: { node_did: 'did:epn:aaa' },
+      region_peers: ['/ip4/1.2.3.4/udp/1/webrtc-direct/certhash/x/p2p/A'],
+      regions: [{
+        pincode: '500050', root_cid: 'sha256:' + 'a'.repeat(64), held: true,
+        label: 'Chandanagar, Hyderabad',
+        centre: [78.33, 17.49], bbox: [78.3, 17.4, 78.4, 17.5],
+      }],
+    },
+    {
+      name: 'relay-01',
+      proof_snapshot: { node_did: 'did:epn:bbb' },
+      regions: [{ pincode: '500050', root_cid: 'sha256:' + 'a'.repeat(64), held: false }],
+    },
+  ];
+  const out = buildRegions(nodes, '2026-01-01T00:00:00.000Z');
+  assert.equal(out.region_count, 1, 'one region across two nodes');
+  const r = out.regions[0];
+  assert.equal(r.label, 'Chandanagar, Hyderabad');
+  assert.deepEqual(r.centre, [78.33, 17.49]);
+  assert.equal(r.holders.length, 1, 'only the holder is somewhere to dial');
+  assert.equal(r.holders[0].node_did, 'did:epn:aaa');
+  assert.equal(r.holders[0].peers.length, 1, 'a holder carries how to reach it');
+}
+
+{
+  // A name nobody holds is not yet a map, and must not appear as one.
+  const out = buildRegions([{
+    proof_snapshot: { node_did: 'did:epn:ccc' },
+    regions: [{ pincode: '999999', root_cid: 'sha256:' + 'b'.repeat(64), held: false }],
+  }]);
+  assert.equal(out.region_count, 0, 'named but unheld is not a region with a map');
+}
+
+{
+  // A node from before /v1/regions must not break the run.
+  assert.equal(buildRegions([{ name: 'old', proof_snapshot: {} }]).region_count, 0);
+  assert.equal(buildRegions([]).region_count, 0);
+}
+
+{
+  // A baked region does not un-bake when the gram holding it sleeps.
+  const previous = {
+    regions: [{
+      pincode: '560100', label: 'Electronic City', root_cid: 'sha256:' + 'c'.repeat(64),
+      centre: [77.66, 12.85], bbox: [1, 2, 3, 4], holders: [], first_seen_at: '2025-06-01T00:00:00.000Z',
+    }],
+  };
+  const merged = mergeRegions(previous, buildRegions([], '2026-01-01T00:00:00.000Z'));
+  assert.equal(merged.region_count, 1, 'a sleeping holder does not delete the region');
+  assert.equal(merged.regions[0].first_seen_at, '2025-06-01T00:00:00.000Z',
+    'first_seen_at is the earliest, not the latest run');
+}
+
+console.log('regions: ok');

@@ -2723,6 +2723,85 @@ export function backfillCommunities(doc, exactDoc) {
   };
 }
 
+// ── WHICH REGIONS CAN BE WALKED THROUGH ─────────────────────────────────────
+//
+// communities.json answers "who is in this pincode", from where nodes say they
+// are. That is a different question from "which pincode has a map", and until
+// this the two never met: a machine reporting IN_500050 held the scene for
+// 560100, so one had a page with no map and the other a map with no page.
+//
+// A gram is the only thing that knows both halves -- which region names it
+// holds bytes for, and where those regions sit on the earth, which is inside
+// the baked scene rather than in any registry. It publishes them on its
+// snapshot (see /v1/regions); this unions them.
+//
+// HELD IS NOT THE SAME AS NAMED. A gram that knows a region's name but not its
+// bytes is a lead worth following, not somewhere to fetch from -- and it has no
+// geography to report, because the geography is in bytes it cannot read. Only
+// a holder contributes centre and bbox, and only a holder is somewhere to dial.
+export function buildRegions(nodes, generatedAt = new Date().toISOString()) {
+  const byPincode = new Map();
+  for (const n of nodes) {
+    const list = Array.isArray(n?.regions) ? n.regions : [];
+    const did = n?.proof_snapshot?.node_did || null;
+    for (const r of list) {
+      const pincode = String(r?.pincode || '').trim();
+      const cid = String(r?.root_cid || '').trim();
+      if (!pincode || !cid.startsWith('sha256:')) continue;
+      let e = byPincode.get(pincode);
+      if (!e) {
+        e = {
+          pincode,
+          label: null,
+          centre: null,
+          bbox: null,
+          root_cid: null,
+          holders: [],
+          first_seen_at: generatedAt,
+          last_seen_at: generatedAt,
+        };
+        byPincode.set(pincode, e);
+      }
+      e.last_seen_at = generatedAt;
+      if (!r.held) continue;
+      // A holder's own read of the scene is the only source of geography.
+      if (r.label && !e.label) e.label = r.label;
+      if (Array.isArray(r.centre) && r.centre.length === 2 && !e.centre) e.centre = r.centre;
+      if (Array.isArray(r.bbox) && r.bbox.length === 4 && !e.bbox) e.bbox = r.bbox;
+      if (!e.root_cid) e.root_cid = cid;
+      const peers = Array.isArray(n?.region_peers) ? n.region_peers : [];
+      if (!e.holders.some((h) => h.node_did === did)) {
+        e.holders.push({ node_did: did, name: n?.name || null, root_cid: cid, peers });
+      }
+    }
+  }
+  const regions = [...byPincode.values()]
+    .filter((r) => r.root_cid)
+    .sort((a, b) => a.pincode.localeCompare(b.pincode));
+  return {
+    generated_at: generatedAt,
+    label: 'regions with a baked 3D scene, and the grams that hold it; geography is read from the scene itself, never from a lookup table',
+    region_count: regions.length,
+    regions,
+  };
+}
+
+// A region that was baked does not un-bake when the gram holding it sleeps --
+// the same rule bests and communities already follow. Merge on pincode and keep
+// the earliest first_seen_at.
+export function mergeRegions(previous, current) {
+  const prev = new Map((previous?.regions || []).map((r) => [r.pincode, r]));
+  const out = new Map(prev);
+  for (const r of current.regions || []) {
+    const old = prev.get(r.pincode);
+    out.set(r.pincode, old
+      ? { ...old, ...r, first_seen_at: old.first_seen_at || r.first_seen_at }
+      : r);
+  }
+  const regions = [...out.values()].sort((a, b) => a.pincode.localeCompare(b.pincode));
+  return { ...current, region_count: regions.length, regions };
+}
+
 function main() {
   const { nodes, nodeHistories } = loadNodes();
   const meshViews = loadMeshViews();
@@ -2752,6 +2831,13 @@ function main() {
     buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected)
   );
   writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
+
+  // Which of those regions can actually be opened in 3D, and who to ask.
+  const regions = mergeRegions(
+    readPublished('data/regions.json'),
+    buildRegions(nodes, out.generated_at)
+  );
+  writeFileSync('data/regions.json', JSON.stringify(regions, null, 2) + '\n');
 
   // The model matrix: what a model PROVED on real hardware, signature by signature.
   // Merge, never regenerate — a signed probe does not un-happen when its prober sleeps
