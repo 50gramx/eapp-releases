@@ -258,11 +258,28 @@ try {
       Unregister-ScheduledTask -TaskName $taskName -Confirm:$false -ErrorAction Stop
     }
 
+    # TWO TRIGGERS, NOT ONE. -AtStartup alone means a task that stops for any
+    # reason -- the 72h limit below, a power event, a manual stop -- has no route
+    # back until the machine is physically rebooted. -AtLogOn gives it a second
+    # chance every time the user signs in, which on a laptop is most days.
     $startupTrigger = New-ScheduledTaskTrigger -AtStartup
+    $logonTrigger = New-ScheduledTaskTrigger -AtLogOn
     $taskAction = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument $wrappedArg
-    $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable
+    # THE THREE DEFAULTS THAT KILLED THE FLEET.
+    #
+    # New-ScheduledTaskSettingsSet defaults DisallowStartIfOnBatteries and
+    # StopIfGoingOnBatteries to TRUE. On a laptop that means: install while
+    # plugged in, it runs; unplug, Windows STOPS the daemon; and it then refuses
+    # to start it again for as long as the machine is on battery. The node
+    # connects for exactly one day and is never seen again -- which is the
+    # signature 16 of 28 grams in the fleet actually show.
+    #
+    # ExecutionTimeLimit defaults to PT72H. This is a long-running daemon, not a
+    # batch job: after three days Task Scheduler force-kills it. Zero means no
+    # limit, which is the only correct value for a service.
+    $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
     $taskPrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
-    $task = New-ScheduledTask -Action $taskAction -Trigger $startupTrigger -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node -- auto-starts on boot and auto-restarts on failure, runs hidden"
+    $task = New-ScheduledTask -Action $taskAction -Trigger @($startupTrigger, $logonTrigger) -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node -- auto-starts on boot and auto-restarts on failure, runs hidden"
     Register-ScheduledTask -TaskName $taskName -InputObject $task -Force -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
 
@@ -436,8 +453,16 @@ try {
 
     $updateTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date).AddSeconds(30) -RepetitionInterval (New-TimeSpan -Minutes 15)
     $updateAction = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$scriptPath`""
-    $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable
-    $updatePrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
+    # Same power defaults, same consequence, and worse: an updater stopped on
+    # battery cannot deliver the fix that repairs the node. The updater must be
+    # the one thing that always gets to run.
+    $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+    # RunLevel Highest, unlike the node task. Modifying a task in the root
+    # folder requires elevation, so a Limited updater can never repair the
+    # settings on a node that already exists -- which is exactly the trap the
+    # current fleet is in. S4U raises no UAC prompt, so this costs the user
+    # nothing and buys the updater the ability to fix the next mistake.
+    $updatePrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Highest
     $updateTask = New-ScheduledTask -Action $updateAction -Trigger $updateTrigger -Settings $updateSettings -Principal $updatePrincipal -Description "Gram node auto-update -- checks for updates every 15 minutes"
     Register-ScheduledTask -TaskName $updateTaskName -InputObject $updateTask -Force -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $updateTaskName -ErrorAction SilentlyContinue
