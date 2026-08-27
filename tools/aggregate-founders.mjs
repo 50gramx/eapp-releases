@@ -668,7 +668,12 @@ function capsFromProbe(extra) {
   if (Array.isArray(extra.capabilities)) {
     for (const c of extra.capabilities) {
       if (!c || typeof c.id !== 'string' || c.asked !== true) continue;
-      out.push([c.id, c.passed === true]);
+      // THE THIRD ELEMENT IS THE MEASUREMENT, and it is why non-text models
+      // stopped being a checkbox. A verdict says a machine got audio out of
+      // musicgen; the facts beside it say four seconds of it, at 32 kHz, in
+      // 1.6 seconds of wall clock, on a 10-core machine with 16 GiB. One of
+      // those is a page worth indexing.
+      out.push([c.id, c.passed === true, c.facts && typeof c.facts === 'object' ? c.facts : null]);
     }
   }
   // Legacy booleans. Kept unconditionally, not as a fallback: a node that has
@@ -676,10 +681,59 @@ function capsFromProbe(extra) {
   // them would blank the page for every model measured before it. The site
   // collapses a legacy name against its registry replacement when both arrive.
   for (const [from, to] of Object.entries(LEGACY_CAP_KEYS)) {
-    if (typeof extra[from] === 'boolean') out.push([to, extra[from]]);
+    if (typeof extra[from] === 'boolean') out.push([to, extra[from], null]);
   }
 
   return out;
+}
+
+/**
+ * The better of two measurements of one capability.
+ *
+ * ── WHY THIS IS NOT ONE COMPARISON ──────────────────────────────────────────
+ *
+ * "Best" is not a property of a measurement, it is a property of a modality.
+ * For a render, more steps per second is better. For speech, a LOWER realtime
+ * factor is better, because that field is wall clock over media seconds. For
+ * everything else the honest fallback is wall clock: whoever finished first.
+ *
+ * A single `>` here would have picked the slowest speech engine in the fleet
+ * and published it as the best, with a signature under it, and nothing would
+ * have looked wrong.
+ *
+ * A PASSING measurement always beats a failing one, whatever the numbers. A
+ * machine that abandoned a render measured itself honestly and its rate is
+ * worth publishing in the per-node table — it is not the headline for a model
+ * that another machine actually rendered.
+ */
+export function pickBetterMeasurement(prev, cur) {
+  if (!prev) return cur;
+  if (!cur) return prev;
+  if (prev.passed !== cur.passed) return prev.passed ? prev : cur;
+
+  const better = (field, lowerIsBetter) => {
+    const a = Number(prev[field]) || 0;
+    const b = Number(cur[field]) || 0;
+    if (a > 0 && b > 0) return lowerIsBetter ? (b < a ? cur : prev) : b > a ? cur : prev;
+    if (b > 0) return cur;
+    if (a > 0) return prev;
+    return null;
+  };
+
+  // Rendering: rate first, because it survives a render that was abandoned and
+  // is comparable across step counts in a way wall clock is not.
+  const bySteps = better('steps_per_second', false);
+  if (bySteps) return bySteps;
+  // Speech, music, video: lower realtime factor is faster. See ModalityFacts.
+  const byRealtime = better('realtime_factor', true);
+  if (byRealtime) return byRealtime;
+  const byFrames = better('frames_per_second', false);
+  if (byFrames) return byFrames;
+  // Whoever finished first.
+  const byClock = better('elapsed_ms', true);
+  if (byClock) return byClock;
+
+  return prev;
 }
 
 function mergeModelCaps(prev = {}, cur = {}) {
@@ -1718,7 +1772,20 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       // which is the whole point of listing machines separately.
       node.probe_signature = signed.signature;
       node.probe_signing_payload_b64 = v.payload_b64 || undefined;
-      for (const [key, val] of capsFromProbe(extra)) node.capabilities[key] = val;
+      for (const [key, val, facts] of capsFromProbe(extra)) {
+        node.capabilities[key] = val;
+        if (facts) {
+          node.measurements = node.measurements || {};
+          node.measurements[key] = facts;
+        }
+      }
+      // THE MACHINE, WITHOUT WHICH A RATE IS UNREADABLE. Two nodes reporting 41s
+      // and 318s for one render are not in conflict — they are two hardware
+      // classes, and a table that omits the class makes them look like a
+      // contradiction. A class and never an identity: see ProbeHardware.
+      if (extra.hardware && typeof extra.hardware === 'object') {
+        node.hardware = extra.hardware;
+      }
 
       // FAMILY, FROM THE SIGNED PAYLOAD. Attested rather than inferred here: the
       // node's catalog placed the ref, and re-deriving it from the name at this
@@ -1742,7 +1809,19 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
         };
       }
 
-      for (const [key, val] of capsFromProbe(extra)) {
+      for (const [key, val, facts] of capsFromProbe(extra)) {
+        if (facts) {
+          m.measurements = m.measurements || {};
+          m.measurements[key] = pickBetterMeasurement(m.measurements[key], {
+            ...facts,
+            passed: val,
+            node_did: signed.result.node_did,
+            hardware: extra.hardware && typeof extra.hardware === 'object' ? extra.hardware : null,
+            ts: signed.result.ts,
+            payload_sha256: v.payload_sha256,
+            signature: signed.signature,
+          });
+        }
         // `false` is a measurement too: the node ran the probe and the model
         // could not do it. Only a capability nobody probed is absent.
         //
@@ -1883,6 +1962,10 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       member: m.member,
       declared: m.declared,
       capabilities: m.capabilities,
+      // The best measurement per capability, each carrying the machine that
+      // took it and the signature under it. Null for the text capabilities,
+      // whose numbers have had their own fields since this file was written.
+      measurements: m.measurements || null,
       best_throughput: m.throughput.reduce((top, t) => (!top || t.tokens_per_sec > top.tokens_per_sec ? t : top), null),
       sample_count: m.throughput.length,
       // Sorted by capacity (highest aggregate tok/s first), same rule as

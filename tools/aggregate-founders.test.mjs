@@ -28,6 +28,7 @@ import {
   buildPrivateWork,
   verifyPrivateAggregate,
   verifyTurnStatement,
+  pickBetterMeasurement,
   verifyEpochStatement,
 } from './aggregate-founders.mjs';
 
@@ -1618,3 +1619,174 @@ console.log('regions: ok');
 }
 
 console.log('regions via gossip: ok');
+
+// ── MEASUREMENTS, NOT CHECKBOXES ─────────────────────────────────────────────
+//
+// A non-text model reached the site as `{ audio.music: true }` beside five
+// nulls, because every quantitative field in this file is text-shaped. The
+// daemon measured the rest all along and returned a bool; these guard the path
+// that keeps the numbers.
+
+test('buildModels carries a modality measurement and the machine that took it', () => {
+  const id = testIdentity();
+  const hardware = { os: 'darwin', arch: 'arm64', cpus: 10, ram_gib: 16, os_version: 'macOS 26.5.2' };
+  const probe = signedResult(id, 'model.probe', 1.0, 'pass', {
+    model: 'facebook/musicgen-small',
+    hardware,
+    capabilities: [
+      {
+        id: 'audio.music',
+        asked: true,
+        passed: true,
+        facts: { media_seconds: 4, elapsed_ms: 1600, realtime_factor: 0.4, sample_rate_hz: 32000 },
+      },
+    ],
+  });
+
+  const out = buildModels(
+    [
+      {
+        name: 'n1',
+        proof_snapshot: {
+          node_did: id.did,
+          model_probes: { 'facebook/musicgen-small': probe.envelope },
+          model_probe_signing_payloads: { 'facebook/musicgen-small': probe.payloadB64 },
+        },
+      },
+    ],
+    'now'
+  );
+
+  const m = out.models[0];
+  assert.equal(m.capabilities['audio.music'], true);
+  assert.ok(m.measurements, 'the numbers behind the verdict must reach the model record');
+  assert.equal(m.measurements['audio.music'].media_seconds, 4);
+  assert.equal(m.measurements['audio.music'].realtime_factor, 0.4);
+  assert.equal(m.measurements['audio.music'].node_did, id.did, 'traceable to the machine that measured it');
+  assert.deepEqual(m.measurements['audio.music'].hardware, hardware, 'a rate without a machine class is unreadable');
+  assert.equal(m.nodes[0].measurements['audio.music'].sample_rate_hz, 32000, 'and per node, for the table');
+  assert.deepEqual(m.nodes[0].hardware, hardware);
+});
+
+test('pickBetterMeasurement knows which way up each modality runs', () => {
+  const fast = { passed: true, steps_per_second: 0.61 };
+  const slow = { passed: true, steps_per_second: 0.08 };
+  assert.equal(pickBetterMeasurement(slow, fast), fast, 'more steps per second is a faster render');
+
+  // Realtime factor is wall clock over media seconds, so LOWER is faster. A
+  // single `>` here would publish the slowest speech engine in the fleet as the
+  // best, with a signature under it, and nothing would look wrong.
+  const quick = { passed: true, realtime_factor: 0.4 };
+  const sluggish = { passed: true, realtime_factor: 2.6 };
+  assert.equal(pickBetterMeasurement(sluggish, quick), quick, 'a lower realtime factor is faster');
+
+  const early = { passed: true, elapsed_ms: 41000 };
+  const late = { passed: true, elapsed_ms: 318000 };
+  assert.equal(pickBetterMeasurement(late, early), early, 'otherwise, whoever finished first');
+});
+
+test('pickBetterMeasurement never lets an abandoned render outrank a finished one', () => {
+  // The machine that gave up measured itself honestly and its rate belongs in
+  // the per-node table. It is not the headline for a model another machine
+  // actually rendered — even though its step rate here is higher.
+  const abandoned = { passed: false, steps_per_second: 9 };
+  const finished = { passed: true, steps_per_second: 0.61 };
+  assert.equal(pickBetterMeasurement(abandoned, finished), finished);
+  assert.equal(pickBetterMeasurement(finished, abandoned), finished);
+});
+
+test('buildModels picks the best measurement across machines, not the last one seen', () => {
+  const mac = testIdentity();
+  const win = testIdentity();
+  const mk = (id, stepsPerSecond, hardware) => {
+    const p = signedResult(id, 'model.probe', 1.0, 'pass', {
+      model: 'flux-schnell',
+      hardware,
+      capabilities: [
+        {
+          id: 'image.generate',
+          asked: true,
+          passed: true,
+          facts: { width_px: 512, height_px: 512, steps_per_second: stepsPerSecond },
+        },
+      ],
+    });
+    return {
+      name: null,
+      proof_snapshot: {
+        node_did: id.did,
+        model_probes: { 'flux-schnell': p.envelope },
+        model_probe_signing_payloads: { 'flux-schnell': p.payloadB64 },
+      },
+    };
+  };
+
+  const out = buildModels(
+    [
+      mk(win, 0.08, { os: 'windows', arch: 'amd64', cpus: 8, ram_gib: 16 }),
+      mk(mac, 0.61, { os: 'darwin', arch: 'arm64', cpus: 10, ram_gib: 16 }),
+    ],
+    'now'
+  );
+
+  const best = out.models[0].measurements['image.generate'];
+  assert.equal(best.steps_per_second, 0.61);
+  assert.equal(best.node_did, mac.did);
+  assert.equal(best.hardware.arch, 'arm64', 'the headline names the machine it was measured on');
+  assert.equal(out.models[0].nodes.length, 2, 'and every machine still appears below it');
+});
+
+test('a capability with nothing to measure carries no measurement object', () => {
+  const id = testIdentity();
+  const probe = signedResult(id, 'model.probe', 1.0, 'pass', {
+    model: 'text-only',
+    capabilities: [{ id: 'tools.call', asked: true, passed: true }],
+  });
+  const out = buildModels(
+    [
+      {
+        name: null,
+        proof_snapshot: {
+          node_did: id.did,
+          model_probes: { 'text-only': probe.envelope },
+          model_probe_signing_payloads: { 'text-only': probe.payloadB64 },
+        },
+      },
+    ],
+    'now'
+  );
+  // `measurements: {}` would read as "measured nothing", which is a different
+  // claim from "this capability has no such numbers".
+  assert.equal(out.models[0].measurements, null);
+});
+
+test('an alias files a bare engine tag under its family', () => {
+  const id = testIdentity();
+  const probe = signedResult(id, 'model.probe', 1.0, 'pass', { model: 'llama3.2:1b', effective_ctx: 4096 });
+  const out = buildModels(
+    [
+      {
+        name: null,
+        proof_snapshot: {
+          node_did: id.did,
+          model_probes: { 'llama3.2:1b': probe.envelope },
+          model_probe_signing_payloads: { 'llama3.2:1b': probe.payloadB64 },
+          families: [
+            {
+              id: 'llama-3-2',
+              display_name: 'Llama 3.2',
+              members: [{ id: '1b', display_name: 'Llama 3.2 1B', aliases: ['llama3.2:1b'] }],
+            },
+          ],
+        },
+      },
+    ],
+    'now'
+  );
+  // A gram that ran `ollama pull llama3.2:1b` has no artifact ref to join on.
+  // Without the alias the measurement appears on no family page and competes
+  // with that family for the same queries.
+  assert.equal(out.models[0].family, 'llama-3-2');
+  assert.equal(out.models[0].member, '1b');
+  assert.equal(out.models[0].family_source, 'catalog_ref');
+});
