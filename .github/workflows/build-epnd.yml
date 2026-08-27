@@ -62,7 +62,19 @@ jobs:
           # epn-daemon HEAD, every scheduled run skipped, and the corrected
           # script sat in git forever while nodes kept downloading the broken
           # one. That is how the em-dash bug survived its own fix.
-          h=$(cat scripts/install.sh scripts/install.ps1                   scripts/epnd-autoupdate.sh scripts/epnd-autoupdate.ps1               | sha256sum | cut -d' ' -f1)
+          #
+          # THIS WORKFLOW IS PART OF WHAT THE RELEASE CONTAINS.
+          #
+          # The marker is what decides whether a build happens at all, so
+          # anything that changes the CONTENTS of the release has to be in it.
+          # The file listing those contents is this one. Adding the world
+          # viewer to the publish list without hashing this file would have
+          # left the marker equal to its old value on every subsequent run:
+          # should_build=false forever, the viewer never published, and the
+          # site's download of it failing indefinitely against a release that
+          # was never going to gain the asset. Same shape of bug as the
+          # scripts hash above was written to prevent, one level up.
+          h=$(cat scripts/install.sh scripts/install.ps1                   scripts/epnd-autoupdate.sh scripts/epnd-autoupdate.ps1                   .github/workflows/build-epnd.yml               | sha256sum | cut -d' ' -f1)
           echo "hash=$h" >> "$GITHUB_OUTPUT"
 
       - name: Compare against last built marker
@@ -211,6 +223,46 @@ jobs:
           abuild x86_64      amd64 x86_64-linux-android${API}-clang
           ls -la dist/epnd-android-*
 
+      # -- THE WORLD VIEWER, BUILT WHERE THE DAEMON IS BUILT --------------
+      #
+      # /world on the brand site loads the same page a gram serves at
+      # /v1/world, driven by a Go program compiled to wasm. It is daemon code,
+      # so it belongs in the daemon's build -- not, as it was until now,
+      # recompiled from a fresh epn-daemon checkout inside the site deploy.
+      #
+      # That arrangement ran a Go toolchain, a module download and an npm
+      # install on every site deploy -- ~96 times a day, since the site
+      # rebuilds after each aggregate-founders run -- to produce a byte-
+      # identical asset that only ever changes when epn-daemon does. Worse, it
+      # coupled the two: a copy edit to the site could not ship while the
+      # daemon repo was unreachable, and the viewer went out with no vet gate.
+      #
+      # No marker change is needed for this. The viewer's sources (cmd/epnwasm,
+      # web/shell, internal/api/world) all live in epn-daemon, so they move
+      # exactly when the daemon SHA the marker already tracks moves. The
+      # scripts hash covers what lives in THIS repo; the SHA covers this.
+      - name: Setup Node (for the viewer bundle)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Build the world viewer (js/wasm)
+        env:
+          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+        working-directory: epn-daemon/web/shell
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+          # Invoked through bash rather than as ./build.sh: the file mode of a
+          # script committed from a Windows checkout is not something this
+          # workflow should depend on.
+          bash build.sh dist
+          # index.html is the right name for a static host to serve and the
+          # wrong name for a release asset sitting beside epnd binaries. It is
+          # renamed on publish and renamed back by whoever consumes it.
+          mv dist/index.html dist/world-viewer.html
+          ls -la dist
+
       - name: PowerShell scripts must be pure ASCII
         run: |
           set -euo pipefail
@@ -237,8 +289,16 @@ jobs:
           # Status reporter stays sourced from epn-daemon — it's founder-node-only
           # (needs a provisioned root PAT) and hasn't diverged from this repo.
           cp epn-daemon/scripts/report-bootstrap-status.sh epn-daemon/dist/report-bootstrap-status.sh
+          # The viewer, from the same build that produced the binaries.
+          cp epn-daemon/web/shell/dist/epn.wasm epn-daemon/dist/epn.wasm
+          cp epn-daemon/web/shell/dist/wasm_exec.js epn-daemon/dist/wasm_exec.js
+          cp epn-daemon/web/shell/dist/epn-shell.js epn-daemon/dist/epn-shell.js
+          cp epn-daemon/web/shell/dist/world-viewer.html epn-daemon/dist/world-viewer.html
           cd epn-daemon/dist
-          sha256sum epnd-* > checksums.txt
+          # The viewer files are named individually rather than folded into the
+          # epnd-* glob: a consumer that downloads them over the network needs
+          # something to verify them against, and the site now does exactly that.
+          sha256sum epnd-* epn.wasm wasm_exec.js epn-shell.js world-viewer.html > checksums.txt
 
       - name: Publish (rolling epnd-latest)
         uses: softprops/action-gh-release@v3
@@ -260,6 +320,10 @@ jobs:
             epn-daemon/dist/report-bootstrap-status.sh
             epn-daemon/dist/epnd-autoupdate.sh
             epn-daemon/dist/epnd-autoupdate.ps1
+            epn-daemon/dist/epn.wasm
+            epn-daemon/dist/wasm_exec.js
+            epn-daemon/dist/epn-shell.js
+            epn-daemon/dist/world-viewer.html
             epn-daemon/dist/checksums.txt
 
       - name: Update built-marker
