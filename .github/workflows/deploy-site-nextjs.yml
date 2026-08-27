@@ -45,54 +45,50 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # ── THE VIEWER, BUILT FROM THE ONE PLACE IT IS DEFINED ────────────────
+      # ── THE VIEWER, DOWNLOADED FROM THE BUILD THAT PRODUCED IT ──────
       #
       # /world loads the same page a gram serves at /v1/world, plus the shell
-      # that lets a browser dial a gram and verify what it gets back. Built
-      # here rather than committed, because epn.wasm is ~14 MB and a binary in
-      # git that must match a Go package is a binary that will not.
+      # that lets a browser dial a gram and verify what it gets back. It is Go
+      # code compiled to wasm, and it is built by build-epnd.yml alongside the
+      # daemon binaries — behind the same `go vet` gate, and only when
+      # epn-daemon actually moves.
       #
-      # Copied, never forked: two copies of this viewer is how a broken one
-      # shipped three times.
-      - name: Checkout epn-daemon (for the world viewer)
-        uses: actions/checkout@v4
-        with:
-          repository: 50gramx/epn-daemon
-          # CI_READ_TOKEN, not SITE_DISPATCH_TOKEN. The dispatch token is scoped
-          # to the site repo, so checking out epn-daemon with it fails as a bare
-          # "Not Found" from the repos API -- which reads like the repo is gone
-          # rather than like the token cannot see it. build-epnd.yml already
-          # uses CI_READ_TOKEN for exactly this checkout.
-          token: ${{ secrets.CI_READ_TOKEN }}
-          path: .epn-daemon
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: .epn-daemon/go.mod
-          cache-dependency-path: .epn-daemon/go.sum
-
-      - name: Build the world viewer
+      # This step used to check out epn-daemon and compile it here, which meant
+      # a Go toolchain, a module download and an npm install on EVERY site
+      # deploy — four times an hour, chasing aggregate-founders — to rebuild an
+      # asset that had not changed. It also meant the site could not deploy at
+      # all while epn-daemon was unreachable: a copy edit to a marketing page
+      # was blocked by a token that has nothing to do with the site.
+      #
+      # Still copied, never forked: one definition, one build, downloaded here.
+      - name: Fetch the world viewer (published by build-epnd)
         run: |
           set -euo pipefail
-          cd .epn-daemon
-          # The Go proxy drops a stream now and then, and it reads as a build
-          # failure rather than as a network one. Same retry as build-epnd.
-          for i in 1 2 3; do
-            if go mod download all; then break; fi
-            echo "module download failed (attempt $i) — retrying"; sleep 15
-          done
-          cd web/shell
-          npm install --no-audit --no-fund
-          # Invoked through bash rather than as ./build.sh: the file mode of a
-          # script committed from a Windows checkout is not something this
-          # workflow should depend on.
-          bash build.sh dist
-          # public/ is what `output: export` copies verbatim into out/, so the
-          # viewer lands at /world/viewer/ with no route to declare.
+          base=https://github.com/50gramx/eapp-releases/releases/download/epnd-latest
           dest="$GITHUB_WORKSPACE/public/world/viewer"
           mkdir -p "$dest"
-          cp dist/index.html dist/epn-shell.js dist/epn.wasm dist/wasm_exec.js "$dest/"
+          tmp=$(mktemp -d)
+          for f in epn.wasm wasm_exec.js epn-shell.js world-viewer.html checksums.txt; do
+            curl -fsSL --retry 3 --retry-delay 5 -o "$tmp/$f" "$base/$f"
+          done
+          # VERIFY BEFORE SERVING. These arrive over the network now rather than
+          # out of a compiler, so the published checksums are the only thing
+          # standing between a truncated download and a broken viewer shipped
+          # to every reader. grep the four lines we care about; checksums.txt
+          # also covers the binaries, which are not here.
+          ( cd "$tmp"
+            grep -E ' (epn\.wasm|wasm_exec\.js|epn-shell\.js|world-viewer\.html)$' checksums.txt > viewer.sums
+            if [ "$(wc -l < viewer.sums)" -ne 4 ]; then
+              echo "::error::checksums.txt is missing viewer entries — has build-epnd published since this change?"
+              exit 1
+            fi
+            sha256sum -c viewer.sums )
+          # index.html, because that is what a static host serves at the root,
+          # and public/ is what `output: export` copies verbatim into out/ — so
+          # the viewer lands at /world/viewer/ with no route to declare.
+          cp "$tmp/world-viewer.html" "$dest/index.html"
+          cp "$tmp/epn.wasm" "$tmp/wasm_exec.js" "$tmp/epn-shell.js" "$dest/"
+          rm -rf "$tmp"
           ls -la "$dest"
 
       - name: Install dependencies
