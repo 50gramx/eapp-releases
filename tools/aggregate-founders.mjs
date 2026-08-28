@@ -2051,8 +2051,30 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
     console.log(`[models] filed ${placedFromCatalog} model(s) under a family by exact catalog ref`);
   }
 
+  // ── WHAT NOTHING CLAIMED, SAID OUT LOUD ───────────────────────────────────
+  //
+  // An unplaced model is not an error — a gram can pull anything, and a ref no
+  // family claims is the honest state for it. But it was previously INVISIBLE:
+  // the model simply appeared on no family page, and nobody could tell the
+  // difference between "correctly unclaimed" and "the catalog lost its alias".
+  //
+  // It made exactly that mistake for weeks. The daemon's family merge dropped
+  // seeded aliases whenever the hub also resolved a member, so llama3.2:1b and
+  // three gemma-4 tags published under no family while the catalog held the
+  // right answer the whole time. The failure was silent on both sides: the
+  // daemon logged nothing, and this file emitted `family: null` without comment.
+  //
+  // Publishing the list is what makes the difference checkable. A name in here
+  // that IS in the catalog is a bug; one that is not is a discovery job.
+  const unplaced = models.filter((m) => !m.family).map((m) => m.name);
+  if (unplaced.length > 0) {
+    console.log(`[models] ${unplaced.length} model(s) no family claims: ${unplaced.join(', ')}`);
+  }
+
   return {
     generated_at: generatedAt,
+    // Models no family claims, by name — see the note above placement.
+    unplaced_models: unplaced,
     // Says what a reader can check, not what we promise. Until this file carried
     // `signature` and `signing_payload_b64` the sentence below was true of the
     // PIPELINE and unverifiable from the ARTIFACT — a digest with nothing beside
