@@ -245,7 +245,15 @@ try {
   # --bootstrap so the daemon PROVISIONS the cluster (WSL VM + k3s + inference
   # pods) on first start, not just checks for one. Idempotent (no-op once k3s is
   # up) and non-fatal. Without it a fresh node never gets a cluster.
-  $wrappedArg = "/c `"`"$exePath`" serve --bootstrap >> `"$logPath`" 2>&1`""
+  # EPN_LAUNCH TELLS THE DAEMON WHAT STARTED IT.
+  #
+  # It infers this from whether stdin is a character device, which is right for
+  # systemd and launchd and wrong for us: `cmd.exe /c` hands the child a
+  # console, so a task-launched node reported itself as "interactive". Every
+  # gram in the fleet did, which made the one field that separates "somebody ran
+  # this in a terminal" from "the machine starts it at boot" useless exactly
+  # when a node went quiet and we needed to know which it was.
+  $wrappedArg = "/c `"set EPN_LAUNCH=service && `"$exePath`" serve --bootstrap >> `"$logPath`" 2>&1`""
 
   # Clean up the old pre-rebrand task name if present, so upgrading doesn't
   # leave two overlapping schedules.
@@ -264,6 +272,18 @@ try {
     # chance every time the user signs in, which on a laptop is most days.
     $startupTrigger = New-ScheduledTaskTrigger -AtStartup
     $logonTrigger = New-ScheduledTaskTrigger -AtLogOn
+    # A THIRD TRIGGER, SO A SLEEPING MACHINE IS STILL A NODE.
+    #
+    # A laptop that sleeps stops being reachable and stops reporting, and in the
+    # fleet view that is indistinguishable from a crash -- two Macs went quiet
+    # within minutes of each other mid-campaign and looked exactly like
+    # failures. An hourly trigger with WakeToRun set brings the machine up long
+    # enough to say it is alive and take any work that is waiting.
+    #
+    # It fires against a task that is ALREADY RUNNING most of the time, which is
+    # why MultipleInstances IgnoreNew matters: the wake is the point, the
+    # duplicate start is discarded.
+    $hourlyTrigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1)
     $taskAction = New-ScheduledTaskAction -Execute 'cmd.exe' -Argument $wrappedArg
     # THE THREE DEFAULTS THAT KILLED THE FLEET.
     #
@@ -277,9 +297,9 @@ try {
     # ExecutionTimeLimit defaults to PT72H. This is a long-running daemon, not a
     # batch job: after three days Task Scheduler force-kills it. Zero means no
     # limit, which is the only correct value for a service.
-    $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+    $taskSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -RestartCount 5 -RestartInterval (New-TimeSpan -Minutes 1) -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero) -WakeToRun
     $taskPrincipal = New-ScheduledTaskPrincipal -UserId "$env:USERDOMAIN\$env:USERNAME" -LogonType S4U -RunLevel Limited
-    $task = New-ScheduledTask -Action $taskAction -Trigger @($startupTrigger, $logonTrigger) -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node -- auto-starts on boot and auto-restarts on failure, runs hidden"
+    $task = New-ScheduledTask -Action $taskAction -Trigger @($startupTrigger, $logonTrigger, $hourlyTrigger) -Settings $taskSettings -Principal $taskPrincipal -Description "Gram node -- auto-starts on boot and auto-restarts on failure, runs hidden"
     Register-ScheduledTask -TaskName $taskName -InputObject $task -Force -ErrorAction Stop | Out-Null
     Start-ScheduledTask -TaskName $taskName -ErrorAction Stop
 
@@ -307,6 +327,22 @@ try {
       $lastResult = (Get-ScheduledTaskInfo -TaskName $taskName -ErrorAction SilentlyContinue).LastTaskResult
       throw "the GramNode task was registered but no node process started (task result: $lastResult)"
     }
+
+    # ONE LAUNCHER, NOT TWO.
+    #
+    # The HKCU Run entry below is a FALLBACK for when task registration is
+    # denied. Nothing ever removed it once the task started working, so a
+    # machine that failed once and succeeded later ended up with both -- two
+    # launch paths at different privilege levels, racing for the same ports and
+    # resolving different homes. That is how one machine grows two identities,
+    # and this fleet has at least two stale identities with the live machine's
+    # exact hardware profile to show for it.
+    try {
+      Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' `
+        -Name 'GramNode' -ErrorAction SilentlyContinue
+      Remove-ItemProperty -Path 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Run' `
+        -Name 'GramNode.disabled-by-claude' -ErrorAction SilentlyContinue
+    } catch {}
 
     Write-Host "Gram node registered in Task Scheduler and running (hidden, no console window)"
     Write-Host "logs: $logPath"

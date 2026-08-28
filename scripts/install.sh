@@ -178,6 +178,14 @@ elif [ "$os" = "darwin" ]; then
         <!-- provision the cluster on first start; idempotent + non-fatal -->
         <string>--bootstrap</string>
     </array>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- The daemon infers how it was started from whether stdin is a
+             character device. launchd gets that right, but saying it outright
+             costs nothing and keeps every platform reporting the same way. -->
+        <key>EPN_LAUNCH</key>
+        <string>service</string>
+    </dict>
     <key>RunAtLoad</key>
     <true/>
     <key>KeepAlive</key>
