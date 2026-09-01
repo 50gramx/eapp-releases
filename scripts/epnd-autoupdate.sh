@@ -10,6 +10,7 @@ BASE="https://github.com/${REPO}/releases/download/${TAG}"
 BIN="${EPND_BIN:-/usr/local/bin/epnd}"
 
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
+os_name="$(uname -s)"
 arch="$(uname -m)"
 # Apple Silicon under a Rosetta shell reports x86_64 — trust the hardware flag,
 # not uname, or a node that got the amd64 build will keep pulling amd64 forever
@@ -26,6 +27,68 @@ asset="epnd-${os}-${arch}"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT
+
+# ── REPORTING A NODE THAT NEVER CAME BACK ─────────────────────────────────────
+#
+# The daemon reports the fleet's telemetry, so a node whose daemon does not start
+# reports NOTHING — it simply stops appearing, indistinguishable from a laptop
+# that was closed. That is the one failure this script can cause and the one it
+# could not describe. epnd already drains $EPN_HOME/fleet-events.jsonl into a
+# milestone on its next start (internal/telemetry/updater_events.go), which the
+# Windows updater has used for a while; this is the same channel for unix. It is
+# only read once the daemon runs again, which is exactly right: the event that
+# matters is "this node had to be resurrected", and it is delivered by the
+# resurrection itself.
+fleet_event() { # $1 event, $2 started(true|false), $3 repaired-item, $4 needs_attention(true|false)
+  _home="${EPN_HOME:-$HOME/.epn}"
+  [ -d "$_home" ] || return 0
+  printf '{"at":"%s","source":"epnd-autoupdate.sh","event":"%s","repaired":["%s"],"started":%s,"needs_attention":%s,"os":"%s"}
+'     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$1" "$3" "$2" "${4:-false}" "$os" >> "$_home/fleet-events.jsonl" 2>/dev/null || true
+}
+
+epnd_running() { pgrep -x epnd >/dev/null 2>&1; }
+
+# start_epnd brings the daemon up through its service manager and CONFIRMS it.
+#
+# The macOS path used to fire and forget: bootout + pkill kill the daemon
+# unconditionally, and if the following bootstrap failed the script echoed a note
+# to stderr — into launchd's void, where nothing reads it — and left the machine
+# with no daemon at all until a human noticed. bootout is also asynchronous, so
+# bootstrapping the same label immediately after it can fail with a busy/IO error
+# purely as a race, which is precisely the case where the old process is already
+# gone. So: retry, and verify by looking for the process rather than trusting the
+# exit status of a command that is documented to succeed without starting
+# anything.
+start_epnd() {
+  attempt=1
+  while [ "$attempt" -le 5 ]; do
+    case "$os_name" in
+      Linux)
+        command -v systemctl >/dev/null 2>&1 && systemctl restart epnd 2>/dev/null || true
+        ;;
+      Darwin)
+        gui="gui/$(id -u)"
+        label="com.50gramx.epnd"
+        plist="$HOME/Library/LaunchAgents/${label}.plist"
+        if [ -f "$plist" ]; then
+          launchctl bootstrap "$gui" "$plist" 2>/dev/null             || launchctl kickstart -k "$gui/$label" 2>/dev/null             || launchctl load "$plist" 2>/dev/null || true
+          launchctl enable "$gui/$label" 2>/dev/null || true
+        else
+          echo "note: no plist at $plist — cannot start epnd" >&2
+          return 1
+        fi
+        ;;
+    esac
+    # Give the process a moment to claim the single-instance lock before judging.
+    sleep 3
+    if epnd_running; then
+      return 0
+    fi
+    attempt=$((attempt + 1))
+  done
+
+  return 1
+}
 
 # Fetch the latest checksum and compare against installed binary
 curl -fsSL "${BASE}/checksums.txt" -o "$tmp/checksums.txt" 2>/dev/null || { echo "could not fetch checksums.txt" >&2; exit 0; }
@@ -77,7 +140,24 @@ else
 fi
 
 if [ "$have" = "$want" ]; then
-  echo "epnd up to date" >&2
+  # UP TO DATE IS NOT THE SAME AS RUNNING, AND THIS IS WHERE A DEAD NODE STAYED
+  # DEAD. The script only ever restarted the daemon as a SIDE EFFECT of an
+  # update, so a node whose daemon failed to come back after one went on
+  # reporting "epnd up to date" every fifteen minutes, forever, while running
+  # nothing. Observed on macOS, where the restart path could kill the daemon and
+  # then fail to start it. The timer is already a heartbeat; make it a watchdog.
+  if epnd_running; then
+    echo "epnd up to date" >&2
+    exit 0
+  fi
+  echo "epnd up to date but NOT RUNNING — starting it" >&2
+  if start_epnd; then
+    echo "epnd started" >&2
+    fleet_event "updater_started_stopped_daemon" true "epnd was installed and current but not running" false
+  else
+    echo "note: epnd is not running and could not be started — check the service" >&2
+    fleet_event "updater_start_failed" false "epnd is installed and current but will not start" true
+  fi
   exit 0
 fi
 
@@ -93,42 +173,31 @@ mv "$tmp/epnd" "${BIN}.new"
 mv "${BIN}.new" "$BIN"
 echo "updated epnd from ${TAG}" >&2
 
-# Restart the service gracefully
-os_name="$(uname -s)"
+# Restart the service gracefully.
+#
+# Both branches kill first — a lingering unmanaged epnd holds the single-instance
+# lock, so a freshly restarted service exits immediately on it and the node
+# silently stays on the OLD build despite "updating". On macOS `launchctl
+# unload`/`load` also SILENTLY NO-OPS when the label is already registered, which
+# is why start_epnd prefers bootstrap/kickstart and then checks for the process.
 if [ "$os_name" = "Linux" ]; then
-  if command -v systemctl >/dev/null 2>&1; then
-    # Kill any epnd NOT managed by systemd (a manual run, or a stale process from
-    # before this node was serviceified) before restarting — same reasoning as
-    # install.sh's Linux path: a lingering unmanaged process holds the
-    # single-instance lock, the freshly restarted systemd unit exits immediately
-    # on it, and the node silently stays on the OLD build despite "updating".
-    pkill -x epnd 2>/dev/null || true
-    sleep 1
-    systemctl restart epnd || echo "note: systemctl restart failed — check systemctl status epnd" >&2
-  fi
+  pkill -x epnd 2>/dev/null || true
+  sleep 1
 elif [ "$os_name" = "Darwin" ]; then
-  # `launchctl unload`/`load` SILENTLY NO-OPS on modern macOS (Ventura+) when the
-  # label is already registered — this branch used to be exactly that, so the
-  # binary was swapped but the OLD process kept running on every auto-update
-  # cycle on a current macOS, indefinitely, with no error surfaced anywhere.
-  # install.sh already had to solve this same problem for the initial install
-  # (see its comment there) via bootout+bootstrap, which actually re-reads state
-  # rather than silently no-opping; mirrored here for the periodic restart path,
-  # which needs the identical fix for the identical reason.
   gui="gui/$(id -u)"
   label="com.50gramx.epnd"
   launchctl bootout "$gui/$label" 2>/dev/null || launchctl unload "$HOME/Library/LaunchAgents/${label}.plist" 2>/dev/null || true
-  # Kill any epnd not managed by launchd — bootout only stops the launchd-managed
-  # instance; a lingering unmanaged process still holds the single-instance lock.
   pkill -x epnd 2>/dev/null || true
   sleep 1
-  plist="$HOME/Library/LaunchAgents/${label}.plist"
-  if [ -f "$plist" ]; then
-    if ! launchctl bootstrap "$gui" "$plist" 2>/dev/null; then
-      launchctl load "$plist" 2>/dev/null || echo "note: launchctl bootstrap/load failed — check $plist" >&2
-    fi
-    launchctl enable "$gui/$label" 2>/dev/null || true
-  else
-    echo "note: no plist at $plist — restart epnd manually" >&2
-  fi
+fi
+
+if start_epnd; then
+  echo "epnd restarted on the new build" >&2
+else
+  # THE WORST OUTCOME THIS SCRIPT CAN PRODUCE, SAID OUT LOUD. The old daemon has
+  # been killed and the new one did not start, so this node is now down and will
+  # stay down. Recorded so the resurrection reports it, and the next run of this
+  # timer will retry through the liveness check above.
+  echo "ERROR: epnd was stopped for the update and did NOT come back — this node is down" >&2
+  fleet_event "updater_restart_failed" false "killed for update and did not restart" true
 fi
