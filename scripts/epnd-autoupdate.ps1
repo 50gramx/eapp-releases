@@ -200,6 +200,34 @@ function Resume-GramNode {
 # Leave a durable, machine-readable trace so a revival is visible as a FACT and
 # not as an inference from a node reappearing. Written next to the binary and,
 # when it exists, into EPN_HOME where the daemon's own state lives.
+function Write-UpdateFailure {
+  # THE FLEET MUST LEARN THAT A NODE WAS BROKEN BY ITS OWN UPDATE.
+  # Write-FleetEvent only speaks windows_task_repair. An update that could not
+  # be completed is a different fact with a different remedy, and it is the one
+  # the fleet had no way to hear: the node simply stopped reporting, which reads
+  # identically to a machine that was switched off.
+  param([string]$Dest, [string]$Reason, [bool]$RolledBack)
+  try {
+    $evt = [ordered]@{
+      at       = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+      source   = 'epnd-autoupdate.ps1'
+      event    = 'updater_swap_failed'
+      repaired = @($Reason)
+      started  = $RolledBack
+      needs_attention = (-not $RolledBack)
+      os       = 'windows'
+    }
+    $line = ($evt | ConvertTo-Json -Compress -Depth 4)
+    foreach ($dir in @($Dest, $env:EPN_HOME)) {
+      if ($dir -and (Test-Path $dir)) {
+        Add-Content -Path (Join-Path $dir 'fleet-events.jsonl') -Value $line -Encoding utf8 -ErrorAction SilentlyContinue
+      }
+    }
+  } catch {
+    Write-Host "note: could not record the update-failure event" -ForegroundColor Gray
+  }
+}
+
 function Write-FleetEvent {
   param([string]$Dest, [string[]]$Repaired, [bool]$Started, [bool]$NeedsElevation, [bool]$LogonEntry)
   if ($Repaired.Count -eq 0 -and -not $Started -and -not $NeedsElevation -and -not $LogonEntry) { return }
@@ -334,9 +362,74 @@ try {
   # Rename-then-replace: Windows can MOVE a running/locked exe aside even when it
   # cannot be overwritten in place, so the swap succeeds even if a handle lingers.
   $old = "$bin.old"
+
+  # -- DO NOT START A SWAP THERE IS NO ROOM TO FINISH ------------------------
+  #
+  # This block used to move the working binary aside and then Copy-Item with
+  # -ErrorAction Stop. On a full disk that copy throws, the throw escapes to the
+  # outer finally, Start-ScheduledTask below is NEVER REACHED, and the node is
+  # left with epnd.exe.old, no epnd.exe, and a killed process. The updater
+  # destroyed the install it was updating.
+  #
+  # That is not hypothetical: it happened on a founder node at 100% disk, which
+  # then sat dead and silent while the fleet read it as merely switched off.
+  #
+  # So: ask first. The check is deliberately generous - the new binary plus the
+  # one being kept as .old, plus a little - because refusing an update we cannot
+  # complete costs one cycle, and half-completing one costs the node.
+  $needBytes = 0
+  try { $needBytes = (Get-Item (Join-Path $tmp 'epnd.exe') -ErrorAction Stop).Length } catch { $needBytes = 0 }
+  if ($needBytes -gt 0) {
+    $freeBytes = -1
+    try {
+      $root = [System.IO.Path]::GetPathRoot($bin)
+      $freeBytes = (Get-PSDrive -Name $root.TrimEnd(':\') -ErrorAction Stop).Free
+    } catch { $freeBytes = -1 }
+    if ($freeBytes -ge 0 -and $freeBytes -lt ($needBytes * 2 + 64MB)) {
+      $reason = "not enough disk to swap the binary safely: need $([math]::Round(($needBytes*2+64MB)/1MB)) MB, have $([math]::Round($freeBytes/1MB)) MB"
+      Write-Host "refusing the update: $reason" -ForegroundColor Yellow
+      # The node is UNTOUCHED and still running its current build, so this is a
+      # deferral, not a fault - but the fleet still needs to know the machine is
+      # stuck on an old version for a reason a person can act on.
+      Write-UpdateFailure -Dest $dest -Reason $reason -RolledBack $true
+      Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+      Update-Self -Base $base -SumsPath (Join-Path $tmp 'checksums.txt') -Tmp $tmp
+      exit 0
+    }
+  }
+
   Remove-Item $old -Force -ErrorAction SilentlyContinue
   if (Test-Path $bin) { Move-Item -Path $bin -Destination $old -Force -ErrorAction SilentlyContinue }
-  Copy-Item (Join-Path $tmp 'epnd.exe') $bin -Force -ErrorAction Stop
+  # ROLL BACK RATHER THAN LEAVE A HOLE. From here the machine has no binary at
+  # $bin, and every failure path must put one back before it returns.
+  try {
+    Copy-Item (Join-Path $tmp 'epnd.exe') $bin -Force -ErrorAction Stop
+    if (-not (Test-Path $bin) -or (Get-Item $bin).Length -lt 1MB) {
+      throw "the copied binary is missing or truncated"
+    }
+  } catch {
+    $reason = "$_"
+    Write-Host "update failed while replacing the binary: $reason" -ForegroundColor Red
+    $restored = $false
+    try {
+      if (Test-Path $old) {
+        Move-Item -Path $old -Destination $bin -Force -ErrorAction Stop
+        $restored = (Test-Path $bin)
+      }
+    } catch { $restored = $false }
+    if ($restored) {
+      Write-Host "rolled back to the previous build - this node keeps running" -ForegroundColor Yellow
+    } else {
+      Write-Host "COULD NOT ROLL BACK: there is no epnd.exe at $bin" -ForegroundColor Red
+    }
+    Write-UpdateFailure -Dest $dest -Reason $reason -RolledBack $restored
+    # Restart either way. A rolled-back node runs the old build; a node with no
+    # binary fails to start and says so, which is still better than a task that
+    # was never asked to run.
+    Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+    Update-Self -Base $base -SumsPath (Join-Path $tmp 'checksums.txt') -Tmp $tmp
+    exit 1
+  }
   Remove-Item $old -Force -ErrorAction SilentlyContinue
   Write-Host "updated epnd from $tag" -ForegroundColor Green
 
