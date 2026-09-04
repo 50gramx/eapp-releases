@@ -298,7 +298,15 @@ function Write-UpdaterState {
       action          = $Action
     }
     $tmpf = Join-Path $home2 'updater-state.json.tmp'
-    ($st | ConvertTo-Json -Compress -Depth 4) | Out-File -FilePath $tmpf -Encoding utf8 -ErrorAction Stop
+    # WRITTEN WITHOUT A BOM, DELIBERATELY. Windows PowerShell 5.1's
+    # "Out-File -Encoding utf8" emits EF BB BF unconditionally, and a BOM is not
+    # JSON - Go's Unmarshal rejects it outright. The very first heartbeat this
+    # fleet produced was unreadable for exactly this reason, which would have
+    # left every Windows gram reporting "no heartbeat" forever while faithfully
+    # writing one every fifteen minutes: the failure the file exists to detect,
+    # produced by the file itself.
+    $json = ($st | ConvertTo-Json -Compress -Depth 4)
+    [System.IO.File]::WriteAllText($tmpf, $json, (New-Object System.Text.UTF8Encoding($false)))
     # Moved into place so the daemon never reads a half-written stamp and
     # concludes this node is running a build it is not.
     Move-Item -Path $tmpf -Destination (Join-Path $home2 'updater-state.json') -Force -ErrorAction Stop
