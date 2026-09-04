@@ -7,10 +7,62 @@ set -eu
 REPO="${EPND_REPO:-50gramx/eapp-releases}"
 TAG="${EPND_TAG:-epnd-latest}"
 BASE="https://github.com/${REPO}/releases/download/${TAG}"
-BIN="${EPND_BIN:-/usr/local/bin/epnd}"
-
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 os_name="$(uname -s)"
+
+BIN="${EPND_BIN:-}"
+
+# -- UPDATE THE BINARY THE SERVICE MANAGER ACTUALLY RUNS ----------------------
+#
+# BIN used to be hardcoded to /usr/local/bin/epnd. install.sh does NOT always
+# put it there:
+#
+#	dest="${EPND_INSTALL:-/usr/local/bin}"
+#	dest="${HOME}/.local/bin"        # when /usr/local/bin needs sudo and
+#	                                 # the install was run without it
+#
+# and the launchd plist it writes runs "$dest/epnd". So on every gram installed
+# without sudo, launchd starts ~/.local/bin/epnd while this script updates
+# /usr/local/bin/epnd. TWO DIFFERENT FILES. The updater then reports "updated"
+# and "current" forever, truthfully, about a binary nothing runs.
+#
+# This fleet's M4 is the proof. Its heartbeat said:
+#
+#	INSTALLED f7546f48 BUT RUNNING 202ce921 — swapped without a restart
+#
+# 202ce92 is months old. The gram had been dutifully updating a file no process
+# ever opened, and every "why is this Mac behind" investigation looked at the
+# timer, the scheduler and the network -- none of which was ever wrong.
+#
+# So ask the service manager where its binary is, instead of assuming. An
+# explicit EPND_BIN still wins, because an operator who names a path means it.
+service_bin() {
+  case "$os_name" in
+    Darwin)
+      _plist="$HOME/Library/LaunchAgents/com.50gramx.epnd.plist"
+      [ -f "$_plist" ] || return 0
+      # PlistBuddy ships with macOS and reads the parsed plist, which may be
+      # binary -- grepping the file works until somebody's is not XML.
+      if [ -x /usr/libexec/PlistBuddy ]; then
+        /usr/libexec/PlistBuddy -c "Print :ProgramArguments:0" "$_plist" 2>/dev/null && return 0
+      fi
+      sed -n 's|.*<string>\(.*/epnd\)</string>.*|\1|p' "$_plist" 2>/dev/null | head -1 || true
+      ;;
+    Linux)
+      # systemd's ExecStart is the same question in the other dialect.
+      systemctl show epnd.service --property=ExecStart --value 2>/dev/null |
+        sed -n 's|.*path=\([^ ;]*\).*|\1|p' | head -1 || true
+      ;;
+  esac
+}
+
+if [ -z "$BIN" ]; then
+  BIN="$(service_bin 2>/dev/null || true)"
+fi
+if [ -z "$BIN" ]; then
+  BIN="/usr/local/bin/epnd"
+fi
+
 arch="$(uname -m)"
 # Apple Silicon under a Rosetta shell reports x86_64 — trust the hardware flag,
 # not uname, or a node that got the amd64 build will keep pulling amd64 forever
