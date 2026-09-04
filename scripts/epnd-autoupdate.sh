@@ -175,9 +175,40 @@ if [ -n "$SELF" ] && [ -f "$SELF" ]; then
         if command -v sha256sum >/dev/null 2>&1; then selfGot="$(sha256sum "$tmp/self.sh" | awk '{print $1}')"
         else selfGot="$(shasum -a 256 "$tmp/self.sh" | awk '{print $1}')"; fi
         if [ "$selfGot" = "$selfWant" ]; then
-          chmod +x "$tmp/self.sh"
-          cp "$tmp/self.sh" "$SELF"
-          echo "updated the auto-update script itself (takes effect next run)" >&2
+          # -- RENAMED, NEVER COPIED OVER. THE COMMENT ABOVE WAS RIGHT AND THIS
+          # -- LINE WAS WRONG ------------------------------------------------
+          #
+          # The safety argument three paragraphs up is "mv is atomic so nothing
+          # mid-execution breaks". The code did `cp`, which is the opposite: it
+          # rewrites the bytes of the file bash is CURRENTLY EXECUTING, in
+          # place, at line ~180 of ~250. Bash reads a script incrementally by
+          # byte offset, so after an in-place overwrite its next read comes out
+          # of the NEW content at the OLD offset -- and every offset shifts by
+          # however much the update added. A release that inserts sixty lines
+          # near the top leaves the running shell resuming in the middle of an
+          # unrelated function.
+          #
+          # The .ps1 sibling already names this hazard and defers its own
+          # self-update to the very end because of it. This side kept the `cp`.
+          #
+          # A rename does not touch the running inode: bash holds its descriptor
+          # on the old file, which stays whole until the process exits, while
+          # the new bytes take the path for the NEXT run. That is what the
+          # comment always claimed happened.
+          #
+          # Staged NEXT TO the target, not in $tmp, because mv across
+          # filesystems degrades to copy-and-unlink -- which is the very thing
+          # being avoided, and mktemp -d is not guaranteed to share a volume
+          # with $HOME.
+          selfNew="${SELF}.new"
+          if cp "$tmp/self.sh" "$selfNew" 2>/dev/null; then
+            chmod +x "$selfNew"
+            if mv -f "$selfNew" "$SELF" 2>/dev/null; then
+              echo "updated the auto-update script itself (takes effect next run)" >&2
+            else
+              rm -f "$selfNew"
+            fi
+          fi
         fi
       fi
     fi
