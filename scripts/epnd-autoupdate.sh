@@ -48,6 +48,64 @@ fleet_event() { # $1 event, $2 started(true|false), $3 repaired-item, $4 needs_a
 
 epnd_running() { pgrep -x epnd >/dev/null 2>&1; }
 
+# -- THE HEARTBEAT: "IS THIS NODE'S UPDATER RUNNING AT ALL?" -------------------
+#
+# fleet_event reports what was REPAIRED, which is the right channel for a repair
+# and the wrong one for the question the fleet keeps asking. An updater that
+# runs every fifteen minutes and finds nothing to do writes NOTHING, so a node
+# whose updater died six weeks ago and a node whose updater ran ninety seconds
+# ago ship byte-identical telemetry: silence.
+#
+# Two grams in this fleet sat behind by six weeks and one working day and
+# neither could be told apart from a healthy one without reading a scheduled
+# task on the machine itself -- the manual step this system exists to remove.
+#
+# So stamp what was seen on EVERY run, satisfied or not. Unlike fleet-events
+# this file is READ by the daemon, never drained: the current value is the fact.
+epnd_home() { echo "${EPN_HOME:-$HOME/.epn}"; }
+
+# bin_version asks the binary on disk what it is. "epnd version" prints
+# "epnd <sha>"; anything else -- an older build, a binary that will not exec on
+# this machine -- yields the empty string, reported as unknown rather than
+# guessed at.
+bin_version() {
+  [ -x "$BIN" ] || return 0
+  "$BIN" version 2>/dev/null | awk 'NR==1 && $1=="epnd" {print $2}' || true
+}
+
+# running_version asks the DAEMON what it is running, which no script can work
+# out by itself -- a process does not carry the commit it was built from. The
+# daemon stamps it at startup (telemetry.WriteRunningState).
+#
+# The PID is checked because the stamp OUTLIVES the process that wrote it: a
+# daemon killed by an OOM leaves behind a stamp claiming a version nothing is
+# serving, and restarting a node on the strength of a dead process's paperwork
+# is exactly the confident wrong action this script must not take.
+running_version() {
+  _rs="$(epnd_home)/running.json"
+  [ -f "$_rs" ] || return 0
+  _pid="$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$_rs" 2>/dev/null | head -1)"
+  [ -n "$_pid" ] || return 0
+  kill -0 "$_pid" 2>/dev/null || return 0
+  sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_rs" 2>/dev/null | head -1 || true
+}
+
+# write_updater_state records this run. Best-effort and silent: a node that
+# cannot write a heartbeat is still a node, and failing an update over
+# diagnostics would turn an observability gap into an outage.
+write_updater_state() { # $1 action, $2 behind_upstream(true|false)
+  _home="$(epnd_home)"
+  [ -d "$_home" ] || return 0
+  _od="$(bin_version)"
+  _rv="$(running_version)"
+  printf '{"at":"%s","asset":"%s","on_disk":"%s","running":"%s","behind_upstream":%s,"action":"%s"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$asset" "${_od:-}" "${_rv:-}" "${2:-false}" "$1" \
+    > "${_home}/updater-state.json.tmp" 2>/dev/null || return 0
+  # Renamed into place so the daemon never reads a half-written stamp and
+  # concludes this node is running a build it is not.
+  mv -f "${_home}/updater-state.json.tmp" "${_home}/updater-state.json" 2>/dev/null || true
+}
+
 # start_epnd brings the daemon up through its service manager and CONFIRMS it.
 #
 # The macOS path used to fire and forget: bootout + pkill kill the daemon
@@ -91,7 +149,7 @@ start_epnd() {
 }
 
 # Fetch the latest checksum and compare against installed binary
-curl -fsSL "${BASE}/checksums.txt" -o "$tmp/checksums.txt" 2>/dev/null || { echo "could not fetch checksums.txt" >&2; exit 0; }
+curl -fsSL "${BASE}/checksums.txt" -o "$tmp/checksums.txt" 2>/dev/null || { write_updater_state "checksums_unreachable" false; echo "could not fetch checksums.txt" >&2; exit 0; }
 
 # Keep THIS updater script current too, same reasoning as the .ps1 sibling: the
 # updater replaces epnd but never itself, so a bug or a missing capability here
@@ -128,6 +186,7 @@ fi
 
 want="$(grep "[ *]${asset}\$" "$tmp/checksums.txt" 2>/dev/null | awk '{print $1}' || true)"
 if [ -z "$want" ]; then
+  write_updater_state "no_checksum_entry" false
   echo "no checksum entry for ${asset}" >&2
   exit 0
 fi
@@ -147,14 +206,50 @@ if [ "$have" = "$want" ]; then
   # nothing. Observed on macOS, where the restart path could kill the daemon and
   # then fail to start it. The timer is already a heartbeat; make it a watchdog.
   if epnd_running; then
+    # UP TO DATE ON DISK IS NOT THE SAME AS RUNNING THE UP-TO-DATE BUILD, and
+    # this is the failure with a live victim. Once a swap lands but the restart
+    # does not take -- a bootout/bootstrap race on macOS, a lingering process
+    # holding the single-instance lock -- every LATER run arrives here, finds
+    # the checksum current and the process alive, prints "up to date", and
+    # exits. The node then serves the old build forever while looking perfectly
+    # healthy, and nothing downstream of it looks wrong.
+    #
+    # The liveness watchdog below cannot catch it: the daemon IS running. Only
+    # the version can tell, and only the daemon knows it.
+    _od="$(bin_version)"
+    _rv="$(running_version)"
+    if [ -n "$_od" ] && [ -n "$_rv" ] && [ "$_od" != "$_rv" ]; then
+      echo "epnd on disk is $_od but the running daemon is $_rv -- restarting onto the installed build" >&2
+      case "$os_name" in
+        Linux) pkill -x epnd 2>/dev/null || true; sleep 1 ;;
+        Darwin)
+          launchctl bootout "gui/$(id -u)/com.50gramx.epnd" 2>/dev/null \
+            || launchctl unload "$HOME/Library/LaunchAgents/com.50gramx.epnd.plist" 2>/dev/null || true
+          pkill -x epnd 2>/dev/null || true
+          sleep 1 ;;
+      esac
+      if start_epnd; then
+        write_updater_state "restarted_onto_installed_build" false
+        fleet_event "updater_restarted_stale_running_build" true "daemon was running an older build than the installed binary" false
+        echo "epnd restarted on the installed build" >&2
+      else
+        write_updater_state "restart_failed" false
+        fleet_event "updater_restart_failed" false "killed to adopt the installed build and did not restart" true
+        echo "ERROR: epnd was stopped to adopt the installed build and did NOT come back" >&2
+      fi
+      exit 0
+    fi
+    write_updater_state "current" false
     echo "epnd up to date" >&2
     exit 0
   fi
   echo "epnd up to date but NOT RUNNING — starting it" >&2
   if start_epnd; then
+    write_updater_state "started_stopped_daemon" false
     echo "epnd started" >&2
     fleet_event "updater_started_stopped_daemon" true "epnd was installed and current but not running" false
   else
+    write_updater_state "start_failed" false
     echo "note: epnd is not running and could not be started — check the service" >&2
     fleet_event "updater_start_failed" false "epnd is installed and current but will not start" true
   fi
@@ -162,10 +257,11 @@ if [ "$have" = "$want" ]; then
 fi
 
 echo "new epnd available (have=${have:-none} want=$want) — updating…" >&2
-curl -fSL "${BASE}/${asset}" -o "$tmp/epnd" 2>/dev/null || { echo "download failed" >&2; exit 1; }
+write_updater_state "downloading" true
+curl -fSL "${BASE}/${asset}" -o "$tmp/epnd" 2>/dev/null || { write_updater_state "download_failed" true; echo "download failed" >&2; exit 1; }
 if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$tmp/epnd" | awk '{print $1}')"
 else got="$(shasum -a 256 "$tmp/epnd" | awk '{print $1}')"; fi
-[ "$got" = "$want" ] || { echo "checksum mismatch" >&2; exit 1; }
+[ "$got" = "$want" ] || { write_updater_state "checksum_mismatch" true; echo "checksum mismatch" >&2; exit 1; }
 
 chmod +x "$tmp/epnd"
 # Atomic swap: write to .new then rename over it
@@ -192,8 +288,10 @@ elif [ "$os_name" = "Darwin" ]; then
 fi
 
 if start_epnd; then
+  write_updater_state "updated" false
   echo "epnd restarted on the new build" >&2
 else
+  write_updater_state "update_restart_failed" false
   # THE WORST OUTCOME THIS SCRIPT CAN PRODUCE, SAID OUT LOUD. The old daemon has
   # been killed and the new one did not start, so this node is now down and will
   # stay down. Recorded so the resurrection reports it, and the next run of this

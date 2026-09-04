@@ -228,6 +228,83 @@ function Write-UpdateFailure {
   }
 }
 
+# -- THE HEARTBEAT: "IS THIS NODE'S UPDATER RUNNING AT ALL?" -------------------
+#
+# Write-FleetEvent reports what was REPAIRED, which is the right channel for a
+# repair and the wrong one for the question the fleet keeps asking. An updater
+# that runs every fifteen minutes and finds nothing to do writes NOTHING, so a
+# node whose updater died six weeks ago and a node whose updater ran ninety
+# seconds ago ship byte-identical telemetry: silence.
+#
+# Two grams in this fleet sat behind by six weeks and one working day and
+# neither could be told apart from a healthy one without reading a scheduled
+# task on the machine itself - the manual step this system exists to remove.
+#
+# So stamp what was seen on EVERY run, satisfied or not. Unlike fleet-events
+# this file is READ by the daemon, never drained: the current value is the fact.
+function Get-EpnHome {
+  if ($env:EPN_HOME) { return $env:EPN_HOME }
+  return (Join-Path $env:USERPROFILE '.epn')
+}
+
+# Get-BinVersion asks the binary on disk what it is. "epnd version" prints
+# "epnd <sha>"; anything else - an older build, a binary that will not run on
+# this machine - yields the empty string, reported as unknown rather than
+# guessed at.
+function Get-BinVersion {
+  param([string]$Bin)
+  if (-not (Test-Path $Bin)) { return "" }
+  try {
+    $out = & $Bin version 2>$null | Select-Object -First 1
+    if ($out -match '^epnd\s+(\S+)') { return $Matches[1] }
+  } catch { }
+  return ""
+}
+
+# Get-RunningVersion asks the DAEMON what it is running, which no script can
+# work out by itself - a process does not carry the commit it was built from.
+# The daemon stamps it at startup (telemetry.WriteRunningState).
+#
+# The PID is checked because the stamp OUTLIVES the process that wrote it: a
+# daemon killed by the OOM reaper leaves behind a stamp claiming a version
+# nothing is serving, and restarting a node on the strength of a dead process's
+# paperwork is exactly the confident wrong action this script must not take.
+function Get-RunningVersion {
+  try {
+    $f = Join-Path (Get-EpnHome) 'running.json'
+    if (-not (Test-Path $f)) { return "" }
+    $st = Get-Content $f -Raw -ErrorAction Stop | ConvertFrom-Json
+    if (-not $st.pid) { return "" }
+    if (-not (Get-Process -Id $st.pid -ErrorAction SilentlyContinue)) { return "" }
+    if ($st.version) { return [string]$st.version }
+  } catch { }
+  return ""
+}
+
+# Write-UpdaterState records this run. Best-effort and silent: a node that
+# cannot write a heartbeat is still a node, and failing an update over
+# diagnostics would turn an observability gap into an outage.
+function Write-UpdaterState {
+  param([string]$Bin, [string]$Asset, [string]$Action, [bool]$Behind)
+  try {
+    $home2 = Get-EpnHome
+    if (-not (Test-Path $home2)) { return }
+    $st = [ordered]@{
+      at              = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+      asset           = $Asset
+      on_disk         = (Get-BinVersion -Bin $Bin)
+      running         = (Get-RunningVersion)
+      behind_upstream = $Behind
+      action          = $Action
+    }
+    $tmpf = Join-Path $home2 'updater-state.json.tmp'
+    ($st | ConvertTo-Json -Compress -Depth 4) | Out-File -FilePath $tmpf -Encoding utf8 -ErrorAction Stop
+    # Moved into place so the daemon never reads a half-written stamp and
+    # concludes this node is running a build it is not.
+    Move-Item -Path $tmpf -Destination (Join-Path $home2 'updater-state.json') -Force -ErrorAction Stop
+  } catch { }
+}
+
 function Write-FleetEvent {
   param([string]$Dest, [string[]]$Repaired, [bool]$Started, [bool]$NeedsElevation, [bool]$LogonEntry)
   if ($Repaired.Count -eq 0 -and -not $Started -and -not $NeedsElevation -and -not $LogonEntry) { return }
@@ -303,6 +380,7 @@ try {
 
   $line = Select-String -Path (Join-Path $tmp 'checksums.txt') -Pattern "[ *]$asset$" | Select-Object -First 1
   if (-not $line) {
+    Write-UpdaterState -Bin $bin -Asset $asset -Action 'no_checksum_entry' -Behind $false
     Write-Host "no checksum entry for $asset" -ForegroundColor Gray
     exit 0
   }
@@ -323,7 +401,35 @@ try {
   # through to the self-update at the end instead of leaving.
   $binaryCurrent = ($have -eq $want.ToLower())
   if ($binaryCurrent) {
-    Write-Host "epnd up to date" -ForegroundColor Gray
+    # UP TO DATE ON DISK IS NOT THE SAME AS RUNNING THE UP-TO-DATE BUILD, and
+    # this is the failure with a live victim. Once a swap lands but the restart
+    # does not take - a scheduled task that never fired, a lingering process
+    # holding the single-instance lock - every LATER run arrives here, finds the
+    # checksum current, and reports "up to date". The node then serves the old
+    # build forever while looking perfectly healthy, and nothing downstream of
+    # it looks wrong.
+    #
+    # Only the version can tell, and only the daemon knows it.
+    $onDisk  = Get-BinVersion -Bin $bin
+    $running = Get-RunningVersion
+    if ($onDisk -and $running -and ($onDisk -ne $running)) {
+      Write-Host "epnd on disk is $onDisk but the running daemon is $running - restarting onto the installed build" -ForegroundColor Yellow
+      Get-Process epnd -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 2
+      Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 3
+      if (Get-Process epnd -ErrorAction SilentlyContinue) {
+        Write-UpdaterState -Bin $bin -Asset $asset -Action 'restarted_onto_installed_build' -Behind $false
+        Write-Host "epnd restarted on the installed build" -ForegroundColor Green
+      } else {
+        Write-UpdaterState -Bin $bin -Asset $asset -Action 'restart_failed' -Behind $false
+        Write-UpdateFailure -Dest $dest -Reason 'killed to adopt the installed build and did not restart' -RolledBack $false
+        Write-Host "ERROR: epnd was stopped to adopt the installed build and did NOT come back" -ForegroundColor Red
+      }
+    } else {
+      Write-UpdaterState -Bin $bin -Asset $asset -Action 'current' -Behind $false
+      Write-Host "epnd up to date" -ForegroundColor Gray
+    }
   } else {
 
   Write-Host "new epnd available (have=$($have.Substring(0,8))... want=$($want.Substring(0,8))...) -- updating..." -ForegroundColor Yellow
@@ -434,6 +540,7 @@ try {
   Write-Host "updated epnd from $tag" -ForegroundColor Green
 
   Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+  Write-UpdaterState -Bin $bin -Asset $asset -Action 'updated' -Behind $false
   }
 
   # ALWAYS LAST, and now always REACHED. See the note on the up-to-date branch.
