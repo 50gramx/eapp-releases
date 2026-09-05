@@ -305,6 +305,80 @@ if [ -n "$SELF" ] && [ -f "$SELF" ]; then
   fi
 fi
 
+# -- THE UPDATER UPDATED EVERYTHING EXCEPT ITS OWN SCHEDULE -------------------
+#
+# This script replaces epnd, and since the block above it replaces itself. It
+# has never been able to replace the TIMER THAT RUNS IT. install.sh writes the
+# launchd plist (and the systemd timer) once, at install, and nothing revises
+# them for the life of the machine.
+#
+# So a gram installed by an older install.sh keeps whatever cadence that build
+# happened to give it, forever, and no release can correct it. That is the same
+# shape as the BIN bug that stranded this fleet's M4 on a months-old binary: a
+# fact decided once at install time, never re-checked, and invisible from the
+# outside because everything downstream of it reports success.
+#
+# It is also the only remaining way a gram can go quiet that a new build cannot
+# reach. Every other failure this script has -- a wrong path, a hung fetch, a
+# divergent binary -- is now fixed by shipping. A wrong interval is fixed by
+# nothing.
+#
+# So the schedule is reconciled the same way the binary is: read what is
+# installed, compare against what this build expects, rewrite only on a
+# mismatch. Idempotent, silent when correct, and it costs one file read.
+EXPECT_INTERVAL="${EPND_UPDATE_INTERVAL:-900}"
+
+reconcile_schedule() {
+  case "$os_name" in
+    Darwin) reconcile_launchd ;;
+    Linux)  reconcile_systemd ;;
+  esac
+}
+
+reconcile_launchd() {
+  _plist="$HOME/Library/LaunchAgents/com.50gramx.epnd-autoupdate.plist"
+  [ -f "$_plist" ] || return 0
+  [ -x /usr/libexec/PlistBuddy ] || return 0
+
+  _have="$(/usr/libexec/PlistBuddy -c "Print :StartInterval" "$_plist" 2>/dev/null || true)"
+  [ "$_have" = "$EXPECT_INTERVAL" ] && return 0
+
+  # Set in place rather than rewriting the file. A rewrite would also have to
+  # reproduce ProgramArguments and the log paths, and reproducing them from
+  # here is how they drift from what install.sh writes -- the exact class of
+  # bug this block exists to close.
+  if [ -z "$_have" ]; then
+    /usr/libexec/PlistBuddy -c "Add :StartInterval integer $EXPECT_INTERVAL" "$_plist" >/dev/null 2>&1 || return 0
+  else
+    /usr/libexec/PlistBuddy -c "Set :StartInterval $EXPECT_INTERVAL" "$_plist" >/dev/null 2>&1 || return 0
+  fi
+  # launchd holds the OLD definition until the job is reloaded; without this the
+  # file is right and the behaviour is unchanged, which is worse than not
+  # trying, because the next run would see a correct file and stop looking.
+  _gui="gui/$(id -u)"
+  launchctl bootout "$_gui/com.50gramx.epnd-autoupdate" >/dev/null 2>&1 || true
+  launchctl bootstrap "$_gui" "$_plist" >/dev/null 2>&1 ||
+    launchctl load "$_plist" >/dev/null 2>&1 || true
+  echo "repaired auto-update interval: ${_have:-unset} -> $EXPECT_INTERVAL" >&2
+}
+
+reconcile_systemd() {
+  _timer="$(systemctl show epnd-autoupdate.timer --property=LoadState --value 2>/dev/null || true)"
+  [ "$_timer" = "loaded" ] || return 0
+  _have="$(systemctl show epnd-autoupdate.timer --property=TimersMonotonic --value 2>/dev/null || true)"
+  case "$_have" in
+    *"$EXPECT_INTERVAL"*) return 0 ;;
+  esac
+  # Deliberately REPORT ONLY on Linux. A systemd unit may be managed by a
+  # package, a config-management tool or the distribution, and silently
+  # rewriting a unit this script did not certainly author is a bigger risk than
+  # a wrong interval. macOS LaunchAgents in the user's own directory have no
+  # such ambiguity -- install.sh is the only thing that writes them.
+  echo "note: epnd-autoupdate.timer interval does not match $EXPECT_INTERVAL (left alone; systemd units may be externally managed)" >&2
+}
+
+reconcile_schedule 2>/dev/null || true
+
 want="$(grep "[ *]${asset}\$" "$tmp/checksums.txt" 2>/dev/null | awk '{print $1}' || true)"
 if [ -z "$want" ]; then
   write_updater_state "no_checksum_entry" false
