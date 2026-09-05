@@ -379,6 +379,80 @@ reconcile_systemd() {
 
 reconcile_schedule 2>/dev/null || true
 
+# -- REFRESH THE OTHER SHIPPED SCRIPTS, NOT JUST THIS ONE --------------------
+#
+# This script updates epnd and, since d1a566d, itself. It has never updated
+# report-bootstrap-status.sh, which is the founder-node reporter that pushes a
+# snapshot and an append-only history to eapp-releases every fifteen minutes.
+#
+# The reason was not a decision. The release workflow built checksums.txt with
+# `sha256sum epnd-*`, a filename pattern standing in for "the things we ship" --
+# and report-bootstrap-status.sh does not begin with epnd-, so it was published
+# as a release asset with no checksum row. Nothing here will write a file it
+# cannot verify, so it could never be refreshed, and bootstrap-01 has been
+# running a copy older than the repo's for weeks.
+#
+# Same defect as the hardcoded BIN path and the never-revised launchd interval:
+# a fact fixed once at install time that no build could reach. The point of
+# this file is that shipping is the remedy for everything, and one unchecksummed
+# filename quietly exempted a script from that.
+#
+# ONLY REFRESHES WHAT IS ALREADY THERE. A missing file means this node is not a
+# founder node and was never meant to run the reporter; installing it here would
+# turn an update into a provisioning decision, and hand a machine a root-only
+# token path it has no business holding.
+refresh_shipped_script() {
+  _name="$1"
+  _dest="$2"
+  [ -f "$_dest" ] || return 0
+
+  # -- COMPARED AS A STRING, NOT MATCHED AS A PATTERN -----------------------
+  #
+  # The sibling lookups above grep with the filename embedded in the pattern,
+  # so every "." in a name is a wildcard. "report-bootstrap-status.sh" happily
+  # matches "report-bootstrap-statusXsh", and escaping it turned out to be
+  # fiddly enough that the first attempt here silently did not escape at all --
+  # verified by od, matching both lines.
+  #
+  # sha256sum prints "HASH  name" or "HASH *name", so the name is field two and
+  # an exact comparison answers the question with no regex in it. Nothing to
+  # escape, nothing to get subtly wrong, and it cannot match a file that merely
+  # resembles the one asked for.
+  _want="$(awk -v n="$_name" '$2 == n || $2 == "*" n { print $1; exit }' "$tmp/checksums.txt" 2>/dev/null || true)"
+  [ -n "$_want" ] || return 0
+  if command -v sha256sum >/dev/null 2>&1; then _have="$(sha256sum "$_dest" | awk '{print $1}')"
+  else _have="$(shasum -a 256 "$_dest" | awk '{print $1}')"; fi
+  [ "$_have" != "$_want" ] || return 0
+
+  curl $CURL_OPTS -fsSL "${BASE}/${_name}" -o "$tmp/$_name" 2>/dev/null || return 0
+  if command -v sha256sum >/dev/null 2>&1; then _got="$(sha256sum "$tmp/$_name" | awk '{print $1}')"
+  else _got="$(shasum -a 256 "$tmp/$_name" | awk '{print $1}')"; fi
+  [ "$_got" = "$_want" ] || return 0
+
+  # Staged beside the target and renamed, never copied over: a timer can fire
+  # mid-write, and a half-written reporter that runs is worse than an old one
+  # that works. mv within a directory is atomic.
+  if cp "$tmp/$_name" "${_dest}.new" 2>/dev/null; then
+    chmod +x "${_dest}.new" 2>/dev/null || true
+    if mv -f "${_dest}.new" "$_dest" 2>/dev/null; then
+      echo "updated ${_name}" >&2
+    else
+      rm -f "${_dest}.new"
+    fi
+  fi
+}
+
+# The reporter runs as root from a systemd timer, so writing it needs root. A
+# non-root updater simply skips -- reported, not fatal, because every other
+# thing this script does still works.
+if [ -f /usr/local/bin/report-bootstrap-status.sh ]; then
+  if [ -w /usr/local/bin/report-bootstrap-status.sh ]; then
+    refresh_shipped_script report-bootstrap-status.sh /usr/local/bin/report-bootstrap-status.sh
+  else
+    echo "note: report-bootstrap-status.sh is out of this updater's reach (not writable)" >&2
+  fi
+fi
+
 want="$(grep "[ *]${asset}\$" "$tmp/checksums.txt" 2>/dev/null | awk '{print $1}' || true)"
 if [ -z "$want" ]; then
   write_updater_state "no_checksum_entry" false
