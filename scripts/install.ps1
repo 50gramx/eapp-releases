@@ -492,7 +492,29 @@ try {
     # Same power defaults, same consequence, and worse: an updater stopped on
     # battery cannot deliver the fix that repairs the node. The updater must be
     # the one thing that always gets to run.
-    $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -ExecutionTimeLimit ([TimeSpan]::Zero)
+    # -- A BOUNDED RUN, BECAUSE IgnoreNew MAKES A WEDGED ONE PERMANENT ------
+    #
+    # ExecutionTimeLimit was Zero, which means UNLIMITED, and MultipleInstances
+    # is IgnoreNew, which means no new run starts while one is alive. Together
+    # those say: one run that never returns ends the update cadence on this
+    # machine forever, and Task Scheduler will never intervene.
+    #
+    # That is not hypothetical. This fleet's roomy Windows gram last wrote
+    # "updated" at 13:47 and had produced nothing 86 minutes later, five windows
+    # missed, while a peer had already taken the next build. The script gets as
+    # far as writing its state and then enters the restart path -- which does
+    # Stop-ScheduledTask, Stop-Process and Start-ScheduledTask, and this very
+    # file records that "Stop-ScheduledTask does NOT reliably kill epnd.exe".
+    #
+    # Ten minutes. The download is capped at 600s by the script's own
+    # Invoke-WebRequest timeouts, so a run that has not finished by then is not
+    # slow, it is stuck. The SCHEDULER enforces it rather than the script,
+    # deliberately: a script wedged in a way it cannot observe cannot time
+    # itself out, which is the whole failure being closed.
+    #
+    # The node task above keeps Zero and should: it supervises a long-running
+    # daemon, where a time limit would kill the thing it exists to keep alive.
+    $updateSettings = New-ScheduledTaskSettingsSet -MultipleInstances IgnoreNew -StartWhenAvailable -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -WakeToRun -ExecutionTimeLimit (New-TimeSpan -Minutes 10)
     # RunLevel Highest, unlike the node task. Modifying a task in the root
     # folder requires elevation, so a Limited updater can never repair the
     # settings on a node that already exists -- which is exactly the trap the

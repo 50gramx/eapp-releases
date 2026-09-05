@@ -257,6 +257,49 @@ function Write-UpdateFailure {
 #
 # So stamp what was seen on EVERY run, satisfied or not. Unlike fleet-events
 # this file is READ by the daemon, never drained: the current value is the fact.
+# -- REPAIR THE TASK'S TIME LIMIT, BECAUSE INSTALL-TIME IS NOT REACHABLE -----
+#
+# The update task was registered with ExecutionTimeLimit Zero, which means
+# UNLIMITED, alongside MultipleInstances IgnoreNew, which means no new run
+# starts while one is alive. Together: one run that never returns ends the
+# update cadence on that machine forever, and Task Scheduler never intervenes.
+#
+# This fleet's roomy Windows gram last wrote "updated" at 13:47 and had produced
+# nothing 86 minutes later -- five windows missed -- while a peer had already
+# taken the next build. The script reaches its state write and then enters the
+# restart path, which install.ps1 itself records as unreliable: "Stop-
+# ScheduledTask does NOT reliably kill epnd.exe".
+#
+# Fixing install.ps1 alone reaches nobody who is already installed, which is the
+# same trap as the hardcoded BIN path and the launchd interval. So the updater
+# repairs its own task, the way its sibling repairs its own launchd plist.
+#
+# Registering with -RunLevel Highest was the change that made this possible:
+# modifying a task in the root folder requires elevation, so a Limited updater
+# could never repair the settings on a node that already exists.
+function Repair-UpdateTaskLimit {
+    $name = 'GramNodeAutoUpdate'
+    try {
+        $task = Get-ScheduledTask -TaskName $name -ErrorAction Stop
+    } catch {
+        return  # not our machine to fix
+    }
+    # PT0S is how Zero is stored, and an empty value means the same "no limit".
+    $limit = $task.Settings.ExecutionTimeLimit
+    if ($limit -and $limit -ne 'PT0S') { return }
+
+    try {
+        $task.Settings.ExecutionTimeLimit = 'PT10M'
+        Set-ScheduledTask -TaskName $name -Settings $task.Settings -ErrorAction Stop | Out-Null
+        Write-Host 'repaired auto-update task: execution time limit unlimited -> 10 minutes' 
+    } catch {
+        # Almost always elevation. Reported, never fatal: everything else this
+        # script does still works, and saying so is how the next person knows
+        # why the machine keeps stalling.
+        Write-Host "note: could not repair the auto-update task time limit ($($_.Exception.Message))"
+    }
+}
+
 function Get-EpnHome {
   if ($env:EPN_HOME) { return $env:EPN_HOME }
   return (Join-Path $env:USERPROFILE '.epn')
@@ -372,6 +415,11 @@ $arch = if ([System.Environment]::Is64BitOperatingSystem) {
 $asset = "epnd-windows-$arch.exe"
 $dest = if ($env:EPND_INSTALL) { $env:EPND_INSTALL } else { Join-Path $env:LOCALAPPDATA 'epnd' }
 $bin = Join-Path $dest 'epnd.exe'
+
+# Repaired before anything else this run does, so a machine whose task can never
+# be interrupted stops being permanently stuck at the earliest possible moment --
+# including on the very run that is itself about to wedge.
+Repair-UpdateTaskLimit
 
 $sums = "$base/checksums.txt"
 $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("epnd-update-" + [System.Guid]::NewGuid())
