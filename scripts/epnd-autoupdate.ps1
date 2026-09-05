@@ -5,6 +5,21 @@ Safe for in-flight work: atomic binary swap + graceful service restart.
 #>
 $ErrorActionPreference = 'Continue'
 
+# -- A RUN THAT NEVER ENDS IS A TIMER THAT NEVER FIRES AGAIN ------------------
+#
+# Invoke-WebRequest in Windows PowerShell 5.1 has NO default timeout. A stalled
+# socket blocks the run forever, and Task Scheduler will not start a second copy
+# of a task whose first copy is still running (MultipleInstances defaults to
+# IgnoreNew). So one hung fetch does not delay one update -- it ends the update
+# cadence on that gram until somebody reboots it.
+#
+# Invisible from the fleet, too: a hung run writes no heartbeat, so
+# updater-state.json keeps whatever the last SUCCESSFUL run left. A wedged gram
+# and an idle one look identical. Same defect and same fix as the .sh sibling;
+# neither platform gets to be the one that quietly stops updating.
+$SmallTimeout = 120
+$BigTimeout   = 600
+
 # Keep THIS updater script current too. The updater replaces epnd.exe but never
 # itself, so a bug in the updater -- like the em dash on line 79 that Windows
 # PowerShell decoded as a smart quote, ending the string early and derailing the
@@ -26,7 +41,7 @@ function Update-Self {
   if ($selfHave -eq $selfWant) { return }
 
   try {
-    Invoke-WebRequest -Uri "$Base/epnd-autoupdate.ps1" -OutFile (Join-Path $Tmp 'self.ps1') -UseBasicParsing -ErrorAction Stop
+    Invoke-WebRequest -Uri "$Base/epnd-autoupdate.ps1" -OutFile (Join-Path $Tmp 'self.ps1') -UseBasicParsing -TimeoutSec $SmallTimeout -ErrorAction Stop
     $selfGot = (Get-FileHash -Path (Join-Path $Tmp 'self.ps1') -Algorithm SHA256).Hash.ToLower()
     if ($selfGot -ne $selfWant) { return }
 
@@ -373,7 +388,7 @@ Write-FleetEvent -Dest $dest -Repaired $repaired -Started $started -NeedsElevati
 try {
   # Fetch the latest checksum
   try {
-    Invoke-WebRequest -Uri $sums -OutFile (Join-Path $tmp 'checksums.txt') -UseBasicParsing -ErrorAction Stop
+    Invoke-WebRequest -Uri $sums -OutFile (Join-Path $tmp 'checksums.txt') -UseBasicParsing -TimeoutSec $SmallTimeout -ErrorAction Stop
   } catch {
     Write-Host "could not fetch checksums.txt" -ForegroundColor Gray
     exit 0
@@ -444,7 +459,7 @@ try {
 
   # Download and verify
   try {
-    Invoke-WebRequest -Uri "$base/$asset" -OutFile (Join-Path $tmp 'epnd.exe') -UseBasicParsing -ErrorAction Stop
+    Invoke-WebRequest -Uri "$base/$asset" -OutFile (Join-Path $tmp 'epnd.exe') -UseBasicParsing -TimeoutSec $BigTimeout -ErrorAction Stop
   } catch {
     Write-Error "download failed: $_"
     exit 1

@@ -7,6 +7,44 @@ set -eu
 REPO="${EPND_REPO:-50gramx/eapp-releases}"
 TAG="${EPND_TAG:-epnd-latest}"
 BASE="https://github.com/${REPO}/releases/download/${TAG}"
+# -- A RUN THAT NEVER ENDS IS A TIMER THAT NEVER FIRES AGAIN ------------------
+#
+# Every network call below used to be unbounded. curl with no --max-time will
+# sit on a half-open socket forever, and neither scheduler will start a second
+# copy of a job whose first copy is still running: launchd skips a StartInterval
+# window while the previous run is alive, and Task Scheduler defaults to
+# IgnoreNew. So ONE stalled fetch does not delay one update -- it silently ends
+# the cadence, permanently, until somebody reboots.
+#
+# That failure is invisible from the fleet, which is what makes it expensive.
+# A hung run writes no heartbeat, so updater-state.json keeps whatever the last
+# SUCCESSFUL run left behind. This fleet's M4 shows exactly that shape: heartbeat
+# frozen at 05:07 reading "current", on_disk == running, nothing diverging, and
+# a build published at 05:41 that it has never once looked at. A gram that is
+# wedged and a gram that is idle are byte-identical in the telemetry.
+#
+# Two bounds, because they fail differently. Per-call caps stop a single stalled
+# socket. The run deadline is the backstop for everything else -- a wedged
+# pkill, a launchctl that blocks, a filesystem that stops answering -- because
+# the invariant that matters is not "this call finishes", it is "this process
+# exits before the next window opens". 600s against a 900s interval leaves the
+# next run a clean slate.
+#
+# Retries are deliberate and small: a laptop waking onto WiFi loses the first
+# connection routinely, and failing that run means waiting a full window.
+CURL_OPTS="--connect-timeout 15 --max-time 120 --retry 2 --retry-delay 3"
+
+# The binary is ~70 MiB and some grams are on domestic uplinks, so it gets its
+# own budget -- still bounded, still shorter than the window.
+CURL_BIG_OPTS="--connect-timeout 15 --max-time 600"
+
+RUN_DEADLINE="${EPND_UPDATE_DEADLINE:-600}"
+( sleep "$RUN_DEADLINE"; kill -9 "$$" 2>/dev/null ) &
+_watchdog=$!
+# Killed on every exit path so a fast run does not leave a sleep behind, and so
+# the watchdog can never outlive the run it was guarding.
+trap 'kill "$_watchdog" 2>/dev/null || true' EXIT INT TERM
+
 os="$(uname -s | tr '[:upper:]' '[:lower:]')"
 os_name="$(uname -s)"
 
@@ -201,7 +239,7 @@ start_epnd() {
 }
 
 # Fetch the latest checksum and compare against installed binary
-curl -fsSL "${BASE}/checksums.txt" -o "$tmp/checksums.txt" 2>/dev/null || { write_updater_state "checksums_unreachable" false; echo "could not fetch checksums.txt" >&2; exit 0; }
+curl $CURL_OPTS -fsSL "${BASE}/checksums.txt" -o "$tmp/checksums.txt" 2>/dev/null || { write_updater_state "checksums_unreachable" false; echo "could not fetch checksums.txt" >&2; exit 0; }
 
 # Keep THIS updater script current too, same reasoning as the .ps1 sibling: the
 # updater replaces epnd but never itself, so a bug or a missing capability here
@@ -223,7 +261,7 @@ if [ -n "$SELF" ] && [ -f "$SELF" ]; then
     if command -v sha256sum >/dev/null 2>&1; then selfHave="$(sha256sum "$SELF" | awk '{print $1}')"
     else selfHave="$(shasum -a 256 "$SELF" | awk '{print $1}')"; fi
     if [ "$selfHave" != "$selfWant" ]; then
-      if curl -fsSL "${BASE}/epnd-autoupdate.sh" -o "$tmp/self.sh" 2>/dev/null; then
+      if curl $CURL_OPTS -fsSL "${BASE}/epnd-autoupdate.sh" -o "$tmp/self.sh" 2>/dev/null; then
         if command -v sha256sum >/dev/null 2>&1; then selfGot="$(sha256sum "$tmp/self.sh" | awk '{print $1}')"
         else selfGot="$(shasum -a 256 "$tmp/self.sh" | awk '{print $1}')"; fi
         if [ "$selfGot" = "$selfWant" ]; then
@@ -341,7 +379,7 @@ fi
 
 echo "new epnd available (have=${have:-none} want=$want) — updating…" >&2
 write_updater_state "downloading" true
-curl -fSL "${BASE}/${asset}" -o "$tmp/epnd" 2>/dev/null || { write_updater_state "download_failed" true; echo "download failed" >&2; exit 1; }
+curl $CURL_BIG_OPTS -fSL "${BASE}/${asset}" -o "$tmp/epnd" 2>/dev/null || { write_updater_state "download_failed" true; echo "download failed" >&2; exit 1; }
 if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$tmp/epnd" | awk '{print $1}')"
 else got="$(shasum -a 256 "$tmp/epnd" | awk '{print $1}')"; fi
 [ "$got" = "$want" ] || { write_updater_state "checksum_mismatch" true; echo "checksum mismatch" >&2; exit 1; }
