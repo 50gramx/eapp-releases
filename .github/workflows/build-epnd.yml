@@ -298,7 +298,25 @@ jobs:
           # The viewer files are named individually rather than folded into the
           # epnd-* glob: a consumer that downloads them over the network needs
           # something to verify them against, and the site now does exactly that.
-          sha256sum epnd-* epn.wasm wasm_exec.js epn-shell.js world-viewer.html > checksums.txt
+          # -- CHECKSUM EVERYTHING PUBLISHED, NOT EVERYTHING NAMED epnd-* ---
+          #
+          # The glob was a filename pattern standing in for "the things we
+          # ship", and they stopped being the same set the moment a shipped file
+          # was named something else. install.sh, install.ps1 and
+          # report-bootstrap-status.sh are all copied into dist above and
+          # uploaded below, and NONE of them has ever had a checksum row.
+          #
+          # epnd-autoupdate.sh will not write a file it cannot verify, so
+          # report-bootstrap-status.sh became the one shipped artifact no
+          # release could ever update: bootstrap-01 ran a copy older than the
+          # repo's for weeks and the only way to move it was to log into the
+          # box. Same defect as the hardcoded BIN path and the launchd interval
+          # -- a fact fixed once at install time that no build can reach.
+          #
+          # An explicit list, because the next file added will not match a glob
+          # either, and a missing row fails SILENTLY: the updater simply
+          # concludes there is nothing to check.
+          sha256sum epnd-* install.sh install.ps1 report-bootstrap-status.sh             epn.wasm wasm_exec.js epn-shell.js world-viewer.html > checksums.txt
 
       - name: Publish (rolling epnd-latest)
         uses: softprops/action-gh-release@v3
