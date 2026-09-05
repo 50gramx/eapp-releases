@@ -240,8 +240,28 @@ EOF
     <array>
         <string>$HOME/Library/LaunchAgents/com.50gramx.epnd-autoupdate.sh</string>
     </array>
-    <key>StartInterval</key>
-    <integer>900</integer>
+    <!-- StartCalendarInterval, NOT StartInterval, and the difference is the
+         whole reason this fleet's Mac stopped updating.
+
+         launchd.plist(5) says of StartInterval: a firing that lands while the
+         machine is asleep is MISSED, "due to shortcomings in kqueue(3)". Not
+         deferred, not coalesced, not fired on wake -- lost, silently, with
+         nothing recorded. A laptop that sleeps through four windows simply
+         does not update, and its scheduler reports no error because nothing
+         failed. That is exactly what was observed: a 75-minute gap against a
+         900-second interval, and launchd saying "registered, has not run, no
+         reason given".
+
+         StartCalendarInterval is the key the Leopard-era wake handling was
+         applied to: a missed calendar firing runs once on wake. Four entries
+         express the same fifteen minutes and survive sleep. -->
+    <key>StartCalendarInterval</key>
+    <array>
+        <dict><key>Minute</key><integer>0</integer></dict>
+        <dict><key>Minute</key><integer>15</integer></dict>
+        <dict><key>Minute</key><integer>30</integer></dict>
+        <dict><key>Minute</key><integer>45</integer></dict>
+    </array>
     <key>StandardOutPath</key>
     <string>/tmp/epnd-autoupdate.log</string>
     <key>StandardErrorPath</key>

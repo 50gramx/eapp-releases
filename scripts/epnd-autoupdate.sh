@@ -335,23 +335,54 @@ reconcile_schedule() {
   esac
 }
 
+# -- RECONCILE TOWARD StartCalendarInterval, NOT StartInterval ---------------
+#
+# The previous version of this function asserted StartInterval 900 on every run.
+# It was written to close a real gap -- a plist fixed once at install time that
+# no release could reach -- and it did close it, onto the WRONG KEY.
+#
+# launchd.plist(5) on StartInterval: a firing that lands while the machine is
+# asleep is MISSED, "due to shortcomings in kqueue(3)". Not deferred, not
+# coalesced, not run on wake. Lost, with nothing recorded, so the scheduler
+# reports no error because nothing failed. A laptop that sleeps through four
+# windows does not update and cannot say why -- which is exactly what this
+# fleet's M4 did all day: a 75-minute gap against a 900-second interval, and
+# launchctl answering "registered, has not run, no reason given".
+#
+# StartCalendarInterval is the key the wake handling was actually applied to: a
+# missed calendar firing runs once on wake. Four entries express the same
+# quarter-hour and survive sleep.
+#
+# THE TWO HALVES CANNOT SHIP SEPARATELY. install.sh now writes the calendar
+# form, and this function ran every fifteen minutes asserting the interval form
+# back -- so fixing only the installer would have been undone on the next tick,
+# on every gram already installed, by a repair that reported success. A
+# reconciler is only ever as right as the shape it reconciles toward.
 reconcile_launchd() {
   _plist="$HOME/Library/LaunchAgents/com.50gramx.epnd-autoupdate.plist"
   [ -f "$_plist" ] || return 0
   [ -x /usr/libexec/PlistBuddy ] || return 0
 
-  _have="$(/usr/libexec/PlistBuddy -c "Print :StartInterval" "$_plist" 2>/dev/null || true)"
-  [ "$_have" = "$EXPECT_INTERVAL" ] && return 0
-
-  # Set in place rather than rewriting the file. A rewrite would also have to
-  # reproduce ProgramArguments and the log paths, and reproducing them from
-  # here is how they drift from what install.sh writes -- the exact class of
-  # bug this block exists to close.
-  if [ -z "$_have" ]; then
-    /usr/libexec/PlistBuddy -c "Add :StartInterval integer $EXPECT_INTERVAL" "$_plist" >/dev/null 2>&1 || return 0
-  else
-    /usr/libexec/PlistBuddy -c "Set :StartInterval $EXPECT_INTERVAL" "$_plist" >/dev/null 2>&1 || return 0
+  # Already on the calendar form: nothing to do. Checked by asking for the
+  # array's first entry, because Print on a missing key is the only portable
+  # "does this exist" PlistBuddy offers.
+  if /usr/libexec/PlistBuddy -c "Print :StartCalendarInterval:0" "$_plist" >/dev/null 2>&1; then
+    return 0
   fi
+
+  # Set in place rather than rewriting the file. A rewrite would have to
+  # reproduce ProgramArguments and the log paths from here, and reproducing them
+  # in a second place is how they drift from what install.sh writes -- the exact
+  # class of bug this block exists to close.
+  /usr/libexec/PlistBuddy -c "Delete :StartInterval" "$_plist" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c "Add :StartCalendarInterval array" "$_plist" >/dev/null 2>&1 || return 0
+  _i=0
+  for _min in 0 15 30 45; do
+    /usr/libexec/PlistBuddy -c "Add :StartCalendarInterval:$_i dict" "$_plist" >/dev/null 2>&1 || return 0
+    /usr/libexec/PlistBuddy -c "Add :StartCalendarInterval:$_i:Minute integer $_min" "$_plist" >/dev/null 2>&1 || return 0
+    _i=$((_i + 1))
+  done
+
   # launchd holds the OLD definition until the job is reloaded; without this the
   # file is right and the behaviour is unchanged, which is worse than not
   # trying, because the next run would see a correct file and stop looking.
@@ -359,7 +390,7 @@ reconcile_launchd() {
   launchctl bootout "$_gui/com.50gramx.epnd-autoupdate" >/dev/null 2>&1 || true
   launchctl bootstrap "$_gui" "$_plist" >/dev/null 2>&1 ||
     launchctl load "$_plist" >/dev/null 2>&1 || true
-  echo "repaired auto-update interval: ${_have:-unset} -> $EXPECT_INTERVAL" >&2
+  echo "repaired auto-update schedule: StartInterval -> StartCalendarInterval (survives sleep)" >&2
 }
 
 reconcile_systemd() {
