@@ -2881,13 +2881,51 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
       });
     }
   }
+  // -- WHERE A GRAM IS, NOT ONLY WHAT IT HOLDS ------------------------------
+  //
+  // Everything above collects holds_regions: scenes a gram declares it HOLDS.
+  // That is the right source for "can this be opened in 3D" and it is the wrong
+  // one for "which regions exist", and the site has been asking the second
+  // question of the first answer.
+  //
+  // The consequence was on the live site for a fortnight. Five grams resolved
+  // real placements -- IN_400070 Maharashtra, IN_500001 and IN_500050
+  // Telangana, IN_751002 Odisha, IN_800001 Bihar -- signed them, gossiped them,
+  // and every one of them was published in the mesh view under `region`. None
+  // appeared. The map showed one pincode, 560100, that no gram is in and which
+  // no longer has a producer.
+  //
+  // A gram's placement is a region that EXISTS with no scene yet, which is a
+  // truthful and useful thing to say. root_cid stays null, holders stays empty,
+  // and the site can render it as a place the network reaches rather than a
+  // place with a map. That distinction is already in the data model; it was
+  // simply never populated from this side.
+  for (const view of meshViews) {
+    for (const n of view?.nodes || []) {
+      const r = n?.region;
+      const pin = String(r?.community_id || '').replace(/^[A-Z]{2}_/, '').trim();
+      if (!pin) continue;
+      fromMesh.push({
+        regions: [{
+          pincode: pin,
+          label: [r.city, r.region].filter(Boolean).join(', ') || null,
+          root_cid: '',
+          held: false,
+        }],
+      });
+    }
+  }
+
   for (const n of [...nodes, ...fromMesh]) {
     const list = Array.isArray(n?.regions) ? n.regions : [];
     const did = n?.proof_snapshot?.node_did || null;
     for (const r of list) {
       const pincode = String(r?.pincode || '').trim();
       const cid = String(r?.root_cid || '').trim();
-      if (!pincode || !cid.startsWith('sha256:')) continue;
+      // A placement carries no CID and is still a real region. Only the
+      // holder/geography block below needs a scene; the entry itself does not.
+      const hasScene = cid.startsWith('sha256:');
+      if (!pincode) continue;
       let e = byPincode.get(pincode);
       if (!e) {
         e = {
@@ -2903,7 +2941,13 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
         byPincode.set(pincode, e);
       }
       e.last_seen_at = generatedAt;
-      if (!r.held) continue;
+      // A NAME IS NOT GEOGRAPHY. The block below is guarded because centre,
+      // bbox and root_cid may only come from a holder's own read of the scene.
+      // A label is different: "Hyderabad, Telangana" is the gram's own signed
+      // placement, and refusing it would leave five real regions listed as bare
+      // pincodes purely because nobody has baked them yet.
+      if (r.label && !e.label) e.label = r.label;
+      if (!r.held || !hasScene) continue;
       // A holder's own read of the scene is the only source of geography.
       if (r.label && !e.label) e.label = r.label;
       if (Array.isArray(r.centre) && r.centre.length === 2 && !e.centre) e.centre = r.centre;
@@ -2915,12 +2959,15 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
       }
     }
   }
+  // NO LONGER FILTERED ON root_cid. A region a gram is IN is a region that
+  // exists; whether it also has a scene is a second, separate fact the reader
+  // can see from root_cid being null. Dropping it here is what made four states
+  // invisible while the map showed one pincode nobody is in.
   const regions = [...byPincode.values()]
-    .filter((r) => r.root_cid)
     .sort((a, b) => a.pincode.localeCompare(b.pincode));
   return {
     generated_at: generatedAt,
-    label: 'regions with a baked 3D scene, and the grams that hold it; geography is read from the scene itself, never from a lookup table',
+    label: 'regions the network reaches; root_cid is set only where a gram holds a baked 3D scene, and geography is read from that scene, never from a lookup table',
     region_count: regions.length,
     regions,
   };
