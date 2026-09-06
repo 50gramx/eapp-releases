@@ -49,7 +49,22 @@ CURL_OPTS="--connect-timeout 15 --max-time 120 --retry 2 --retry-delay 3"
 # --retry-connrefused as well, because a machine seconds out of sleep is
 # refusing connections rather than timing them out, and plain --retry does not
 # cover that case.
-CURL_BIG_OPTS="--connect-timeout 15 --max-time 600 --retry 3 --retry-delay 5 --retry-connrefused"
+# -- AND RESUME, BECAUSE THIS MACHINE GETS A FEW MINUTES AT A TIME -----------
+#
+# Retries restart the transfer. On a laptop that is the wrong remedy, and the
+# fleet says so plainly: the M4's awake_seconds reads 133, 102, 529, 250 at
+# every observation. It wakes, runs the updater, and sleeps again inside a few
+# minutes. Seventy megabytes does not finish in that window, so every attempt
+# began at zero and every attempt was cut off at the same place -- for a day.
+#
+# -C - continues where the last one stopped. A machine that gets four minutes at
+# a time then makes four minutes of progress per wake instead of none, and the
+# download completes across however many wakes it takes.
+#
+# The partial lands in $tmp, which is per-run, so this only helps within a run
+# today; see the note where the download target is chosen for why that is worth
+# fixing next and why it is not fixed here.
+CURL_BIG_OPTS="--connect-timeout 15 --max-time 600 --retry 3 --retry-delay 5 --retry-connrefused -C -"
 
 RUN_DEADLINE="${EPND_UPDATE_DEADLINE:-600}"
 ( sleep "$RUN_DEADLINE"; kill -9 "$$" 2>/dev/null ) &
@@ -571,10 +586,53 @@ fi
 
 echo "new epnd available (have=${have:-none} want=$want) — updating…" >&2
 write_updater_state "downloading" true
-curl $CURL_BIG_OPTS -fSL "${BASE}/${asset}" -o "$tmp/epnd" 2>/dev/null || { write_updater_state "download_failed" true; echo "download failed" >&2; exit 1; }
+# -- THE PARTIAL HAS TO OUTLIVE THE RUN, OR RESUME BUYS NOTHING --------------
+#
+# $tmp is mktemp -d, fresh every run, so -C - could only ever resume across the
+# three retries INSIDE one run. That is not the shape of the problem. This
+# fleet's M4 is awake 133, 102, 529, 250 seconds at a time -- it gets a few
+# minutes per wake, and seventy megabytes does not finish in one. Every run
+# started at zero, was cut off at the same place, and threw the bytes away.
+#
+# So the partial lives under the epn home, and each wake adds however much it
+# manages before sleeping.
+#
+# KEYED BY THE CHECKSUM IT IS BEING BUILT TOWARDS. A partial left from an
+# earlier build is not a head start, it is a different file: resuming onto it
+# produces bytes that fail the checksum, and since the next run would resume
+# onto the same wrong prefix it would fail identically, forever. The sidecar is
+# what stops a stale partial becoming a permanent one -- when the wanted hash
+# changes, the partial goes.
+partialDir="$(epnd_home)/update"
+mkdir -p "$partialDir" 2>/dev/null || true
+partial="$partialDir/${asset}.partial"
+partialFor="$partialDir/${asset}.want"
+if [ -f "$partial" ] && [ "$(cat "$partialFor" 2>/dev/null || true)" != "$want" ]; then
+  rm -f "$partial"
+fi
+printf '%s' "$want" > "$partialFor" 2>/dev/null || true
+
+curl $CURL_BIG_OPTS -fSL "${BASE}/${asset}" -o "$partial" 2>/dev/null || {
+  # NOT an error worth erasing progress over. Whatever arrived is kept and the
+  # next wake continues from it; the only thing that discards a partial is a
+  # change in what we are aiming at.
+  write_updater_state "download_failed" true
+  echo "download failed (partial kept for the next run)" >&2
+  exit 1
+}
+cp "$partial" "$tmp/epnd" 2>/dev/null || { write_updater_state "download_failed" true; exit 1; }
 if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$tmp/epnd" | awk '{print $1}')"
 else got="$(shasum -a 256 "$tmp/epnd" | awk '{print $1}')"; fi
-[ "$got" = "$want" ] || { write_updater_state "checksum_mismatch" true; echo "checksum mismatch" >&2; exit 1; }
+[ "$got" = "$want" ] || {
+  # The completed file does not match. Whatever is in the partial is wrong and
+  # resuming onto it would reproduce the same wrong answer, so it goes -- this
+  # is the one case where progress is worth less than a clean start.
+  rm -f "$partial" "$partialFor"
+  write_updater_state "checksum_mismatch" true; echo "checksum mismatch" >&2; exit 1
+}
+# Verified. The partial has done its job and holding seventy megabytes for a
+# build already installed is just cost.
+rm -f "$partial" "$partialFor"
 
 chmod +x "$tmp/epnd"
 # Atomic swap: write to .new then rename over it
