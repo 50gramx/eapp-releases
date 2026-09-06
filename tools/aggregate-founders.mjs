@@ -2502,6 +2502,88 @@ function estNodeTflops(n) {
   return gpu + cpu;
 }
 
+// ── WHERE A BROWSER STARTS WHEN NOBODY SAID WHICH GRAM ──────────────────────
+//
+// The viewer has always had three ways to find a gram, in order of who knows
+// best: an explicit ?addr=, the ?peers= of the grams holding THIS region, and
+// peers.json beside the page for "any gram, when nobody said which".
+//
+// The third was never written. So opening a region whose holders list is empty
+// -- which is four of the five regions the network has reached, because they
+// have a gramx and not yet a baked scene -- ended at
+//
+//   epn: no peer list at .../world/viewer/peers.json (404)
+//
+// which reads like the network is down and means only that the fallback file
+// was never generated. Nothing here is new information: mesh.json already
+// carries every address every reporter knows, and among them are the ones a
+// browser can dial. This publishes that subset in the shape the shell reads.
+//
+// UNSIGNED, AND SAFE FOR THE SAME REASON /v1/bootstrap IS. A peer id is inside
+// every multiaddr and the noise handshake proves it, so a wrong address costs
+// a failed dial and can never become a wrong peer. Everything fetched
+// afterwards is content-addressed or signed by the identity named in it. This
+// is a hint about where to knock, never an authority about what is true.
+export function buildViewerPeers(mesh, generatedAt = new Date().toISOString()) {
+  const peers = [];
+  const seen = new Set();
+  for (const n of (mesh && mesh.nodes) || []) {
+    for (const a of n.addrs || []) {
+      // Only what a browser has a transport for, AND ONLY FROM AN HTTPS PAGE.
+      //
+      // That second half is what makes this narrower than it looks. A circuit
+      // is dialable through its relay, but only through the transport the hop
+      // is named with -- so /tcp/.../p2p-circuit and /quic-v1/.../p2p-circuit
+      // are a gram's addresses and never a page's. Plain /ws is worse than
+      // useless here: the viewer is served over https and mixed content is
+      // blocked outright, so it would spend a visitor's first seconds failing.
+      //
+      // What is left is webrtc-direct with a certhash (js-libp2p cannot verify
+      // the offer without it) and secure websockets, in either position.
+      const dialable =
+        (a.includes('/webrtc-direct/') && a.includes('/certhash/')) || a.includes('/wss/');
+      if (!dialable || seen.has(a)) continue;
+      // A private address is reachable from the LAN it is on and nowhere else.
+      // Kept OUT rather than sorted last: this file is fetched by strangers on
+      // the public internet, and 172.28.x is a WSL host interface that will
+      // never answer them.
+      if (isPrivateMultiaddr(a)) continue;
+      seen.add(a);
+      peers.push(a);
+    }
+  }
+  return {
+    generated_at: generatedAt,
+    label:
+      'browser-dialable addresses for any gram, the last resort when neither ?addr= nor a region\'s holders named one',
+    // The name the shell reads. Same shape as a gram's own GET /v1/bootstrap,
+    // so one parser serves both and a page cannot care which it got.
+    peers,
+  };
+}
+
+// isPrivateMultiaddr reports whether an address is only reachable from inside
+// some network. RFC1918, loopback, link-local and IPv6 ULA.
+function isPrivateMultiaddr(a) {
+  const m = /^\/ip4\/([0-9.]+)\//.exec(a);
+  if (m) {
+    const [x, y] = m[1].split('.').map(Number);
+    return (
+      x === 10 ||
+      x === 127 ||
+      (x === 172 && y >= 16 && y <= 31) ||
+      (x === 192 && y === 168) ||
+      (x === 169 && y === 254)
+    );
+  }
+  const m6 = /^\/ip6\/([0-9a-fA-F:]+)\//.exec(a);
+  if (m6) {
+    const v = m6[1].toLowerCase();
+    return v === '::1' || v.startsWith('fe80') || v.startsWith('fc') || v.startsWith('fd');
+  }
+  return false;
+}
+
 // buildMeshView unions the DHT-known nodes across every reporter's mesh view
 // (by DID, keeping the richest entry) and summarizes network-wide resource
 // capacity and model availability. Purely additive — never touches
@@ -3006,6 +3088,8 @@ function main() {
   writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
   const mesh = buildMeshView(meshViews, out.generated_at);
   writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
+  // The last-resort entry point for a browser that was given no gram.
+  writeFileSync('data/peers.json', JSON.stringify(buildViewerPeers(mesh, out.generated_at), null, 2) + '\n');
   // Same for the community ledger. See mergeCommunityLedger: a region that a
   // node signed itself into happened, and it cannot un-happen because one
   // reporter stopped seeing it on the DHT.

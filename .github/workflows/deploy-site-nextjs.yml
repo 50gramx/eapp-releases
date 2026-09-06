@@ -88,6 +88,25 @@ jobs:
           # the viewer lands at /world/viewer/ with no route to declare.
           cp "$tmp/world-viewer.html" "$dest/index.html"
           cp "$tmp/epn.wasm" "$tmp/wasm_exec.js" "$tmp/epn-shell.js" "$dest/"
+          # -- AND SOMEWHERE FOR IT TO KNOCK ----------------------------
+          #
+          # The viewer finds a gram three ways, in order of who knows best:
+          # an explicit ?addr=, the ?peers= of the grams holding the region,
+          # and this file for "any gram, when nobody said which". The third
+          # was described in the code and never published, so opening a
+          # region whose holders list is empty -- four of the five the network
+          # has reached -- ended at a 404 that reads like the network is down.
+          #
+          # Built by the aggregator from mesh.json, which already knew every
+          # address every reporter had seen, filtered to what a browser on an
+          # https page can actually dial. Unsigned and safe: a peer id is
+          # inside every multiaddr and the handshake proves it, so a wrong
+          # address costs a failed dial and never becomes a wrong peer.
+          #
+          # NOT fatal when absent. A site deploy that runs before the
+          # aggregator has ever written this file is the ordinary first state,
+          # and it leaves the viewer exactly where it already was.
+          curl -fsSL --retry 3 --retry-delay 5 -o "$dest/peers.json" https://50gramx.github.io/eapp-releases/data/peers.json || echo "::warning::no peers.json published yet - the viewer has no fallback entry point"
           rm -rf "$tmp"
           ls -la "$dest"
 
