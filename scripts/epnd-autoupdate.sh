@@ -36,7 +36,20 @@ CURL_OPTS="--connect-timeout 15 --max-time 120 --retry 2 --retry-delay 3"
 
 # The binary is ~70 MiB and some grams are on domestic uplinks, so it gets its
 # own budget -- still bounded, still shorter than the window.
-CURL_BIG_OPTS="--connect-timeout 15 --max-time 600"
+# RETRIES HERE TOO, AND THIS IS THE ONE THAT NEEDED THEM. The note above says a
+# laptop waking onto WiFi loses its first connection routinely and that failing
+# that run costs a whole window -- and then the retries went on the kilobyte
+# fetches and not on the seventy-megabyte one.
+#
+# This fleet's M4 is reporting download_failed right now: awake 133 seconds, on
+# battery, behind_upstream true, its updater running and its binary fetch giving
+# up on the first refused connection. The small fetches before it succeeded,
+# because they retry.
+#
+# --retry-connrefused as well, because a machine seconds out of sleep is
+# refusing connections rather than timing them out, and plain --retry does not
+# cover that case.
+CURL_BIG_OPTS="--connect-timeout 15 --max-time 600 --retry 3 --retry-delay 5 --retry-connrefused"
 
 RUN_DEADLINE="${EPND_UPDATE_DEADLINE:-600}"
 ( sleep "$RUN_DEADLINE"; kill -9 "$$" 2>/dev/null ) &

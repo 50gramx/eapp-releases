@@ -505,11 +505,33 @@ try {
 
   Write-Host "new epnd available (have=$($have.Substring(0,8))... want=$($want.Substring(0,8))...) -- updating..." -ForegroundColor Yellow
 
-  # Download and verify
+  # Download and verify.
+  #
+  # RETRIED, because the sibling script's own note applies here and was applied
+  # everywhere else first: a machine seconds out of sleep refuses connections
+  # before its network is up, and failing this fetch costs a whole window. The
+  # kilobyte fetches above got retries and the seventy-megabyte one did not.
+  #
+  # PowerShell 5.1's Invoke-WebRequest has no -MaximumRetryCount (that arrives
+  # in 6.0), so the loop is written out. Three attempts, five seconds apart,
+  # matching the .sh exactly -- two updaters that disagree about how hard to try
+  # are two different products.
+  $dlAttempt = 0
   try {
-    Invoke-WebRequest -Uri "$base/$asset" -OutFile (Join-Path $tmp 'epnd.exe') -UseBasicParsing -TimeoutSec $BigTimeout -ErrorAction Stop
+    while ($true) {
+      $dlAttempt++
+      try {
+        Invoke-WebRequest -Uri "$base/$asset" -OutFile (Join-Path $tmp 'epnd.exe') -UseBasicParsing -TimeoutSec $BigTimeout -ErrorAction Stop
+        break
+      } catch {
+        # The last attempt rethrows into the outer catch, which is the one that
+        # reports and exits. Anything earlier sleeps and goes round again.
+        if ($dlAttempt -ge 3) { throw }
+        Start-Sleep -Seconds 5
+      }
+    }
   } catch {
-    Write-Error "download failed: $_"
+    Write-Error "download failed after $dlAttempt attempt(s): $_"
     exit 1
   }
 
