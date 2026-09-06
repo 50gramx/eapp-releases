@@ -214,6 +214,103 @@ try {
     }
   }
 
+  # -- WSL2 preflight, third question -------------------------------------------
+  # CAN IT ACTUALLY START A VIRTUAL MACHINE?
+  #
+  # The two checks above ask "is WSL there" and "can this WSL run systemd", and
+  # the comment on the first explains at length why one was not enough. It was
+  # right and it stopped one question short.
+  #
+  # A real node passed BOTH. `wsl --status` succeeded, `wsl --version`
+  # succeeded, this script printed "WSL2 is available (systemd supported)", and
+  # every `wsl --import` the daemon attempted failed for five hours with:
+  #
+  #   The operation could not be started because a required feature is not
+  #   installed.
+  #
+  # WSL2 runs its distros in a lightweight Hyper-V VM, and that needs the
+  # VirtualMachinePlatform Windows optional feature -- separate from WSL, and
+  # able to be absent while every wsl.exe subcommand that does not need a VM
+  # works perfectly. So the machine reported healthy at every layer and could
+  # not create a virtual machine.
+  #
+  # THE PATTERN, NAMED, BECAUSE IT HAS NOW COST FOUR DIAGNOSES: every one of
+  # these tested a PROXY for a capability rather than the capability.
+  #
+  #   wsl.exe is on PATH        -> WSL is installed     (it ships as a stub)
+  #   wsl --status succeeds     -> WSL2 works           (no VM was attempted)
+  #   a VM backend was CHOSEN   -> a backend is USABLE
+  #   an Nvidia card is present -> CUDA work can run
+  #
+  # Ask about the exact resource the thing needs, never about something that
+  # correlates with it.
+  #
+  # HERE, AND ONLY HERE. The daemon runs -RunLevel Limited under S4U: no
+  # desktop, so it cannot raise a UAC prompt even if it wanted to, so it can
+  # NEVER enable a Windows feature for itself. This is the one moment in the
+  # life of a gram when elevation exists and a person is present, which is why
+  # every privileged step belongs in this file and none belongs in the daemon.
+  if ($wslOK) {
+    $vmpState = ''
+    try {
+      # dism.exe over Get-WindowsOptionalFeature: it is in System32 on every
+      # Windows, needs no execution policy, and /english pins the output so a
+      # localised machine does not silently fail to match.
+      $dism = & dism.exe /online /get-featureinfo /featurename:VirtualMachinePlatform /english 2>&1
+      foreach ($line in $dism) {
+        if ("$line" -match '^\s*State\s*:\s*(.+?)\s*$') { $vmpState = $Matches[1]; break }
+      }
+    } catch { $vmpState = '' }
+
+    if ($vmpState -eq 'Disabled') {
+      Write-Host ""
+      Write-Host "WSL2 is present but the Windows feature it needs to start a VM is not enabled."
+      Write-Host "Enabling it now - this is the last thing that needs your approval."
+      $isAdmin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+      try {
+        # `wsl --install --no-distribution` enables BOTH features WSL2 needs in
+        # one call, using Microsoft's own definition of what those are. Doing it
+        # by name with dism would mean maintaining that list ourselves and being
+        # wrong on whichever Windows build changes it.
+        #
+        # It is safe on a machine that already has WSL: --no-distribution means
+        # it touches features only, and never installs an Ubuntu the owner did
+        # not ask for.
+        if ($isAdmin) {
+          & wsl.exe --install --no-distribution *> $null
+        } else {
+          $p = Start-Process -FilePath 'wsl.exe' -ArgumentList '--install','--no-distribution' -Verb RunAs -Wait -PassThru
+          if ($p.ExitCode -ne 0) { throw "wsl --install exited $($p.ExitCode)" }
+        }
+        # A feature enable does not take effect until a restart. Saying so is
+        # the whole value of having checked: without it the daemon retries into
+        # a window it cannot succeed in and reports itself broken.
+        $wslNeedsRestart = $true
+        Write-Host "Windows feature enabled - RESTART REQUIRED before your node can host a cluster"
+      } catch {
+        Write-Warning "the Windows feature was not enabled: $($_.Exception.Message)"
+        Write-Host "your node will run without a local cluster (it can still use the network)."
+        Write-Host "to enable it later: open PowerShell as Administrator, run"
+        Write-Host "  wsl --install --no-distribution"
+        Write-Host "then restart Windows."
+      }
+    } elseif ($vmpState -eq 'Enable Pending') {
+      # Already done, already staged, already needs the same restart. Not a
+      # second problem and not worth a second prompt.
+      $wslNeedsRestart = $true
+      Write-Host "WSL2 virtual machine platform is enabled - RESTART REQUIRED to activate it"
+    } elseif ($vmpState -eq 'Enabled') {
+      Write-Host "WSL2 can start a virtual machine"
+    } else {
+      # Not elevated, no dism, or a Windows that answered something new. UNKNOWN
+      # IS NOT MISSING: enabling a feature and demanding a restart on a machine
+      # that never said it needed one is worse than saying nothing, and the
+      # daemon reports the real failure with Windows' own words if it comes to
+      # that.
+      Write-Host "could not check the WSL2 virtual machine platform (needs Administrator) - continuing"
+    }
+  }
+
   # -- register as a background service (Task Scheduler) ------------------------
   # Two separate concerns, both best-effort so a failure in either never aborts
   # an otherwise-successful install:
