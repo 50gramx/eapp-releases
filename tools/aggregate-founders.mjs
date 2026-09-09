@@ -1284,6 +1284,18 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
         node_did: fromDID, persona_id: persona, kind: statement.kind || '',
         turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0,
         prompt_tokens: 0, output_tokens: 0,
+        // CACHE READS ARE THE INPUT, not a footnote on it. Measured on
+        // 9e3c79: 1,226,610,340 cache-read tokens against 66,510 of true
+        // input -- the page published the 66,510 and dropped the rest, so
+        // the largest agent in the network read as having consumed almost
+        // nothing. turn_digest.go split these fields precisely so a reader
+        // could tell them apart at their ~10x price difference; summing
+        // only prompt_tokens threw that away one layer further along.
+        cache_read_tokens: 0, cache_write_tokens: 0,
+        // Money that LEFT the network, at the provider's published rate.
+        // Never folded into the resource figures: those are credited back
+        // at settlement and a vendor's invoice is not.
+        external_cost_uusd: 0,
         vcpu_seconds: 0, gpu_seconds: 0, energy_kwh: 0, carbon_grams: 0,
         rooms: new Set(), models: new Set(), tools: new Set(),
         first_epoch: null, last_epoch: null, epochs: new Set(), signed: [],
@@ -1291,7 +1303,8 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
       agents.set(key, a);
     }
     for (const k of ['turns', 'tool_calls', 'held', 'failed', 'gated',
-      'prompt_tokens', 'output_tokens',
+      'prompt_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens',
+      'external_cost_uusd',
       'vcpu_seconds', 'gpu_seconds', 'energy_kwh', 'carbon_grams']) {
       a[k] += Number(statement[k]) || 0;
     }
@@ -1336,6 +1349,9 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
       held_pct: decided > 0 ? +((a.held / decided) * 100).toFixed(1) : null,
       prompt_tokens: a.prompt_tokens,
       output_tokens: a.output_tokens,
+      cache_read_tokens: a.cache_read_tokens,
+      cache_write_tokens: a.cache_write_tokens,
+      external_cost_uusd: a.external_cost_uusd,
       vcpu_seconds: Math.round(a.vcpu_seconds * 1e6) / 1e6,
       gpu_seconds: Math.round(a.gpu_seconds * 1e6) / 1e6,
       energy_kwh: a.energy_kwh,
@@ -1354,8 +1370,16 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
   const totals = out.reduce((t, a) => {
     t.turns += a.turns; t.tool_calls += a.tool_calls;
     t.held += a.held; t.failed += a.failed; t.gated += a.gated;
+    t.prompt_tokens += a.prompt_tokens; t.output_tokens += a.output_tokens;
+    t.cache_read_tokens += a.cache_read_tokens;
+    t.cache_write_tokens += a.cache_write_tokens;
+    t.external_cost_uusd += a.external_cost_uusd;
     return t;
-  }, { turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0 });
+  }, {
+    turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0,
+    prompt_tokens: 0, output_tokens: 0,
+    cache_read_tokens: 0, cache_write_tokens: 0, external_cost_uusd: 0,
+  });
   const decided = totals.held + totals.failed + totals.gated;
 
   return {

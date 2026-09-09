@@ -1400,6 +1400,78 @@ test('the rooms, models and tools an agent worked in accumulate across epochs', 
   assert.equal(a.last_epoch, 1786000000 + 3600);
 });
 
+// -- CACHE READS ARE THE INPUT ---------------------------------------------------
+//
+// Measured on 9e3c79 and published on 2026-09-09: 1,226,610,340 cache-read
+// tokens and 34,752,600 cache-write against 66,510 of true input, plus $2,715
+// of provider cost. data/turns.json showed prompt_tokens 66,510 and no cost at
+// all, because the roll summed two token fields and the statement carries five.
+//
+// turn_digest.go split these fields on purpose -- its own comment says a
+// statement that folded cache reads into PromptTokens "would publish a number
+// that is wrong by more than an order of magnitude, and a reader would have no
+// way to tell". The daemon did not fold them. The roll dropped them instead,
+// which reads the same to anybody looking at the page.
+const HARNESS_TURN = {
+  node_did: 'did:epn:bbb',
+  persona_id: 'epn.harness.claude-code.v1',
+  kind: 'harness_turn',
+  epoch_start: 1785153600,
+  epoch_end: 1785157200,
+  turns: 10, tool_calls: 5, held: 10, failed: 0, gated: 0,
+  prompt_tokens: 700, output_tokens: 9000,
+  cache_read_tokens: 12_000_000, cache_write_tokens: 350_000,
+  external_cost_uusd: 27_150,
+  vcpu_seconds: 0, gpu_seconds: 0, energy_kwh: 0, carbon_grams: 0,
+  models: ['claude-opus-5'], tools: ['Bash'],
+  sig: 'sig-h', signing_payload_b64: 'payload-h',
+};
+
+test('cache reads and provider cost survive the roll', () => {
+  const out = rollAgentTurns([HARNESS_TURN], 'now');
+  const a = out.agents[0];
+  assert.equal(a.cache_read_tokens, 12_000_000);
+  assert.equal(a.cache_write_tokens, 350_000);
+  assert.equal(a.external_cost_uusd, 27_150);
+  // The true input is not prompt_tokens alone, and the page cannot work that
+  // out unless all three arrive.
+  assert.equal(a.prompt_tokens, 700);
+});
+
+// The failure that shipped: two token fields summed, five present. Pinned as a
+// property of the OUTPUT rather than of the sum list, so a future refactor that
+// reintroduces a hand-written field list still trips it.
+test('every priced token bucket the statement carries reaches the page', () => {
+  const a = rollAgentTurns([HARNESS_TURN], 'now').agents[0];
+  for (const k of ['prompt_tokens', 'output_tokens', 'cache_read_tokens',
+    'cache_write_tokens', 'external_cost_uusd']) {
+    assert.ok(k in a, `${k} never reached the published row`);
+    assert.equal(a[k], HARNESS_TURN[k], `${k} was dropped or altered`);
+  }
+});
+
+// Totals are what a reader sees first. Publishing a turn count beside a token
+// figure that omits 99.99% of the tokens is worse than publishing neither.
+test('totals carry the token buckets, not only the turn counts', () => {
+  const out = rollAgentTurns([HARNESS_TURN, atEpoch(1785153600)], 'now');
+  assert.equal(out.totals.cache_read_tokens, 12_000_000);
+  assert.equal(out.totals.external_cost_uusd, 27_150);
+  assert.equal(out.totals.output_tokens, 9000);
+});
+
+// A statement written before these fields existed must contribute zero, not
+// NaN. 1 of the 99 harness statements in the live archive predates them.
+test('a statement from before the cache fields existed still rolls', () => {
+  const old = { ...HARNESS_TURN };
+  delete old.cache_read_tokens;
+  delete old.cache_write_tokens;
+  delete old.external_cost_uusd;
+  const a = rollAgentTurns([old], 'now').agents[0];
+  assert.equal(a.cache_read_tokens, 0);
+  assert.equal(a.external_cost_uusd, 0);
+  assert.equal(a.turns, 10);
+});
+
 // Verified once, on the way in — the archive is extended from exactly these.
 test('collecting verifies once and carries the signed bytes through', () => {
   const { statements, rejected } = collectVerifiedTurnStatements(
