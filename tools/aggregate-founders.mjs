@@ -1259,6 +1259,23 @@ export function buildAgentTurns(nodes, generatedAt, meshViews = []) {
  * they claim to summarise — the discipline turn_digest.go's Digest already keeps on
  * the daemon side, held one level further along the road.
  */
+/**
+ * Order a count map by size, then by name, and bound it.
+ *
+ * Bounded because a tool name is whatever a harness calls it -- MCP servers
+ * synthesize them at runtime -- so this is one of the few maps in the payload
+ * whose key space nothing on this side controls. Ordered by count so the bound
+ * cuts the tail rather than an alphabetical slice, and by name within a tie so
+ * two runs over an unchanged ledger stay byte-identical.
+ */
+function rankedCounts(counts, max = 64) {
+  return Object.fromEntries(
+    Object.entries(counts)
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .slice(0, max),
+  );
+}
+
 export function rollAgentTurns(statements, generatedAt, rejected = 0) {
   const agents = new Map();
   const seen = new Set();
@@ -1298,6 +1315,20 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
         external_cost_uusd: 0,
         vcpu_seconds: 0, gpu_seconds: 0, energy_kwh: 0, carbon_grams: 0,
         rooms: new Set(), models: new Set(), tools: new Set(),
+        // HOW MUCH, not only WHICH. `models` and `tools` are name SETS -- they
+        // say an agent touched a model, never that it did any work there. The
+        // counts lived only inside the signed payloads, which the page decoded
+        // from `signed` -- and `signed` is capped at 24 below. On the live
+        // ledger that meant the model mix was drawn from 956 of 19,038 turns:
+        // opus 952, haiku 4, and sonnet missing altogether despite sitting
+        // right there in the name list. Summed here instead, over every
+        // statement, so the breakdown is not a sample of the newest few hours.
+        model_turns: {}, tool_counts: {},
+        // The turns actually described by that breakdown. Statements signed
+        // before the counts existed contribute turns and no attribution, so a
+        // mix rendered without this denominator silently claims to describe
+        // work it has never seen.
+        detailed_turns: 0,
         first_epoch: null, last_epoch: null, epochs: new Set(), signed: [],
       };
       agents.set(key, a);
@@ -1311,6 +1342,16 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
     if (room) a.rooms.add(room);
     for (const m of statement.models || []) a.models.add(m);
     for (const t of statement.tools || []) a.tools.add(t);
+    let described = false;
+    for (const [k, v] of Object.entries(statement.model_turns || {})) {
+      a.model_turns[k] = (a.model_turns[k] || 0) + (Number(v) || 0);
+      described = true;
+    }
+    for (const [k, v] of Object.entries(statement.tool_counts || {})) {
+      a.tool_counts[k] = (a.tool_counts[k] || 0) + (Number(v) || 0);
+      described = true;
+    }
+    if (described) a.detailed_turns += Number(statement.turns) || 0;
     a.epochs.add(statement.epoch_start);
     if (a.first_epoch === null || statement.epoch_start < a.first_epoch) a.first_epoch = statement.epoch_start;
     if (a.last_epoch === null || statement.epoch_end > a.last_epoch) a.last_epoch = statement.epoch_end;
@@ -1359,6 +1400,12 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
       rooms: [...a.rooms].sort(),
       models: [...a.models].sort(),
       tools: [...a.tools].sort(),
+      // Ordered by count, then by name so a tie cannot reorder between runs --
+      // the beacon republishes on any byte change and churn that did not happen
+      // is churn every reader downstream pays for.
+      model_turns: rankedCounts(a.model_turns),
+      tool_counts: rankedCounts(a.tool_counts),
+      detailed_turns: a.detailed_turns,
       epochs: a.epochs.size,
       first_epoch: a.first_epoch,
       last_epoch: a.last_epoch,

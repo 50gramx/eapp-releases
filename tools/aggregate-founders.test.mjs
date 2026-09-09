@@ -1472,6 +1472,63 @@ test('a statement from before the cache fields existed still rolls', () => {
   assert.equal(a.turns, 10);
 });
 
+// -- HOW MUCH, NOT ONLY WHICH -----------------------------------------------
+//
+// The live page showed a model mix of opus 952 / haiku 4, with sonnet absent
+// entirely though it sat in the same row's name list, and 15 tools of the 17
+// actually recorded. It was reading the per-model counts out of the signed
+// payloads carried in `signed`, which is capped at 24 for page weight -- 956 of
+// 19,038 turns, 5%, all from the newest few hours.
+const DETAILED = {
+  ...HARNESS_TURN,
+  model_turns: { 'claude-opus-5': 8, 'claude-sonnet-5': 2 },
+  tool_counts: { Bash: 4, Edit: 1 },
+};
+
+test('per-model and per-tool counts are summed, not sampled', () => {
+  const a = rollAgentTurns([
+    { ...DETAILED, epoch_start: 1785153600, epoch_end: 1785157200 },
+    { ...DETAILED, epoch_start: 1785157200, epoch_end: 1785160800 },
+  ], 'now').agents[0];
+
+  assert.equal(a.model_turns['claude-opus-5'], 16);
+  // The model that vanished from the live page. A model with few turns must
+  // survive: it is the one a sample is most likely to lose.
+  assert.equal(a.model_turns['claude-sonnet-5'], 4);
+  assert.equal(a.tool_counts.Bash, 8);
+  assert.equal(a.detailed_turns, 20);
+});
+
+// A breakdown WITHOUT its denominator is the more dangerous half. One statement
+// on the live ledger carries 15,741 turns and no attribution at all -- it was
+// signed before the counts existed -- so a mix rendered as if it described
+// every turn would be describing 17% of them and saying so nowhere.
+test('turns with no breakdown are counted but not claimed as described', () => {
+  const a = rollAgentTurns([
+    { ...HARNESS_TURN, turns: 1000, epoch_start: 1785150000, epoch_end: 1785153600 },
+    { ...DETAILED, epoch_start: 1785153600, epoch_end: 1785157200 },
+  ], 'now').agents[0];
+
+  assert.equal(a.turns, 1010);
+  assert.equal(a.detailed_turns, 10);
+  assert.equal(a.model_turns['claude-opus-5'], 8);
+});
+
+// Deterministic ordering: the beacon republishes on any byte change, so a tie
+// that reorders between runs is churn every reader downstream pays for.
+test('counts are ordered by size then name, and bounded', () => {
+  const many = {};
+  for (let i = 0; i < 200; i += 1) many['tool-' + i] = 1;
+  many.Bash = 99;
+  const a = rollAgentTurns([{ ...DETAILED, tool_counts: many }], 'now').agents[0];
+
+  const keys = Object.keys(a.tool_counts);
+  assert.equal(keys[0], 'Bash', 'the biggest count must survive the bound');
+  assert.ok(keys.length <= 64, `unbounded tool map: ${keys.length}`);
+  // Ties broken by name, so two runs agree.
+  assert.deepEqual(keys.slice(1, 3), ['tool-0', 'tool-1']);
+});
+
 // Verified once, on the way in — the archive is extended from exactly these.
 test('collecting verifies once and carries the signed bytes through', () => {
   const { statements, rejected } = collectVerifiedTurnStatements(
