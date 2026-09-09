@@ -83,6 +83,24 @@ echo "installed epnd → $dest/epnd" >&2
 echo "" >&2
 echo "registering epnd as a system service…" >&2
 
+# -- VERIFY, DO NOT ASSERT ---------------------------------------------------
+#
+# This script used to end with five confident lines -- "running as a system
+# service", "auto-updates every 15 minutes" -- none of which it had checked.
+# That is how a Mac in this fleet sat on a stale build: `launchctl bootstrap`
+# failed, the fallback `launchctl load` printed "Load failed: 5: Input/output
+# error" AND STILL EXITED 0 (legacy launchctl reports failure on stderr and
+# returns success), so the `||` guard never fired, and the installer told the
+# owner the service was running and updating itself while nothing had loaded.
+# The owner only found out days later, by hand, when the node was four builds
+# behind.
+#
+# An installer that claims a state it never measured is the same defect as a
+# daemon reporting a GPU it never probed. So: every claim below is a check,
+# and a claim that cannot be checked is not printed.
+svc_ok=0
+upd_ok=0
+
 if [ "$os" = "linux" ]; then
   # systemd service file
   service_file="/etc/systemd/system/epnd.service"
@@ -158,7 +176,14 @@ WantedBy=timers.target
   $SUDO systemctl restart epnd
   $SUDO systemctl enable epnd-autoupdate.timer
   $SUDO systemctl restart epnd-autoupdate.timer
-  echo "epnd service and auto-update timer registered" >&2
+
+  # `systemctl restart` can exit 0 on a unit that then dies in its first
+  # seconds. Ask the unit what it IS, rather than trusting the command that
+  # was supposed to have made it so.
+  systemctl is-active --quiet epnd 2>/dev/null && svc_ok=1
+  systemctl is-active --quiet epnd-autoupdate.timer 2>/dev/null && upd_ok=1
+  [ "$svc_ok" = 1 ] || echo "epnd.service is not active - systemctl status epnd" >&2
+  [ "$upd_ok" = 1 ] || echo "epnd-autoupdate.timer is not active - systemctl status epnd-autoupdate.timer" >&2
 
 elif [ "$os" = "darwin" ]; then
   # launchd plist for macOS — substitute the path BEFORE writing
@@ -214,8 +239,12 @@ EOF
   # old" symptom.
   pkill -x epnd 2>/dev/null || true
   sleep 1
-  if ! launchctl bootstrap "$gui" "$plist_file" 2>/dev/null; then
-    launchctl load "$plist_file" 2>&1 || { echo "launchctl bootstrap/load failed — run: launchctl bootstrap $gui $plist_file" >&2; exit 1; }
+  if ! launchctl bootstrap "$gui" "$plist_file" 2>&1; then
+    # THE FALLBACK'S EXIT CODE IS NOT EVIDENCE. `launchctl load` prints
+    # "Load failed: <errno>: ..." on stderr and exits 0 anyway. Run it, let
+    # the owner see what it says, and decide from the domain afterwards --
+    # never from `||`, which is what silently passed a failed load for months.
+    launchctl load "$plist_file" 2>&1 || true
   fi
   launchctl enable "$gui/com.50gramx.epnd" 2>/dev/null || true
 
@@ -269,16 +298,53 @@ EOF
 </dict>
 </plist>
 EOF
-  launchctl unload "$autoupdate_plist" 2>/dev/null || true
-  launchctl load "$autoupdate_plist" 2>/dev/null || echo "note: launchctl load autoupdate failed — you may need to manually load $autoupdate_plist" >&2
+  launchctl bootout "$gui/com.50gramx.epnd-autoupdate" 2>/dev/null || launchctl unload "$autoupdate_plist" 2>/dev/null || true
+  if ! launchctl bootstrap "$gui" "$autoupdate_plist" 2>&1; then
+    launchctl load "$autoupdate_plist" 2>&1 || true
+  fi
 
-  echo "epnd service and auto-update timer registered via launchd" >&2
+  # Now ASK THE DOMAIN what is actually loaded. This is the only statement in
+  # this script about launchd that is worth anything: `launchctl print` fails
+  # when the label is not there, whatever the loader claimed about itself.
+  launchd_has() {
+    launchctl print "$gui/$1" >/dev/null 2>&1 || launchctl list "$1" >/dev/null 2>&1
+  }
+  launchd_has com.50gramx.epnd && svc_ok=1
+  launchd_has com.50gramx.epnd-autoupdate && upd_ok=1
+
+  if [ "$svc_ok" != 1 ]; then
+    echo "" >&2
+    echo "epnd did NOT load as a service. The binary is installed at $dest/epnd," >&2
+    echo "but nothing is running it and nothing will update it." >&2
+    echo "  fix: launchctl bootout $gui/com.50gramx.epnd; launchctl bootstrap $gui $plist_file" >&2
+  fi
+  if [ "$upd_ok" != 1 ]; then
+    echo "" >&2
+    echo "the 15-minute auto-update timer did NOT load. This machine will stay on" >&2
+    echo "the build it has until somebody re-runs this installer by hand." >&2
+    echo "  fix: launchctl bootstrap $gui $autoupdate_plist" >&2
+  fi
 fi
 
 echo "" >&2
-echo "✓ epnd is installed and running as a system service" >&2
-echo "  • auto-starts on boot" >&2
-echo "  • auto-restarts on crash" >&2
-echo "  • auto-updates every 15 minutes" >&2
-echo "  • it is already running — do NOT run 'epnd serve' yourself" >&2
-echo "  • run: epnd node list" >&2
+if [ "$svc_ok" = 1 ] && [ "$upd_ok" = 1 ]; then
+  echo "✓ epnd is installed and running as a system service" >&2
+  echo "  • auto-starts on boot" >&2
+  echo "  • auto-restarts on crash" >&2
+  echo "  • auto-updates every 15 minutes" >&2
+  echo "  • it is already running — do NOT run 'epnd serve' yourself" >&2
+  echo "  • run: epnd node list" >&2
+elif [ "$svc_ok" = 1 ]; then
+  # A running daemon that cannot update itself is the failure this fleet
+  # actually had, and it is worth its own exit code: the machine works today
+  # and silently falls behind forever.
+  echo "⚠ epnd is running, but it will NOT auto-update." >&2
+  echo "  Apply the fix above, or re-run this installer whenever you want a" >&2
+  echo "  newer build." >&2
+  echo "  • run: epnd node list" >&2
+  exit 1
+else
+  echo "⚠ epnd is installed at $dest/epnd but is NOT running as a service." >&2
+  echo "  Nothing above succeeded in starting it. Apply the fix printed above." >&2
+  exit 1
+fi
