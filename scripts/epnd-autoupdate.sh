@@ -3,6 +3,13 @@
 # Runs periodically (every 15 min, matching the CI's aggregate cycle) via launchd/systemd timer.
 # Safe for in-flight work: atomic binary swap + graceful service restart.
 set -eu
+# systemd runs a oneshot with no HOME. Under set -u every "$HOME" below is
+# then a fatal "unbound variable" -- bootstrap's updater died on the line
+# that stamps its own heartbeat, mid-update, on the first run of a script
+# that had finally reached it. Root's home is the only honest default for a
+# unit that runs as root; a user-run script keeps its own.
+: "${HOME:=/root}"
+export HOME
 
 REPO="${EPND_REPO:-50gramx/eapp-releases}"
 TAG="${EPND_TAG:-epnd-latest}"
