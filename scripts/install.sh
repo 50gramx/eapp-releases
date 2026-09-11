@@ -164,6 +164,25 @@ WantedBy=timers.target
 "
   echo "$timer_content" | $SUDO tee "$autoupdate_timer" > /dev/null
 
+  # THE KICK. A running gram that learns a newer build exists -- from a peer's
+  # ad, or by polling the release when it is always on -- asks the updater to
+  # run now rather than waiting for the timer. It cannot `systemctl start` a
+  # system unit as its own user (that needs root or polkit), so it touches one
+  # file instead, and this path unit runs the same updater service when the
+  # file changes. No authority at runtime; a touch with no watcher is harmless.
+  kick_path="/etc/systemd/system/epnd-autoupdate.path"
+  kick_content="[Unit]
+Description=EP&N Auto-Update Kick (a running gram asks for a check now)
+
+[Path]
+PathModified=/tmp/epnd-kick-update
+Unit=epnd-autoupdate.service
+
+[Install]
+WantedBy=paths.target
+"
+  echo "$kick_content" | $SUDO tee "$kick_path" > /dev/null
+
   $SUDO systemctl daemon-reload
   $SUDO systemctl enable epnd
   # Kill any epnd NOT managed by systemd (a manual `epnd serve` or a stale
@@ -176,6 +195,8 @@ WantedBy=timers.target
   $SUDO systemctl restart epnd
   $SUDO systemctl enable epnd-autoupdate.timer
   $SUDO systemctl restart epnd-autoupdate.timer
+  $SUDO systemctl enable epnd-autoupdate.path
+  $SUDO systemctl restart epnd-autoupdate.path
 
   # `systemctl restart` can exit 0 on a unit that then dies in its first
   # seconds. Ask the unit what it IS, rather than trusting the command that
