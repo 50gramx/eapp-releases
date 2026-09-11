@@ -12,6 +12,7 @@
 // no independent verification — and every card on the page must say so.
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
+import { buildSeasons, writeSeasons } from './seasons.mjs';
 
 const NODES_DIR = 'data/nodes';
 // What the published data/ directory may weigh before this run says so out loud.
@@ -3187,6 +3188,13 @@ function main() {
   // blinking empty and 404-ing /inference/models/[slug].
   const models = mergeModels(readPublished('data/models.json'), buildModels(out.nodes, out.generated_at, meshViews));
   writeFileSync('data/models.json', JSON.stringify(models, null, 2) + '\n');
+
+  // The catalog's SEASONS: what the network proved, per artifact and hardware
+  // class, this window and every window before it, with contributor counts.
+  // Merged with the previously published copy of each season, never
+  // regenerated wholesale (see tools/seasons.mjs). current.json is what every
+  // gram reads to choose the least-covered artifact for its own hardware.
+  writeSeasons(buildSeasons(models, models.families, out.generated_at));
 
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.
