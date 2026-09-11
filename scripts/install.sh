@@ -137,6 +137,10 @@ WantedBy=multi-user.target
   fi
 
   # systemd timer files for 15-minute auto-update cycle
+  # The daemon's home, by the rule the daemon itself applies (config.epnHome):
+  # EPN_HOME, else ~/.epn of the user the service above runs as.
+  kick_home() { echo "${EPN_HOME:-$HOME/.epn}"; }
+
   autoupdate_service="/etc/systemd/system/epnd-autoupdate.service"
   autoupdate_timer="/etc/systemd/system/epnd-autoupdate.timer"
 
@@ -171,10 +175,16 @@ WantedBy=timers.target
   # file instead, and this path unit runs the same updater service when the
   # file changes. No authority at runtime; a touch with no watcher is harmless.
   kick_path="/etc/systemd/system/epnd-autoupdate.path"
+  # Two files are watched: the daemon's home, which is the one directory a
+  # sandboxed unit (ProtectSystem=strict, ReadWritePaths=<home>) can write,
+  # and /tmp for a daemon whose unit is looser. The service and this unit
+  # agree on the home through the same rule: EPN_HOME, else ~/.epn of the
+  # installing user.
   kick_content="[Unit]
 Description=EP&N Auto-Update Kick (a running gram asks for a check now)
 
 [Path]
+PathModified=$(kick_home)/kick-update
 PathModified=/tmp/epnd-kick-update
 Unit=epnd-autoupdate.service
 

@@ -436,32 +436,57 @@ reconcile_systemd() {
   echo "note: epnd-autoupdate.timer interval does not match $EXPECT_INTERVAL (left alone; systemd units may be externally managed)" >&2
 }
 
-# ensure_kick_path gives an existing gram the path unit install.sh now
-# writes. ADDITIVE, unlike reconcile_systemd above: that function refuses to
-# rewrite a unit it did not certainly author, and rightly. This creates a unit
-# nobody has, named by us, and touches nothing that exists. It runs here
-# because this service runs as root on the timer, so every gram that predates
-# the unit gains it within one cycle with no owner action -- the only way a
-# fleet of laptops ever converges.
+# daemon_home is where the RUNNING daemon keeps its home -- read from its
+# unit, not from this script's environment: this runs as root on a timer with
+# HOME=/root, and the daemon on bootstrap runs as user epnd with
+# EPN_HOME=/var/lib/epnd. The same rule the daemon applies (config.epnHome):
+# EPN_HOME from the unit, else ~/.epn of the unit's user.
+daemon_home() {
+  _env=$(systemctl show epnd -p Environment --value 2>/dev/null || true)
+  _h=$(printf '%s
+' "$_env" | tr ' ' '
+' | sed -n 's/^EPN_HOME=//p' | head -1)
+  if [ -n "$_h" ]; then echo "$_h"; return 0; fi
+  _u=$(systemctl show epnd -p User --value 2>/dev/null || true)
+  [ -n "$_u" ] || _u=root
+  _d=$(getent passwd "$_u" 2>/dev/null | cut -d: -f6)
+  [ -n "$_d" ] || _d=/root
+  echo "$_d/.epn"
+}
+
+# ensure_kick_path gives an existing gram the path unit install.sh writes,
+# and keeps it current. It runs here because this service runs as root on
+# the timer, so every gram converges within one cycle with no owner action.
+#
+# The unit is ours by name, so unlike reconcile_schedule it IS rewritten when
+# its content is not what we would write now. The first version watched only
+# /tmp -- which a daemon under ProtectSystem=strict cannot write, so on
+# bootstrap the kick never landed and every update rode the timer. The unit
+# now watches the daemon's home first (the one directory such a unit can
+# write) and /tmp second.
 ensure_kick_path() {
   command -v systemctl >/dev/null 2>&1 || return 0
   [ "$(id -u)" = "0" ] || return 0
   _p="/etc/systemd/system/epnd-autoupdate.path"
-  [ -e "$_p" ] && return 0
-  cat > "$_p" <<'UNIT'
-[Unit]
+  _want="[Unit]
 Description=EP&N Auto-Update Kick (a running gram asks for a check now)
 
 [Path]
+PathModified=$(daemon_home)/kick-update
 PathModified=/tmp/epnd-kick-update
 Unit=epnd-autoupdate.service
 
 [Install]
 WantedBy=paths.target
-UNIT
+"
+  if [ -e "$_p" ] && [ "$(cat "$_p")" = "$(printf '%s' "$_want")" ]; then
+    return 0
+  fi
+  printf '%s' "$_want" > "$_p"
   systemctl daemon-reload >/dev/null 2>&1 || true
   systemctl enable --now epnd-autoupdate.path >/dev/null 2>&1 || true
-  echo "installed epnd-autoupdate.path: a running gram can now ask for a check without waiting for the timer" >&2
+  systemctl restart epnd-autoupdate.path >/dev/null 2>&1 || true
+  echo "installed epnd-autoupdate.path watching $(daemon_home)/kick-update: a running gram can now ask for a check without waiting for the timer" >&2
 }
 
 reconcile_schedule 2>/dev/null || true
