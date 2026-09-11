@@ -4,7 +4,7 @@
   "starts_at": "2026-09-07T00:00:00.000Z",
   "ends_at": "2026-09-14T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-09-11T18:28:51.458Z",
+  "published_at": "2026-09-11T19:13:37.508Z",
   "contributors": {
     "grams": 6,
     "classes": [
@@ -12,13 +12,18 @@
       "darwin/arm64/none/16g",
       "unknown",
       "windows/amd64/none/16g",
-      "windows/amd64/none/8g"
+      "windows/amd64/none/8g",
+      "windows/amd64/nvidia/16g"
     ]
   },
   "counts": {
     "artifacts": 12,
     "publishers": 7,
-    "by_cohort": {}
+    "by_cohort": {
+      "1": 2,
+      "2": 4,
+      "3": 1
+    }
   },
   "artifacts": [
     {
@@ -85,8 +90,8 @@
       "attribution": "vendor",
       "base": null,
       "derivative": false,
-      "cohort": null,
-      "rung": null,
+      "cohort": 1,
+      "rung": 1,
       "disk_mib": 2254,
       "by_class": {
         "darwin/arm64/none/16g": {
@@ -131,11 +136,11 @@
       "engine": "ollama",
       "quant": "IQ1_S",
       "publisher": "MaziyarPanahi",
-      "attribution": "derivative",
-      "base": null,
+      "attribution": "quantizer",
+      "base": "meta-llama/Llama-3.2-1B-Instruct",
       "derivative": false,
-      "cohort": null,
-      "rung": null,
+      "cohort": 2,
+      "rung": 5,
       "disk_mib": 375,
       "by_class": {
         "darwin/amd64/none/8g": {
@@ -156,11 +161,11 @@
       "engine": "ollama",
       "quant": "IQ3_XS",
       "publisher": "MaziyarPanahi",
-      "attribution": "derivative",
-      "base": null,
+      "attribution": "quantizer",
+      "base": "meta-llama/Llama-3.2-1B-Instruct",
       "derivative": false,
-      "cohort": null,
-      "rung": null,
+      "cohort": 2,
+      "rung": 2,
       "disk_mib": 592,
       "by_class": {
         "darwin/amd64/none/8g": {
@@ -203,17 +208,8 @@
     },
     {
       "ref": "hf.co/Mungert/Phi-4-mini-instruct.gguf:IQ2_XS",
-      "family": "phi-4",
-      "member": "mini",
-      "engine": "ollama",
-      "quant": "IQ2_XS",
-      "publisher": "Mungert",
-      "attribution": "derivative",
-      "base": null,
-      "derivative": false,
-      "cohort": null,
-      "rung": null,
-      "disk_mib": 1303,
+      "family": null,
+      "member": null,
       "by_class": {
         "windows/amd64/none/16g": {
           "grams": 1,
@@ -231,17 +227,8 @@
     },
     {
       "ref": "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M",
-      "family": "llama-3-2",
-      "member": "1b",
-      "engine": "ollama",
-      "quant": "Q4_K_M",
-      "publisher": "bartowski",
-      "attribution": "quantizer",
-      "base": null,
-      "derivative": false,
-      "cohort": null,
-      "rung": null,
-      "disk_mib": 770,
+      "family": null,
+      "member": null,
       "by_class": {
         "darwin/amd64/none/8g": {
           "grams": 1,
@@ -270,15 +257,15 @@
     {
       "ref": "hf.co/mradermacher/Qwen3-VL-8B-Instruct-abliterated-GGUF:Q2_K",
       "family": "qwen-3",
-      "member": "8b",
+      "member": "8b~mradermacher",
       "engine": "ollama",
       "quant": "Q2_K",
       "publisher": "mradermacher",
       "attribution": "derivative",
-      "base": null,
+      "base": "prithivMLmods/Qwen3-VL-8B-Instruct-abliterated-v1",
       "derivative": false,
-      "cohort": null,
-      "rung": null,
+      "cohort": 3,
+      "rung": 5,
       "disk_mib": 3129,
       "by_class": {
         "windows/amd64/none/16g": {
@@ -307,10 +294,10 @@
       "quant": "IQ1_S",
       "publisher": "unsloth",
       "attribution": "quantizer",
-      "base": null,
+      "base": "microsoft/Phi-4-mini-reasoning",
       "derivative": false,
-      "cohort": null,
-      "rung": null,
+      "cohort": 2,
+      "rung": 5,
       "disk_mib": 1088,
       "by_class": {
         "windows/amd64/none/16g": {
@@ -321,13 +308,33 @@
           "caps": {},
           "first_at": "2026-09-11T04:54:16.851Z",
           "last_at": "2026-09-11T04:54:16.851Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 188.88,
+          "effective_ctx_best": null,
+          "caps": {
+            "lang.en": 1
+          },
+          "first_at": "2026-09-11T18:33:38.903Z",
+          "last_at": "2026-09-11T18:33:38.903Z"
         }
       }
     },
     {
       "ref": "hf.co/unsloth/Qwen3-4B-GGUF:IQ3_XXS",
-      "family": null,
-      "member": null,
+      "family": "qwen-3",
+      "member": "4b",
+      "engine": "ollama",
+      "quant": "IQ3_XXS",
+      "publisher": "unsloth",
+      "attribution": "quantizer",
+      "base": "Qwen/Qwen3-4B",
+      "derivative": false,
+      "cohort": 1,
+      "rung": 2,
+      "disk_mib": 1596,
       "by_class": {
         "windows/amd64/none/16g": {
           "grams": 1,
@@ -337,7 +344,9 @@
           "caps": {
             "faithful_tool_result": 1,
             "output.schema": 1,
+            "reason.channel": 1,
             "structured_output": 1,
+            "thinking": 1,
             "tools": 1,
             "tools.call": 1,
             "tools.faithful": 1,
@@ -346,7 +355,7 @@
             "tools_loop_terminated": 1
           },
           "first_at": "2026-09-11T11:19:12.369Z",
-          "last_at": "2026-09-11T11:19:12.369Z"
+          "last_at": "2026-09-11T15:50:55.585Z"
         }
       }
     },
@@ -360,8 +369,8 @@
       "attribution": "vendor",
       "base": null,
       "derivative": false,
-      "cohort": null,
-      "rung": null,
+      "cohort": 2,
+      "rung": 9,
       "disk_mib": 4972,
       "by_class": {
         "windows/amd64/none/16g": {
@@ -389,6 +398,14 @@
     },
     {
       "publisher": "MaziyarPanahi",
+      "held": 3,
+      "grams": 2,
+      "engines": {
+        "ollama": 3
+      }
+    },
+    {
+      "publisher": "unsloth",
       "held": 3,
       "grams": 2,
       "engines": {
@@ -425,14 +442,6 @@
       "grams": 1,
       "engines": {
         "diffusers": 1
-      }
-    },
-    {
-      "publisher": "unsloth",
-      "held": 1,
-      "grams": 1,
-      "engines": {
-        "ollama": 1
       }
     }
   ],
