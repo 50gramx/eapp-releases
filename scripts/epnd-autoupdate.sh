@@ -584,9 +584,50 @@ WantedBy=paths.target
   echo "installed epnd-autoupdate.path watching $(daemon_home)/kick-update: a running gram can now ask for a check without waiting for the timer" >&2
 }
 
+# -- DOORS: LET THE SERVICE BIND 443/8443 ---------------------------------------
+#
+# The daemon offers extra listen ports that port-filtered campus networks
+# still admit (p2p/doors.go). On Linux a service user cannot bind a port
+# below 1024 without CAP_NET_BIND_SERVICE, so every Linux gram -- the
+# bootstrap first -- gets a drop-in granting exactly that capability and
+# nothing else. NoNewPrivileges stays: ambient capabilities are compatible
+# with it. Installed once; the daemon picks the capability up on its next
+# restart, which the update that ships this already performs.
+ensure_bind_doors() {
+  command -v systemctl >/dev/null 2>&1 || return 0
+  [ "$(id -u)" = "0" ] || return 0
+  [ -f /etc/systemd/system/epnd.service ] || return 0
+  _d="/etc/systemd/system/epnd.service.d"
+  _p="$_d/doors.conf"
+  _want="# Installed by epnd-autoupdate.sh: the daemon listens on 443/8443 beside its
+# own ports so grams behind port-filtered networks can reach it. A service
+# user needs this one capability to bind them; nothing else is granted.
+[Service]
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+"
+  if [ -e "$_p" ] && [ "$(cat "$_p")" = "$(printf '%s' "$_want")" ]; then
+    return 0
+  fi
+  mkdir -p "$_d"
+  printf '%s' "$_want" > "$_p"
+  systemctl daemon-reload >/dev/null 2>&1 || true
+  echo "installed $_p: epnd may bind 443/8443 from its next restart" >&2
+  fleet_event "updater_installed_bind_doors" true "systemd drop-in granting CAP_NET_BIND_SERVICE" false
+  # A restart is what makes the capability real. Stop synchronously, start,
+  # verify the new pid -- the same path an update takes.
+  stop_epnd
+  if start_epnd; then
+    write_updater_state "restarted_for_doors" false
+  else
+    write_updater_state "restart_failed" false
+    fleet_event "updater_restart_failed" false "restarted to grant bind capability and did not come back" true
+  fi
+}
+
 reconcile_schedule 2>/dev/null || true
 case "$(uname -s)" in
-  Linux) ensure_kick_path 2>/dev/null || true ;;
+  Linux) ensure_kick_path 2>/dev/null || true; ensure_bind_doors 2>/dev/null || true ;;
 esac
 
 # -- REFRESH THE OTHER SHIPPED SCRIPTS, NOT JUST THIS ONE --------------------
