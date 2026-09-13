@@ -218,13 +218,19 @@ running_version() {
 # write_updater_state records this run. Best-effort and silent: a node that
 # cannot write a heartbeat is still a node, and failing an update over
 # diagnostics would turn an observability gap into an outage.
+# RESTART_ERR is the service manager's last words. They used to go to
+# /dev/null; now they ride in the state file so the fleet can read WHY a
+# restart failed instead of only that it did. Quotes and newlines stripped so
+# the hand-rolled JSON stays JSON.
+RESTART_ERR=""
 write_updater_state() { # $1 action, $2 behind_upstream(true|false)
   _home="$(epnd_home)"
   [ -d "$_home" ] || return 0
   _od="$(bin_version)"
   _rv="$(running_version)"
-  printf '{"at":"%s","asset":"%s","on_disk":"%s","running":"%s","behind_upstream":%s,"action":"%s"}\n' \
-    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$asset" "${_od:-}" "${_rv:-}" "${2:-false}" "$1" \
+  _err="$(printf '%s' "$RESTART_ERR" | tr -d '"\\' | tr '\n' ' ' | cut -c1-400)"
+  printf '{"at":"%s","asset":"%s","on_disk":"%s","running":"%s","running_pid":"%s","behind_upstream":%s,"action":"%s","last_error":"%s"}\n' \
+    "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$asset" "${_od:-}" "${_rv:-}" "$(pgrep -x epnd 2>/dev/null | tr '\n' ' ' | sed 's/ $//')" "${2:-false}" "$1" "$_err" \
     > "${_home}/updater-state.json.tmp" 2>/dev/null || return 0
   # Renamed into place so the daemon never reads a half-written stamp and
   # concludes this node is running a build it is not.
@@ -242,6 +248,77 @@ write_updater_state() { # $1 action, $2 behind_upstream(true|false)
 # gone. So: retry, and verify by looking for the process rather than trusting the
 # exit status of a command that is documented to succeed without starting
 # anything.
+# -- THE RACE THAT TOOK THE INTEL MAC DOWN FOR A TIMER WINDOW ----------------
+#
+# bootout is asynchronous. One second after it the label is still registered
+# and draining, so bootstrap fails "already registered", kickstart -k and load
+# no-op, and every error went to /dev/null. Then `pgrep -x epnd` found the OLD
+# daemon still inside its five-second shutdown grace and start_epnd said 0.
+# updater-state.json recorded action:"updated"; launchctl list had no label;
+# the node was down until the next run. A dying process is not a started one.
+#
+# So stopping is now a function that WAITS: for the label to leave launchd and
+# for every pid that existed before the stop to be gone. And starting verifies
+# by a pid that is NOT one of those, plus the daemon's own running.json
+# naming that pid and the on-disk version -- the only two facts that mean
+# "the new build is up".
+OLD_PIDS=""
+stop_epnd() {
+  OLD_PIDS="$(pgrep -x epnd 2>/dev/null | tr '\n' ' ')"
+  case "$os_name" in
+    Linux)
+      command -v systemctl >/dev/null 2>&1 && systemctl stop epnd 2>/dev/null || true
+      pkill -x epnd 2>/dev/null || true
+      ;;
+    Darwin)
+      gui="gui/$(id -u)"
+      label="com.50gramx.epnd"
+      _e="$(launchctl bootout "$gui/$label" 2>&1)" \
+        || _e="$_e; $(launchctl unload "$HOME/Library/LaunchAgents/${label}.plist" 2>&1)" || true
+      [ -n "$_e" ] && RESTART_ERR="bootout: $_e"
+      ;;
+  esac
+  # Wait for the graceful shutdown to FINISH (the daemon's stage 3), not begin.
+  # 45 s covers stage-2 grace plus lock release; past that, the old build is
+  # holding the node hostage and SIGKILL is the lesser harm.
+  _w=0
+  while [ "$_w" -lt 45 ]; do
+    _left=""
+    for _p in $OLD_PIDS; do kill -0 "$_p" 2>/dev/null && _left="$_left $_p"; done
+    if [ "$os_name" = "Darwin" ] && launchctl print "$gui/$label" >/dev/null 2>&1; then
+      _left="$_left label"
+    fi
+    [ -z "$_left" ] && return 0
+    sleep 1
+    _w=$((_w + 1))
+    [ "$_w" -eq 15 ] && { for _p in $OLD_PIDS; do kill -TERM "$_p" 2>/dev/null || true; done; }
+  done
+  for _p in $OLD_PIDS; do kill -KILL "$_p" 2>/dev/null || true; done
+  RESTART_ERR="${RESTART_ERR:+$RESTART_ERR; }old epnd did not exit in 45s, killed:$_left"
+  sleep 1
+
+  return 0
+}
+
+# new_epnd_up: a pid that is not one of OLD_PIDS, and running.json written by
+# THAT pid naming the on-disk version. pgrep alone was the bug.
+new_epnd_up() {
+  _od="$(bin_version)"
+  for _p in $(pgrep -x epnd 2>/dev/null); do
+    case " $OLD_PIDS " in *" $_p "*) continue ;; esac
+    _rs="$(epnd_home)/running.json"
+    [ -f "$_rs" ] || continue
+    _rp="$(sed -n 's/.*"pid"[[:space:]]*:[[:space:]]*\([0-9]*\).*/\1/p' "$_rs" 2>/dev/null | head -1)"
+    _rv="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$_rs" 2>/dev/null | head -1)"
+    [ "$_rp" = "$_p" ] || continue
+    [ -z "$_od" ] || [ "$_rv" = "$_od" ] || continue
+
+    return 0
+  done
+
+  return 1
+}
+
 start_epnd() {
   attempt=1
   while [ "$attempt" -le 5 ]; do
@@ -254,21 +331,32 @@ start_epnd() {
         label="com.50gramx.epnd"
         plist="$HOME/Library/LaunchAgents/${label}.plist"
         if [ -f "$plist" ]; then
-          launchctl bootstrap "$gui" "$plist" 2>/dev/null             || launchctl kickstart -k "$gui/$label" 2>/dev/null             || launchctl load "$plist" 2>/dev/null || true
+          _e="$(launchctl bootstrap "$gui" "$plist" 2>&1)" \
+            || _e="$_e; kickstart: $(launchctl kickstart -k "$gui/$label" 2>&1)" \
+            || _e="$_e; load: $(launchctl load "$plist" 2>&1)" || true
+          [ -n "$_e" ] && RESTART_ERR="attempt $attempt: $_e"
           launchctl enable "$gui/$label" 2>/dev/null || true
         else
+          RESTART_ERR="no plist at $plist"
           echo "note: no plist at $plist — cannot start epnd" >&2
           return 1
         fi
         ;;
     esac
-    # Give the process a moment to claim the single-instance lock before judging.
-    sleep 3
-    if epnd_running; then
-      return 0
-    fi
+    # The daemon writes running.json once it holds the single-instance lock
+    # and knows its build; give it up to 20 s per attempt before judging.
+    _t=0
+    while [ "$_t" -lt 20 ]; do
+      if new_epnd_up; then
+        RESTART_ERR=""
+        return 0
+      fi
+      sleep 1
+      _t=$((_t + 1))
+    done
     attempt=$((attempt + 1))
   done
+  [ -n "$RESTART_ERR" ] || RESTART_ERR="no new epnd pid with running.json at the installed version after 5 attempts"
 
   return 1
 }
@@ -611,14 +699,7 @@ if [ "$have" = "$want" ]; then
     _rv="$(running_version)"
     if [ -n "$_od" ] && [ -n "$_rv" ] && [ "$_od" != "$_rv" ]; then
       echo "epnd on disk is $_od but the running daemon is $_rv -- restarting onto the installed build" >&2
-      case "$os_name" in
-        Linux) pkill -x epnd 2>/dev/null || true; sleep 1 ;;
-        Darwin)
-          launchctl bootout "gui/$(id -u)/com.50gramx.epnd" 2>/dev/null \
-            || launchctl unload "$HOME/Library/LaunchAgents/com.50gramx.epnd.plist" 2>/dev/null || true
-          pkill -x epnd 2>/dev/null || true
-          sleep 1 ;;
-      esac
+      stop_epnd
       if start_epnd; then
         write_updater_state "restarted_onto_installed_build" false
         fleet_event "updater_restarted_stale_running_build" true "daemon was running an older build than the installed binary" false
@@ -635,6 +716,7 @@ if [ "$have" = "$want" ]; then
     exit 0
   fi
   echo "epnd up to date but NOT RUNNING — starting it" >&2
+  OLD_PIDS=""
   if start_epnd; then
     write_updater_state "started_stopped_daemon" false
     echo "epnd started" >&2
@@ -710,16 +792,7 @@ echo "updated epnd from ${TAG}" >&2
 # silently stays on the OLD build despite "updating". On macOS `launchctl
 # unload`/`load` also SILENTLY NO-OPS when the label is already registered, which
 # is why start_epnd prefers bootstrap/kickstart and then checks for the process.
-if [ "$os_name" = "Linux" ]; then
-  pkill -x epnd 2>/dev/null || true
-  sleep 1
-elif [ "$os_name" = "Darwin" ]; then
-  gui="gui/$(id -u)"
-  label="com.50gramx.epnd"
-  launchctl bootout "$gui/$label" 2>/dev/null || launchctl unload "$HOME/Library/LaunchAgents/${label}.plist" 2>/dev/null || true
-  pkill -x epnd 2>/dev/null || true
-  sleep 1
-fi
+stop_epnd
 
 if start_epnd; then
   write_updater_state "updated" false
