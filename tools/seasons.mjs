@@ -179,7 +179,52 @@ function mergeRows(prev, cur) {
  * Returns { files: Map<path, object>, current, index } so a caller (and a test) can
  * see what would be written without writing it.
  */
-export function buildSeasons(models, families, generatedAt = new Date().toISOString(), previous = readSeasons()) {
+/**
+ * WHAT PROVING COSTS, per hardware class and engine, from the fleet's own
+ * clocks. Every measured row a gram reports carries pull_ms and probe_ms (its
+ * residency ledger), and the report carries the gram's median download speed.
+ * Medians per (class, engine), with sample counts. Operational data, not a
+ * claim about any model: a gram with no samples of its own reads this to
+ * expect what an artifact will cost it, which is what turns "remaining" into
+ * an estimate instead of a trailing count (see the daemon's forecast).
+ */
+export function costTable(nodes) {
+  const probe = new Map(); // class -> engine -> ms[]
+  const speed = new Map(); // class -> MiB/s[]
+  for (const n of nodes || []) {
+    const p = n?.probes;
+    const klass = p?.hardware_class || 'unknown';
+    if (Number(p?.download_mib_per_sec) > 0) {
+      if (!speed.has(klass)) speed.set(klass, []);
+      speed.get(klass).push(Number(p.download_mib_per_sec));
+    }
+    for (const m of p?.models || []) {
+      if (m.state !== 'measured' || !(Number(m.probe_ms) > 0)) continue;
+      const eng = m.engine || 'unknown';
+      if (!probe.has(klass)) probe.set(klass, new Map());
+      const byEng = probe.get(klass);
+      if (!byEng.has(eng)) byEng.set(eng, []);
+      byEng.get(eng).push(Number(m.probe_ms));
+    }
+  }
+  const median = (xs) => {
+    const s = [...xs].sort((a, b) => a - b);
+    return s.length ? (s.length % 2 ? s[(s.length - 1) / 2] : (s[s.length / 2 - 1] + s[s.length / 2]) / 2) : null;
+  };
+  const out = {};
+  for (const [klass, byEng] of probe) {
+    out[klass] = out[klass] || { engines: {} };
+    for (const [eng, xs] of byEng) out[klass].engines[eng] = { probe_ms_median: Math.round(median(xs)), samples: xs.length };
+  }
+  for (const [klass, xs] of speed) {
+    out[klass] = out[klass] || { engines: {} };
+    out[klass].download_mib_per_sec_median = +median(xs).toFixed(1);
+    out[klass].download_samples = xs.length;
+  }
+  return out;
+}
+
+export function buildSeasons(models, families, generatedAt = new Date().toISOString(), previous = readSeasons(), nodes = []) {
   const idx = artifactIndex(families);
   const obs = observations(models);
   const now = seasonIdOf(Date.parse(generatedAt));
@@ -289,7 +334,12 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
       for (const [k, row] of Object.entries(a.by_class || {})) coverage[a.ref][k] = Math.max(coverage[a.ref][k] || 0, row.grams || 0);
     }
   }
-  const current = { ...files.get(`${SEASONS_DIR}/${now}.json`), coverage };
+  const current = {
+    ...files.get(`${SEASONS_DIR}/${now}.json`),
+    coverage,
+    cost: costTable(nodes),
+    cost_note: 'cost is operational: medians of node-reported pull/probe clocks per hardware class and engine, with sample counts. It is not a measurement of any model and is never ranked.',
+  };
   const index = { generated_at: generatedAt, cadence_days: SEASON_CADENCE_DAYS, current: now, seasons: indexEntries };
   return { files, current, index };
 }

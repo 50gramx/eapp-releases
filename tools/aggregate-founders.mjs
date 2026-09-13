@@ -3225,7 +3225,7 @@ function main() {
   // Merged with the previously published copy of each season, never
   // regenerated wholesale (see tools/seasons.mjs). current.json is what every
   // gram reads to choose the least-covered artifact for its own hardware.
-  writeSeasons(buildSeasons(models, models.families, out.generated_at));
+  writeSeasons(buildSeasons(models, models.families, out.generated_at, undefined, out.nodes));
 
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.
