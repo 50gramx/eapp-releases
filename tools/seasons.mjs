@@ -127,6 +127,10 @@ function observations(models) {
         effective_ctx: Number(extra.effective_ctx || n.effective_ctx || 0) || 0,
         tokens_per_sec: Number(n.tokens_per_sec || 0) || 0,
         held: held.sort(),
+        hw,
+        // Signed demand proxy: the rolling throughput observation carries how
+        // many tokens this node actually produced with the model.
+        total_tokens: Number(n.total_tokens || 0) || 0,
       });
     }
   }
@@ -220,6 +224,79 @@ export function costTable(nodes) {
     out[klass] = out[klass] || { engines: {} };
     out[klass].download_mib_per_sec_median = +median(xs).toFixed(1);
     out[klass].download_samples = xs.length;
+  }
+  return out;
+}
+
+/**
+ * LEARNED CLASSES: where one hardware class hides two machines.
+ *
+ * A class is a bucket (os/arch/gpu/RAM band). Whether it is ONE kind of machine
+ * is an empirical question the signed outcomes can answer: if the same
+ * artifact runs at 3 tok/s on some members and 105 on others, the bucket is
+ * hiding a dimension. This reports, per class, the spread of tok/s per ref
+ * across its grams and the candidate dimension that separates the fast from
+ * the slow (VRAM band or RAM band, whichever separates them cleanly). A split
+ * is proposed when the two halves each spread less than half of the whole:
+ * the halves explain the outcome better than the bucket did. Nothing is
+ * split here -- the proposal is published for the daemon to read as data.
+ */
+export function classVariance(obs) {
+  const byClassRef = new Map(); // class -> ref -> [{tps, hw, did}]
+  for (const o of obs) {
+    if (!(o.tokens_per_sec > 0) || !o.hw) continue;
+    if (!byClassRef.has(o.klass)) byClassRef.set(o.klass, new Map());
+    const refs = byClassRef.get(o.klass);
+    if (!refs.has(o.ref)) refs.set(o.ref, []);
+    refs.get(o.ref).push({ tps: o.tokens_per_sec, hw: o.hw, did: o.node_did });
+  }
+  const spread = (xs) => (xs.length < 2 ? 0 : Math.max(...xs) / Math.min(...xs));
+  const out = {};
+  for (const [klass, refs] of byClassRef) {
+    let worst = null;
+    for (const [ref, rows] of refs) {
+      const uniq = new Map(rows.map((r) => [r.did, r]));
+      if (uniq.size < 3) continue;
+      const list = [...uniq.values()];
+      const whole = spread(list.map((r) => r.tps));
+      if (!worst || whole > worst.spread) worst = { ref, spread: whole, list };
+    }
+    if (!worst) continue;
+    const row = { ref: worst.ref, grams: worst.list.length, tps_spread: +worst.spread.toFixed(1), split: null };
+    for (const dim of ['vram_gib', 'ram_gib']) {
+      const vals = [...new Set(worst.list.map((r) => Number(r.hw[dim] || 0)))].sort((a, b) => a - b);
+      if (vals.length < 2) continue;
+      for (let i = 1; i < vals.length; i++) {
+        const cut = vals[i];
+        const lo = worst.list.filter((r) => Number(r.hw[dim] || 0) < cut).map((r) => r.tps);
+        const hi = worst.list.filter((r) => Number(r.hw[dim] || 0) >= cut).map((r) => r.tps);
+        if (lo.length < 2 || hi.length < 2) continue;
+        const sl = spread(lo), sh = spread(hi);
+        if (sl < worst.spread / 2 && sh < worst.spread / 2) {
+          row.split = { dimension: dim, at: cut, below: { grams: lo.length, tps_spread: +sl.toFixed(1) }, above: { grams: hi.length, tps_spread: +sh.toFixed(1) } };
+          break;
+        }
+      }
+      if (row.split) break;
+    }
+    out[klass] = row;
+  }
+  return out;
+}
+
+/**
+ * DEMAND PER CELL, from signed throughput observations: how many tokens the
+ * grams of a class actually produced with an artifact. Depth (the rest of
+ * the ladder, the language tail, batch shapes) follows this, never an
+ * authored list. Tokens, not requests: a request that produced nothing is not
+ * demand anyone paid for.
+ */
+export function demandTable(obs) {
+  const out = {};
+  for (const o of obs) {
+    if (!(o.total_tokens > 0)) continue;
+    out[o.ref] = out[o.ref] || {};
+    out[o.ref][o.klass] = (out[o.ref][o.klass] || 0) + o.total_tokens;
   }
   return out;
 }
@@ -356,6 +433,9 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     coverage,
     coverage_caps: coverageCaps,
     cost: costTable(nodes),
+    class_variance: classVariance(obs),
+    demand: demandTable(obs),
+    demand_note: 'demand is tokens produced per artifact per class, from signed throughput observations; it orders depth, never existence.',
     cost_note: 'cost is operational: medians of node-reported pull/probe clocks per hardware class and engine, with sample counts. It is not a measurement of any model and is never ranked.',
   };
   const index = { generated_at: generatedAt, cadence_days: SEASON_CADENCE_DAYS, current: now, seasons: indexEntries };
