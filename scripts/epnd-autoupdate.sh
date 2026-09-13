@@ -187,7 +187,35 @@ epnd_running() { pgrep -x epnd >/dev/null 2>&1; }
 #
 # So stamp what was seen on EVERY run, satisfied or not. Unlike fleet-events
 # this file is READ by the daemon, never drained: the current value is the fact.
-epnd_home() { echo "${EPN_HOME:-$HOME/.epn}"; }
+# daemon_home is where the DAEMON keeps its state, read from its unit: the
+# EPN_HOME in the service environment, else the service user's ~/.epn. On the
+# bootstrap the unit says /var/lib/epnd while this script runs as root, so
+# $HOME/.epn was /root/.epn -- running.json and updater-state.json were read
+# and written in a home no daemon uses. running_version() answered "" on every
+# run, the state file the fleet reads was never there, and the first restart
+# through the verified path reported "did NOT come back" about a daemon that
+# had been up for forty seconds.
+daemon_home() {
+  _env=$(systemctl show epnd -p Environment --value 2>/dev/null || true)
+  _h=$(printf '%s
+' "$_env" | tr ' ' '
+' | sed -n 's/^EPN_HOME=//p' | head -1)
+  if [ -n "$_h" ]; then echo "$_h"; return 0; fi
+  _u=$(systemctl show epnd -p User --value 2>/dev/null || true)
+  [ -n "$_u" ] || _u=root
+  _d=$(getent passwd "$_u" 2>/dev/null | cut -d: -f6)
+  [ -n "$_d" ] || _d=/root
+  echo "$_d/.epn"
+}
+
+epnd_home() {
+  if [ -n "${EPN_HOME:-}" ]; then echo "$EPN_HOME"; return 0; fi
+  if command -v systemctl >/dev/null 2>&1 && systemctl show epnd -p Id --value 2>/dev/null | grep -q '^epnd.service$'; then
+    daemon_home
+    return 0
+  fi
+  echo "$HOME/.epn"
+}
 
 # bin_version asks the binary on disk what it is. "epnd version" prints
 # "epnd <sha>"; anything else -- an older build, a binary that will not exec on
@@ -536,18 +564,6 @@ reconcile_systemd() {
 # HOME=/root, and the daemon on bootstrap runs as user epnd with
 # EPN_HOME=/var/lib/epnd. The same rule the daemon applies (config.epnHome):
 # EPN_HOME from the unit, else ~/.epn of the unit's user.
-daemon_home() {
-  _env=$(systemctl show epnd -p Environment --value 2>/dev/null || true)
-  _h=$(printf '%s
-' "$_env" | tr ' ' '
-' | sed -n 's/^EPN_HOME=//p' | head -1)
-  if [ -n "$_h" ]; then echo "$_h"; return 0; fi
-  _u=$(systemctl show epnd -p User --value 2>/dev/null || true)
-  [ -n "$_u" ] || _u=root
-  _d=$(getent passwd "$_u" 2>/dev/null | cut -d: -f6)
-  [ -n "$_d" ] || _d=/root
-  echo "$_d/.epn"
-}
 
 # ensure_kick_path gives an existing gram the path unit install.sh writes,
 # and keeps it current. It runs here because this service runs as root on
