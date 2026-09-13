@@ -301,9 +301,23 @@ export function demandTable(obs) {
   return out;
 }
 
+/** The refined class key under a proposed split: "<coarse>/vram>=12" or "<coarse>/vram<12". */
+export function refinedClassOf(coarse, hw, variance) {
+  const split = variance?.[coarse]?.split;
+  if (!split || !hw) return coarse;
+  const v = Number(hw[split.dimension] || 0);
+  const dim = split.dimension.replace('_gib', '');
+  return `${coarse}/${dim}${v >= split.at ? '>=' : '<'}${split.at}`;
+}
+
 export function buildSeasons(models, families, generatedAt = new Date().toISOString(), previous = readSeasons(), nodes = []) {
   const idx = artifactIndex(families);
   const obs = observations(models);
+  // LEARNED CLASSES, applied. The split is proposed from the coarse buckets
+  // and then used to key coverage, so a gram reading class_variance derives
+  // the same refined key the season used (agent.CurrentHardwareClass).
+  const variance = classVariance(obs);
+  for (const o of obs) o.klass = refinedClassOf(o.klass, o.hw, variance);
   const now = seasonIdOf(Date.parse(generatedAt));
 
   // season -> ref -> class -> row
@@ -433,7 +447,7 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     coverage,
     coverage_caps: coverageCaps,
     cost: costTable(nodes),
-    class_variance: classVariance(obs),
+    class_variance: variance,
     demand: demandTable(obs),
     demand_note: 'demand is tokens produced per artifact per class, from signed throughput observations; it orders depth, never existence.',
     cost_note: 'cost is operational: medians of node-reported pull/probe clocks per hardware class and engine, with sample counts. It is not a measurement of any model and is never ranked.',
