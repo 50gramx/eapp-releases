@@ -759,7 +759,25 @@ function mergeOneModel(prev, cur) {
   // prior entry; a node absent this run keeps its last one, whose probed_at/measured_at
   // shows its age.
   const byNode = new Map((prev.nodes || []).map((n) => [n.node_did, n]));
-  for (const n of cur.nodes || []) byNode.set(n.node_did, n);
+  for (const n of cur.nodes || []) {
+    // THE PEAK IS A HIGH-WATER MARK PER NODE; the latest is what it does now.
+    // best_throughput used to be a high-water mark over the whole model while
+    // the per-node table showed each node's latest -- so the headline said
+    // 165 tok/s and the fastest row said 98, both signed by the same machine
+    // on different days, and nothing on the page explained the gap.
+    const p = byNode.get(n.node_did);
+    if (p && Number(p.peak_tokens_per_sec) > Number(n.peak_tokens_per_sec || 0)) {
+      n.peak_tokens_per_sec = p.peak_tokens_per_sec;
+      n.peak_measured_at = p.peak_measured_at;
+      n.peak_signature = p.peak_signature;
+      n.peak_signing_payload_b64 = p.peak_signing_payload_b64;
+    }
+    // Cost facts a node signed once stay until it signs them again.
+    for (const k of ['resident_mib', 'resident_vram_mib', 'weights_mib', 'cold_start_ms']) {
+      if (!(Number(n[k]) > 0) && p && Number(p[k]) > 0) n[k] = p[k];
+    }
+    byNode.set(n.node_did, n);
+  }
   const nodes = [...byNode.values()].sort((a, b) => (b.tokens_per_sec || 0) - (a.tokens_per_sec || 0));
 
   return {
@@ -1858,6 +1876,13 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       if (extra.hardware && typeof extra.hardware === 'object') {
         node.hardware = extra.hardware;
       }
+      // WHAT IT COSTS TO HOLD, signed beside what it does: resident bytes (and
+      // the share on the card), weights on disk, and the cold start this
+      // machine paid. Published per node because they are facts about the
+      // model AS THIS MACHINE LOADED IT.
+      for (const k of ['resident_mib', 'resident_vram_mib', 'weights_mib', 'cold_start_ms']) {
+        if (Number(extra[k]) > 0) node[k] = Number(extra[k]);
+      }
 
       // FAMILY, FROM THE SIGNED PAYLOAD. Attested rather than inferred here: the
       // node's catalog placed the ref, and re-deriving it from the name at this
@@ -1935,6 +1960,12 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       });
       const node = nodeEntry(m, signed.result.node_did);
       node.tokens_per_sec = signed.result.value;
+      // The node's peak is merged across runs (mergeOneModel); this run's
+      // figure seeds it so a first-time node has one.
+      node.peak_tokens_per_sec = signed.result.value;
+      node.peak_measured_at = signed.result.ts;
+      node.peak_signature = signed.signature;
+      node.peak_signing_payload_b64 = v.payload_b64 || undefined;
       node.sample_count = Number(extra.sample_count) || null;
       node.total_tokens = Number(extra.total_tokens) || null;
       node.total_seconds = Number(extra.total_seconds) || null;
