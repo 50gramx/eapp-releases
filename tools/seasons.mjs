@@ -334,9 +334,27 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
       for (const [k, row] of Object.entries(a.by_class || {})) coverage[a.ref][k] = Math.max(coverage[a.ref][k] || 0, row.grams || 0);
     }
   }
+  // coverage_caps: one level finer -- ref -> class -> capability -> how many
+  // probes proved it. A CELL of the probe-work plan is one entry here.
+  const coverageCaps = {};
+  for (const [ref, classes] of cumulative) {
+    coverageCaps[ref] = {};
+    for (const [k, row] of classes) coverageCaps[ref][k] = Object.fromEntries(Object.entries(row.caps).sort());
+  }
+  for (const [sid, prev] of previous) {
+    if (sid === now) continue;
+    for (const a of prev.artifacts || []) {
+      coverageCaps[a.ref] = coverageCaps[a.ref] || {};
+      for (const [k, row] of Object.entries(a.by_class || {})) {
+        coverageCaps[a.ref][k] = coverageCaps[a.ref][k] || {};
+        for (const [c, n] of Object.entries(row.caps || {})) coverageCaps[a.ref][k][c] = Math.max(coverageCaps[a.ref][k][c] || 0, n);
+      }
+    }
+  }
   const current = {
     ...files.get(`${SEASONS_DIR}/${now}.json`),
     coverage,
+    coverage_caps: coverageCaps,
     cost: costTable(nodes),
     cost_note: 'cost is operational: medians of node-reported pull/probe clocks per hardware class and engine, with sample counts. It is not a measurement of any model and is never ranked.',
   };
