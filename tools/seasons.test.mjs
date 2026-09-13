@@ -1,6 +1,6 @@
 // node tools/seasons.test.mjs
 import assert from 'node:assert/strict';
-import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf } from './seasons.mjs';
+import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
 
 function payload(extra, ts, did) {
   return Buffer.from(JSON.stringify({ metric: 'model.probe', value: 1, unit: 'pass', ts, node_did: did, extra })).toString('base64');
@@ -35,7 +35,7 @@ const models = { models: [
   ] },
 ] };
 
-const r = buildSeasons(models, families, new Date(W37).toISOString(), new Map());
+const r = buildSeasons(models, families, new Date(W37).toISOString(), new Map(), [], null);
 assert.deepEqual(r.index.seasons.map((s) => s.id), ['2026-W37', '2026-W36']);
 const w37 = r.files.get('data/catalog/seasons/2026-W37.json');
 assert.equal(w37.open, true);
@@ -61,10 +61,79 @@ assert.equal(r.current.coverage['hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M']['win
 
 // A closed season merged with its published copy never loses a gram.
 const prev = new Map([['2026-W36', { ...r.files.get('data/catalog/seasons/2026-W36.json') }]]);
-const later = buildSeasons({ models: [] }, families, new Date(W37).toISOString(), prev);
+const later = buildSeasons({ models: [] }, families, new Date(W37).toISOString(), prev, [], null);
 const w36 = later.files.get('data/catalog/seasons/2026-W36.json');
 assert.equal(w36.open, false);
 assert.equal(w36.artifacts[0].by_class['darwin/arm64/apple/16g'].grams, 1, 'merged, not regenerated');
 assert.equal(later.current.coverage['hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M']['darwin/arm64/apple/16g'], 1, 'prior seasons still count as coverage');
+
+
+// ── LEARNED CLASSES: split, merge, and the oscillation window ──────────────
+const K = 'windows/amd64/nvidia/16g';
+const ob = (did, tps, vram) => ({ ref: 'r', node_did: did, klass: K, tokens_per_sec: tps, hw: { os: 'windows', arch: 'amd64', gpu: 'nvidia', ram_gib: 16, vram_gib: vram } });
+// Two machines hiding in one bucket: 8 GiB cards at ~10 tok/s, 16 GiB cards at ~100.
+const bimodal = [ob('a', 10, 8), ob('b', 11, 8), ob('c', 100, 16), ob('d', 105, 16)];
+// The same cut explaining nothing: both halves spread as much as the whole.
+const flat = [ob('a', 10, 8), ob('b', 100, 8), ob('c', 11, 16), ob('d', 105, 16)];
+
+const v = classVariance(bimodal);
+assert.deepEqual({ dimension: v[K].split.dimension, at: v[K].split.at }, { dimension: 'vram_gib', at: 16 }, 'a clean cut on VRAM is proposed');
+assert.equal(classVariance(bimodal.slice(0, 3))[K].split, null, 'a class with fewer than 4 grams never splits');
+assert.equal(classVariance(bimodal.slice(0, 3))[K].tps_spread, 10, 'but its spread is still reported');
+const m = classVariance(flat, { [K]: { dimension: 'vram_gib', at: 16 } });
+assert.equal(m[K].split, null, 'an already-split class is not re-split');
+assert.equal(m[K].merge.converged, true, 'halves that each spread >= 0.75 of the whole propose a merge');
+assert.equal(classVariance(bimodal, { [K]: { dimension: 'vram_gib', at: 16 } })[K].merge.converged, false, 'halves that explain the spread do not');
+
+// Hysteresis: the split is applied only after K consecutive proposals.
+let prior;
+for (let i = 1; i < CLASS_VARIANCE_WINDOW; i++) {
+  prior = classVarianceWithHistory(bimodal, prior, `t${i}`);
+  assert.equal(prior[K].split, null, `aggregate ${i}: proposed, not yet applied`);
+  assert.equal(prior[K].proposed, 'split');
+  assert.equal(prior[K].streak, i);
+  assert.equal(refinedClassOf(K, { vram_gib: 16 }, prior), K, 'grams still key coarse');
+}
+prior = classVarianceWithHistory(bimodal, prior, 'tK');
+assert.equal(prior[K].split.dimension, 'vram_gib', 'applied on the Kth consecutive aggregate');
+assert.equal(prior[K].history.length, CLASS_VARIANCE_WINDOW, 'history is bounded to the window');
+assert.equal(refinedClassOf(K, { vram_gib: 16 }, prior), `${K}/vram>=16`);
+assert.equal(refinedClassOf(K, { vram_gib: 8 }, prior), `${K}/vram<16`);
+
+// A single flat aggregate does not flip it back; the split holds and the streak resets.
+prior = classVarianceWithHistory(flat, prior, 'm1');
+assert.equal(prior[K].proposed, 'merge');
+assert.equal(prior[K].streak, 1);
+assert.equal(prior[K].split.dimension, 'vram_gib', 'still split after one converged aggregate');
+prior = classVarianceWithHistory(bimodal, prior, 'h1');
+assert.equal(prior[K].proposed, 'hold');
+assert.equal(prior[K].split.dimension, 'vram_gib', 'a hold in between keeps the split');
+// The streak was broken: three more converged aggregates are needed.
+for (let i = 1; i < CLASS_VARIANCE_WINDOW; i++) {
+  prior = classVarianceWithHistory(flat, prior, `m${i + 1}`);
+  assert.equal(prior[K].split.dimension, 'vram_gib', `merge ${i}: proposed, not yet applied`);
+}
+prior = classVarianceWithHistory(flat, prior, 'mK');
+assert.equal(prior[K].split, null, 'merged back after K consecutive converged aggregates');
+assert.equal(refinedClassOf(K, { vram_gib: 16 }, prior), K, 'grams key coarse again');
+// And it cannot re-split on the very next aggregate.
+prior = classVarianceWithHistory(bimodal, prior, 's1');
+assert.equal(prior[K].split, null, 'a fresh split proposal starts its own window');
+assert.equal(prior[K].streak, 1);
+// A class that lost its grams keeps the split in force rather than flapping.
+const kept = classVarianceWithHistory([], { [K]: { split: { dimension: 'vram_gib', at: 16 }, history: [] } }, 'e1');
+assert.equal(kept[K].split.dimension, 'vram_gib', 'no observations: the split in force is carried');
+assert.equal(kept[K].proposed, 'hold');
+
+// The history is carried through current.json: buildSeasons reads the prior publication.
+const probeAt = (did, tps, vram) => ({ node_did: did, tokens_per_sec: tps, capabilities: {}, probe_signing_payload_b64: payload({ hardware: { ...hwWin, vram_gib: vram } }, W37 * 1e6, did) });
+const bimodalModels = { models: [{ name: 'hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M', nodes: [probeAt('did:epn:a', 10, 8), probeAt('did:epn:b', 11, 8), probeAt('did:epn:c', 100, 16), probeAt('did:epn:d', 105, 16)] }] };
+let cur = null;
+for (let i = 1; i <= CLASS_VARIANCE_WINDOW; i++) {
+  cur = buildSeasons(bimodalModels, families, new Date(W37 + i * 1000).toISOString(), new Map(), [], cur).current;
+  assert.equal(cur.class_variance[K].history.length, i, `aggregate ${i} carried ${i - 1} prior proposals`);
+}
+assert.equal(cur.class_variance[K].split.at, 16, 'buildSeasons applies the split once the window is full');
+assert.ok(cur.coverage['hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M'][`${K}/vram>=16`], 'coverage is keyed by the refined class once applied');
 
 console.log('ok - seasons');

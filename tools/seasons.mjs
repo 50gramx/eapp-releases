@@ -240,8 +240,24 @@ export function costTable(nodes) {
  * is proposed when the two halves each spread less than half of the whole:
  * the halves explain the outcome better than the bucket did. Nothing is
  * split here -- the proposal is published for the daemon to read as data.
+ *
+ * A class with fewer than CLASS_SPLIT_MIN_GRAMS distinct grams never has a
+ * split proposed: two halves of three machines is one machine on a side, and
+ * one machine has no spread to compare.
+ *
+ * `applied` is the split currently in force per coarse class (from the
+ * previous publication). For a class that is already split this reports the
+ * INVERSE question against the same cut: have the halves converged -- each
+ * half now spreads at least CLASS_MERGE_RATIO of the whole -- so the split
+ * explains nothing and a merge is proposed. Proposals only; applying either
+ * is classVarianceWithHistory's job, behind the oscillation window.
  */
-export function classVariance(obs) {
+export const CLASS_SPLIT_MIN_GRAMS = 4;
+export const CLASS_MERGE_RATIO = 0.75;
+/** Consecutive aggregates a split or merge proposal must hold before it is applied. */
+export const CLASS_VARIANCE_WINDOW = 3;
+
+export function classVariance(obs, applied = {}) {
   const byClassRef = new Map(); // class -> ref -> [{tps, hw, did}]
   for (const o of obs) {
     if (!(o.tokens_per_sec > 0) || !o.hw) continue;
@@ -251,6 +267,11 @@ export function classVariance(obs) {
     refs.get(o.ref).push({ tps: o.tokens_per_sec, hw: o.hw, did: o.node_did });
   }
   const spread = (xs) => (xs.length < 2 ? 0 : Math.max(...xs) / Math.min(...xs));
+  const halves = (list, dim, cut) => {
+    const lo = list.filter((r) => Number(r.hw[dim] || 0) < cut).map((r) => r.tps);
+    const hi = list.filter((r) => Number(r.hw[dim] || 0) >= cut).map((r) => r.tps);
+    return { lo, hi };
+  };
   const out = {};
   for (const [klass, refs] of byClassRef) {
     let worst = null;
@@ -262,14 +283,29 @@ export function classVariance(obs) {
       if (!worst || whole > worst.spread) worst = { ref, spread: whole, list };
     }
     if (!worst) continue;
-    const row = { ref: worst.ref, grams: worst.list.length, tps_spread: +worst.spread.toFixed(1), split: null };
+    const row = { ref: worst.ref, grams: worst.list.length, tps_spread: +worst.spread.toFixed(1), split: null, merge: null };
+    const inForce = applied?.[klass] || null;
+    if (inForce?.dimension && Number(inForce.at) > 0) {
+      // Already split on this cut: does the cut still explain the spread?
+      const { lo, hi } = halves(worst.list, inForce.dimension, Number(inForce.at));
+      if (lo.length >= 2 && hi.length >= 2) {
+        const sl = spread(lo), sh = spread(hi);
+        const converged = sl >= worst.spread * CLASS_MERGE_RATIO && sh >= worst.spread * CLASS_MERGE_RATIO;
+        row.merge = { dimension: inForce.dimension, at: Number(inForce.at), converged, below: { grams: lo.length, tps_spread: +sl.toFixed(1) }, above: { grams: hi.length, tps_spread: +sh.toFixed(1) } };
+      }
+      out[klass] = row;
+      continue;
+    }
+    if (worst.list.length < CLASS_SPLIT_MIN_GRAMS) {
+      out[klass] = row;
+      continue;
+    }
     for (const dim of ['vram_gib', 'ram_gib']) {
       const vals = [...new Set(worst.list.map((r) => Number(r.hw[dim] || 0)))].sort((a, b) => a - b);
       if (vals.length < 2) continue;
       for (let i = 1; i < vals.length; i++) {
         const cut = vals[i];
-        const lo = worst.list.filter((r) => Number(r.hw[dim] || 0) < cut).map((r) => r.tps);
-        const hi = worst.list.filter((r) => Number(r.hw[dim] || 0) >= cut).map((r) => r.tps);
+        const { lo, hi } = halves(worst.list, dim, cut);
         if (lo.length < 2 || hi.length < 2) continue;
         const sl = spread(lo), sh = spread(hi);
         if (sl < worst.spread / 2 && sh < worst.spread / 2) {
@@ -280,6 +316,59 @@ export function classVariance(obs) {
       if (row.split) break;
     }
     out[klass] = row;
+  }
+  return out;
+}
+
+/**
+ * THE OSCILLATION WINDOW. A split or merge changes how every gram of a class
+ * keys itself, and a class with few grams can look split one week and not the
+ * next. So a proposal is applied only after it has held for
+ * CLASS_VARIANCE_WINDOW consecutive aggregates, and the proposals are carried
+ * in the published row as `history` (newest last) so the next aggregate reads
+ * them back from the previous current.json.
+ *
+ * Per coarse class the published row is:
+ *   split     the split IN FORCE (what refinedClassOf and the daemon apply),
+ *             or null
+ *   proposed  what this aggregate saw: 'split' | 'merge' | 'hold'
+ *   history   the last CLASS_VARIANCE_WINDOW proposals, each
+ *             { at, proposal, dimension?, cut? }
+ *   streak    how many consecutive entries of history agree with the newest
+ *   halves    (when split) the two halves' spreads under the cut in force
+ *
+ * `prior` is the previous publication's class_variance (or undefined).
+ */
+export function classVarianceWithHistory(obs, prior, at = new Date().toISOString()) {
+  const applied = {};
+  for (const [klass, row] of Object.entries(prior || {})) if (row?.split?.dimension) applied[klass] = { dimension: row.split.dimension, at: Number(row.split.at) };
+  const fresh = classVariance(obs, applied);
+  const out = {};
+  const classes = new Set([...Object.keys(fresh), ...Object.keys(applied)]);
+  for (const klass of classes) {
+    const seen = fresh[klass] || null;
+    const inForce = applied[klass] || null;
+    const prev = prior?.[klass] || {};
+    let proposal;
+    if (inForce) {
+      proposal = seen?.merge?.converged ? { at, proposal: 'merge', dimension: inForce.dimension, cut: inForce.at } : { at, proposal: 'hold' };
+    } else if (seen?.split) {
+      proposal = { at, proposal: 'split', dimension: seen.split.dimension, cut: seen.split.at };
+    } else {
+      proposal = { at, proposal: 'hold' };
+    }
+    const history = [...(Array.isArray(prev.history) ? prev.history : []), proposal].slice(-CLASS_VARIANCE_WINDOW);
+    const same = (a, b) => a.proposal === b.proposal && (a.dimension || null) === (b.dimension || null) && (a.cut ?? null) === (b.cut ?? null);
+    let streak = 0;
+    for (let i = history.length - 1; i >= 0 && same(history[i], proposal); i--) streak++;
+    const held = streak >= CLASS_VARIANCE_WINDOW;
+    let split = inForce ? (prev.split || inForce) : null;
+    if (!inForce && proposal.proposal === 'split' && held) split = seen.split;
+    if (inForce && proposal.proposal === 'merge' && held) split = null;
+    const row = seen ? { ...seen } : { ref: prev.ref || null, grams: 0, tps_spread: null };
+    delete row.merge;
+    if (seen?.merge) row.halves = { below: seen.merge.below, above: seen.merge.above, converged: seen.merge.converged };
+    out[klass] = { ...row, split, proposed: proposal.proposal, history, streak };
   }
   return out;
 }
@@ -310,13 +399,15 @@ export function refinedClassOf(coarse, hw, variance) {
   return `${coarse}/${dim}${v >= split.at ? '>=' : '<'}${split.at}`;
 }
 
-export function buildSeasons(models, families, generatedAt = new Date().toISOString(), previous = readSeasons(), nodes = []) {
+export function buildSeasons(models, families, generatedAt = new Date().toISOString(), previous = readSeasons(), nodes = [], priorCurrent = readCurrent()) {
   const idx = artifactIndex(families);
   const obs = observations(models);
-  // LEARNED CLASSES, applied. The split is proposed from the coarse buckets
-  // and then used to key coverage, so a gram reading class_variance derives
-  // the same refined key the season used (agent.CurrentHardwareClass).
-  const variance = classVariance(obs);
+  // LEARNED CLASSES, applied. The split is proposed from the coarse buckets,
+  // held for CLASS_VARIANCE_WINDOW aggregates (history read back from the
+  // previous current.json), and then used to key coverage, so a gram reading
+  // class_variance derives the same refined key the season used
+  // (agent.CurrentHardwareClass).
+  const variance = classVarianceWithHistory(obs, priorCurrent?.class_variance, generatedAt);
   for (const o of obs) o.klass = refinedClassOf(o.klass, o.hw, variance);
   const now = seasonIdOf(Date.parse(generatedAt));
 
@@ -448,6 +539,7 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     coverage_caps: coverageCaps,
     cost: costTable(nodes),
     class_variance: variance,
+    class_variance_note: `class_variance.<class>.split is the split in force; a split or merge is applied only after the same proposal held for ${CLASS_VARIANCE_WINDOW} consecutive aggregates (history), and a class with fewer than ${CLASS_SPLIT_MIN_GRAMS} grams never splits.`,
     demand: demandTable(obs),
     demand_note: 'demand is tokens produced per artifact per class, from signed throughput observations; it orders depth, never existence.',
     cost_note: 'cost is operational: medians of node-reported pull/probe clocks per hardware class and engine, with sample counts. It is not a measurement of any model and is never ranked.',
@@ -470,6 +562,17 @@ export function readSeasons(dir = SEASONS_DIR) {
     }
   }
   return out;
+}
+
+/** The previously published current.json, or null: the class-variance history lives there. */
+export function readCurrent(dir = SEASONS_DIR) {
+  const path = `${dir}/current.json`;
+  if (!existsSync(path)) return null;
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    return null; // an unreadable history starts the window over; nothing else is lost
+  }
 }
 
 /** Write what buildSeasons returned. */
