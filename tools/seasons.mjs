@@ -192,7 +192,7 @@ function mergeRows(prev, cur) {
  * expect what an artifact will cost it, which is what turns "remaining" into
  * an estimate instead of a trailing count (see the daemon's forecast).
  */
-export function costTable(nodes) {
+export function costTable(nodes, prior = null) {
   const probe = new Map(); // class -> engine -> ms[]
   const speed = new Map(); // class -> MiB/s[]
   for (const n of nodes || []) {
@@ -380,13 +380,59 @@ export function classVarianceWithHistory(obs, prior, at = new Date().toISOString
  * authored list. Tokens, not requests: a request that produced nothing is not
  * demand anyone paid for.
  */
-export function demandTable(obs) {
+export function demandTable(obs, prior = null) {
   const out = {};
   for (const o of obs) {
     if (!(o.total_tokens > 0)) continue;
     out[o.ref] = out[o.ref] || {};
     out[o.ref][o.klass] = (out[o.ref][o.klass] || 0) + o.total_tokens;
   }
+  // A GRAM THAT WENT TO SLEEP DID NOT UN-SERVE ITS TOKENS.
+  //
+  // Demand is built from the observations the fleet is reporting NOW, so the
+  // moment a gram sleeps every token it ever served vanished from the table
+  // and the refs it served dropped below their class median -- which is what
+  // orders depth and places replicas. Cumulative is what the number always
+  // meant: the highest total the network has ever recorded for this cell
+  // stands until a larger one replaces it.
+  for (const [ref, classes] of Object.entries(prior || {})) {
+    for (const [klass, tokens] of Object.entries(classes || {})) {
+      if (!(Number(tokens) > 0)) continue;
+      out[ref] = out[ref] || {};
+      out[ref][klass] = Math.max(Number(out[ref][klass] || 0), Number(tokens));
+    }
+  }
+
+  return out;
+}
+
+/**
+ * mergeCost carries a hardware class's operational medians across an aggregate
+ * in which no gram of that class reported.
+ *
+ * THE SAME REASON DEMAND IS CUMULATIVE. costTable reads the live fleet
+ * snapshot; a class whose only grams are asleep disappeared from the table
+ * entirely, taking its probe medians and download speed with it -- and every
+ * gram of that class then planned its queue with no basis at all, on a fact
+ * the network had already measured. What is carried is marked with the
+ * aggregate that last saw it, so a reader can tell a measurement from a
+ * memory.
+ */
+export function mergeCost(fresh, prior, at) {
+  const out = {};
+  for (const [klass, row] of Object.entries(prior || {})) {
+    out[klass] = { ...row, carried_from: row.carried_from || row.at || null };
+  }
+  for (const [klass, row] of Object.entries(fresh || {})) {
+    const kept = out[klass] || {};
+    const engines = { ...(kept.engines || {}) };
+    for (const [eng, r] of Object.entries(row.engines || {})) engines[eng] = { ...r, at };
+    out[klass] = {
+      ...kept, ...row, engines, at,
+      carried_from: null,
+    };
+  }
+
   return out;
 }
 
@@ -539,11 +585,12 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     coverage_caps: coverageCaps,
     refusals: refusalTable(nodes, previous, now),
     refusals_note: 'refusals are signed facts about (artifact, class): gated, unloadable, or absent upstream. They are coverage of a kind -- the fleet learned it once -- and they sink the cell to the back of every gram of that class. A refusal lifts when its season closes and the engine that refused has moved on.',
-    cost: costTable(nodes),
+    cost: mergeCost(costTable(nodes), priorCurrent?.cost, generatedAt),
     class_variance: variance,
     class_variance_note: `class_variance.<class>.split is the split in force; a split or merge is applied only after the same proposal held for ${CLASS_VARIANCE_WINDOW} consecutive aggregates (history), and a class with fewer than ${CLASS_SPLIT_MIN_GRAMS} grams never splits.`,
-    demand: demandTable(obs),
+    demand: demandTable(obs, priorCurrent?.demand),
     demand_note: 'demand is tokens produced per artifact per class, from signed throughput observations; it orders depth, never existence.',
+    contributors_note: 'grams and classes are what THIS window heard from; coverage, refusals, cost and demand carry across windows, because a gram going to sleep does not unmake what it measured.',
     cost_note: 'cost is operational: medians of node-reported pull/probe clocks per hardware class and engine, with sample counts. It is not a measurement of any model and is never ranked.',
   };
   const index = { generated_at: generatedAt, cadence_days: SEASON_CADENCE_DAYS, current: now, seasons: indexEntries };

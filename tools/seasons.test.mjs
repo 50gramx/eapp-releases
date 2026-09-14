@@ -1,6 +1,6 @@
 // node tools/seasons.test.mjs
 import assert from 'node:assert/strict';
-import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, refusalTable, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
+import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, refusalTable, demandTable, mergeCost, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
 
 function payload(extra, ts, did) {
   return Buffer.from(JSON.stringify({ metric: 'model.probe', value: 1, unit: 'pass', ts, node_did: did, extra })).toString('base64');
@@ -159,4 +159,20 @@ console.log('ok - seasons');
 
   const carried = refusalTable([], new Map([['2026-W37', { refusals: { 'x/y': { cls: { cause: 'unloadable', grams: 1, version: 'old' } } } }]]), '2026-W38');
   assert.equal(carried['x/y'].cls.cause, 'unloadable', 'an earlier season refusal still stands');
+}
+
+// -- A GRAM THAT SLEPT DID NOT UNMAKE WHAT IT MEASURED ----------------------
+{
+  const prior = { 'a/b': { 'cls': 100 }, 'c/d': { 'cls': 50 } };
+  const obs = [{ ref: 'a/b', klass: 'cls', total_tokens: 60 }];
+  const d = demandTable(obs, prior);
+  assert.equal(d['a/b'].cls, 100, 'the highest total the network ever recorded stands');
+  assert.equal(d['c/d'].cls, 50, 'a ref no live gram reports is still demanded');
+
+  const fresh = { k1: { engines: { ollama: { probe_ms_median: 10, samples: 2 } }, download_mib_per_sec_median: 20 } };
+  const before = { k1: { engines: { ollama: { probe_ms_median: 99, samples: 1 } } }, k2: { engines: { vllm: { probe_ms_median: 5, samples: 3 } } } };
+  const m = mergeCost(fresh, before, '2026-09-14T00:00:00Z');
+  assert.equal(m.k1.engines.ollama.probe_ms_median, 10, 'a class reporting now replaces its own memory');
+  assert.equal(m.k1.carried_from, null, 'a class measured this window is not carried');
+  assert.equal(m.k2.engines.vllm.probe_ms_median, 5, 'a class whose grams are asleep keeps its medians');
 }
