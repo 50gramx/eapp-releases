@@ -1,6 +1,6 @@
 // node tools/seasons.test.mjs
 import assert from 'node:assert/strict';
-import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
+import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, refusalTable, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
 
 function payload(extra, ts, did) {
   return Buffer.from(JSON.stringify({ metric: 'model.probe', value: 1, unit: 'pass', ts, node_did: did, extra })).toString('base64');
@@ -137,3 +137,26 @@ assert.equal(cur.class_variance[K].split.at, 16, 'buildSeasons applies the split
 assert.ok(cur.coverage['hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M'][`${K}/vram>=16`], 'coverage is keyed by the refined class once applied');
 
 console.log('ok - seasons');
+
+// -- REFUSALS ARE COVERAGE (PROBE_WORK_AND_WEIGHT_OBJECTS.md item 13) -------
+{
+  const nodes = [
+    { node_did: 'did:a', version: 'buildA', probes: { hardware_class: 'windows/amd64/intel/16g', refusals: [
+      { ref: 'ai4bharat/indic-parler-tts', class: 'windows/amd64/intel/16g', cause: 'gated', at: '2026-09-14T01:00:00Z' },
+      { ref: 'some/model', class: 'windows/amd64/intel/16g', cause: 'engine-outage', at: '2026-09-14T01:00:00Z' },
+    ] } },
+    { node_did: 'did:b', version: 'buildA', probes: { hardware_class: 'windows/amd64/intel/16g', refusals: [
+      { ref: 'ai4bharat/indic-parler-tts', class: 'windows/amd64/intel/16g', cause: 'gated', at: '2026-09-14T02:00:00Z' },
+    ] } },
+  ];
+  const t = refusalTable(nodes);
+  assert.equal(t['some/model'], undefined, 'an engine outage is this minute, not a refusal');
+  const row = t['ai4bharat/indic-parler-tts']['windows/amd64/intel/16g'];
+  assert.equal(row.cause, 'gated');
+  assert.equal(row.grams, 2, 'both grams that signed it are counted');
+  assert.equal(row.first_at, '2026-09-14T01:00:00Z');
+  assert.equal(row.last_at, '2026-09-14T02:00:00Z');
+
+  const carried = refusalTable([], new Map([['2026-W37', { refusals: { 'x/y': { cls: { cause: 'unloadable', grams: 1, version: 'old' } } } }]]), '2026-W38');
+  assert.equal(carried['x/y'].cls.cause, 'unloadable', 'an earlier season refusal still stands');
+}

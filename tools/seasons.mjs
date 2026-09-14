@@ -537,6 +537,8 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     ...files.get(`${SEASONS_DIR}/${now}.json`),
     coverage,
     coverage_caps: coverageCaps,
+    refusals: refusalTable(nodes, previous, now),
+    refusals_note: 'refusals are signed facts about (artifact, class): gated, unloadable, or absent upstream. They are coverage of a kind -- the fleet learned it once -- and they sink the cell to the back of every gram of that class. A refusal lifts when its season closes and the engine that refused has moved on.',
     cost: costTable(nodes),
     class_variance: variance,
     class_variance_note: `class_variance.<class>.split is the split in force; a split or merge is applied only after the same proposal held for ${CLASS_VARIANCE_WINDOW} consecutive aggregates (history), and a class with fewer than ${CLASS_SPLIT_MIN_GRAMS} grams never splits.`,
@@ -546,6 +548,72 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
   };
   const index = { generated_at: generatedAt, cadence_days: SEASON_CADENCE_DAYS, current: now, seasons: indexEntries };
   return { files, current, index };
+}
+
+/**
+ * refusalTable: ref -> class -> {cause, grams, version, first_at, last_at}.
+ *
+ * ── WHY A REFUSAL IS PUBLISHED AT ALL ─────────────────────────────────────
+ *
+ * Coverage-first sends every gram of a class at the cells nobody has proved.
+ * When a cell CANNOT be proved -- the repo is gated, the engine has no loader
+ * for that architecture, the quant was never published -- every gram of the
+ * class discovers that separately, once per season. Four grams lost four
+ * hours each on the same sixteen Indic artifacts the night this was written.
+ *
+ * A refusal is as useful as a measurement and is signed the same way, so it
+ * belongs in the season beside coverage. Only permanent causes appear: a
+ * budget refusal is one machine's today, an engine outage is one minute's.
+ */
+export function refusalTable(nodes, previous = new Map(), now = '') {
+  const PERMANENT = new Set(['gated', 'unloadable', 'unavailable']);
+  const out = {};
+  const note = (ref, klass, cause, at, version) => {
+    if (!ref || !klass || !PERMANENT.has(cause)) return;
+    out[ref] = out[ref] || {};
+    const row = out[ref][klass] || { cause, grams: 0, version: version || '', first_at: at, last_at: at, dids: new Set() };
+    row.cause = cause;
+    if (at && (!row.first_at || at < row.first_at)) row.first_at = at;
+    if (at && (!row.last_at || at > row.last_at)) row.last_at = at;
+    if (version) row.version = version;
+    out[ref][klass] = row;
+  };
+  for (const n of nodes || []) {
+    const p = n?.probes;
+    const klass = p?.hardware_class || '';
+    for (const r of p?.refusals || []) {
+      note(r.ref, r.class || klass, String(r.cause || ''), r.at || '', n.version || '');
+      const row = out[r.ref]?.[r.class || klass];
+      if (row && n.node_did) row.dids.add(n.node_did);
+    }
+  }
+  // A refusal another gram published in an earlier season still stands until
+  // that season closes AND the engine moves; carrying it forward is what
+  // makes a gram that has never met the artifact step over it.
+  for (const [sid, prev] of previous || []) {
+    if (sid === now) continue;
+    for (const [ref, classes] of Object.entries(prev.refusals || {})) {
+      for (const [klass, row] of Object.entries(classes)) {
+        if (!PERMANENT.has(row.cause)) continue;
+        out[ref] = out[ref] || {};
+        const cur = out[ref][klass];
+        if (!cur) {
+          out[ref][klass] = { ...row, dids: new Set() };
+          out[ref][klass].grams = row.grams || 1;
+        }
+      }
+    }
+  }
+  for (const classes of Object.values(out)) {
+    for (const row of Object.values(classes)) {
+      if (row.dids) {
+        row.grams = Math.max(row.grams || 0, row.dids.size);
+        delete row.dids;
+      }
+    }
+  }
+
+  return out;
 }
 
 /** Previously published seasons, by id. */
