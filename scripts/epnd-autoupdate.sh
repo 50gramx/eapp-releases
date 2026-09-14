@@ -837,6 +837,57 @@ else got="$(shasum -a 256 "$tmp/epnd" | awk '{print $1}')"; fi
 rm -f "$partial" "$partialFor"
 
 chmod +x "$tmp/epnd"
+
+# -- HAND OVER IF THE DAEMON IS ALIVE; SWAP ONLY IF IT IS NOT ---------------
+#
+# Backlog item 15. Killing epnd mid-probe threw away whatever it was doing --
+# a multi-gigabyte pull, a forty-minute probe, a call being served for a peer
+# -- and bounced the pods on the way back up. A live daemon is asked instead:
+# the verified binary is staged beside it with a JSON sidecar, and the daemon
+# drains its own work and swaps itself (internal/selfupdate/handover.go).
+#
+# THE FALLBACK IS WHAT MAKES THIS SAFE: a daemon too old to know about the
+# sidecar would ignore it forever, so a stage not taken up within the grace
+# window is abandoned and this run does the old hard swap.
+HANDOVER_GRACE_MIN=20
+
+daemon_answering() {
+  curl -fsS --max-time 3 http://127.0.0.1:53581/v1/identity >/dev/null 2>&1
+}
+
+write_staged_update() {
+  _home=$(epnd_home)
+  [ -n "$_home" ] && [ -d "$_home" ] || return 1
+  cp -f "$1" "$BIN.staged" 2>/dev/null || return 1
+  _at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+  printf '{"version":"%s","path":"%s","sha256":"%s","at":"%s"}
+'     "$2" "$BIN.staged" "$3" "$_at" > "$_home/update-staged.json.tmp" 2>/dev/null || return 1
+  mv -f "$_home/update-staged.json.tmp" "$_home/update-staged.json" 2>/dev/null || return 1
+
+  return 0
+}
+
+staged_is_stale() {
+  _home=$(epnd_home)
+  _f="$_home/update-staged.json"
+  [ -f "$_f" ] || return 1
+  _age=$(( $(date +%s) - $(date -r "$_f" +%s 2>/dev/null || echo 0) ))
+  [ "$_age" -ge $(( HANDOVER_GRACE_MIN * 60 )) ]
+}
+
+if daemon_answering && ! staged_is_stale; then
+  if write_staged_update "$tmp/epnd" "$TAG" "$got"; then
+    write_updater_state "handover_pending" false
+    echo "staged for handover - the daemon will finish its work and swap itself" >&2
+    exit 0
+  fi
+  echo "could not stage for handover - falling back to the hard swap" >&2
+elif staged_is_stale; then
+  echo "a staged update was not taken up within ${HANDOVER_GRACE_MIN}m - this build does not hand over, swapping" >&2
+  write_updater_state "handover_timeout" true
+  rm -f "$(epnd_home)/update-staged.json" 2>/dev/null || true
+fi
+
 # Atomic swap: write to .new then rename over it
 mv "$tmp/epnd" "${BIN}.new"
 mv "${BIN}.new" "$BIN"

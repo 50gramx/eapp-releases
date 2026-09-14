@@ -339,6 +339,49 @@ function Get-RunningVersion {
   return ""
 }
 
+# Test-DaemonAnswering asks the daemon's own local REST API whether it is up,
+# the same endpoint the gram page polls. A short timeout: this is a liveness
+# check, not a diagnostic, and a slow/hung daemon must be treated as "not
+# safely handed-over-able" rather than blocking the updater on it.
+function Test-DaemonAnswering {
+  try {
+    $r = Invoke-RestMethod -Uri 'http://127.0.0.1:53581/v1/identity' -TimeoutSec 3 -ErrorAction Stop
+    return [bool]$r
+  } catch {
+    return $false
+  }
+}
+
+# Write-StagedUpdate is the handover half of backlog item 15: AN UPDATE MUST
+# DRAIN, NOT INTERRUPT. Instead of killing the running epnd, this stages the
+# verified binary beside it and describes it in a JSON sidecar
+# (internal/selfupdate/handover.go's StagedUpdate); the daemon itself notices,
+# drains its own work, swaps the binary, and exits on purpose for the task
+# scheduler to restart. No process here is ever stopped.
+function Write-StagedUpdate {
+  param([string]$Verified, [string]$Bin, [string]$Version, [string]$Sha256)
+  $home2 = Get-EpnHome
+  if (-not (Test-Path $home2)) { return $false }
+  try {
+    $staged = "$Bin.staged"
+    Copy-Item -Path $Verified -Destination $staged -Force -ErrorAction Stop
+    $st = [ordered]@{
+      version = $Version
+      path    = $staged
+      sha256  = $Sha256
+      at      = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+    }
+    $tmpf = Join-Path $home2 'update-staged.json.tmp'
+    $json = ($st | ConvertTo-Json -Compress -Depth 4)
+    # No BOM, same reasoning as Write-UpdaterState: Go's Unmarshal rejects one.
+    [System.IO.File]::WriteAllText($tmpf, $json, (New-Object System.Text.UTF8Encoding($false)))
+    Move-Item -Path $tmpf -Destination (Join-Path $home2 'update-staged.json') -Force -ErrorAction Stop
+    return $true
+  } catch {
+    return $false
+  }
+}
+
 # Write-UpdaterState records this run. Best-effort and silent: a node that
 # cannot write a heartbeat is still a node, and failing an update over
 # diagnostics would turn an observability gap into an outage.
@@ -539,6 +582,39 @@ try {
   if ($got -ne $want.ToLower()) {
     Write-Error "checksum mismatch (want $want got $got)"
     exit 1
+  }
+
+  # -- HAND OVER IF THE DAEMON IS ALIVE; SWAP ONLY IF IT IS NOT ------------
+  #
+  # Backlog item 15. Killing epnd mid-probe threw away whatever it was doing
+  # (a 4 GB pull, a 40-minute probe, a call it was serving for a peer) and
+  # bounced the k3s pods on the way back up. A live daemon is asked instead:
+  # the verified binary is staged beside it with a JSON sidecar, and the
+  # daemon drains its own work and swaps itself.
+  #
+  # THE FALLBACK IS WHAT MAKES THIS SAFE. A daemon too old to know about
+  # handover would ignore the sidecar forever, so a stage that has not been
+  # taken up within the grace window is abandoned and this run does the old
+  # hard swap. A fleet can never be stranded by a feature it does not have.
+  $epnHome = Get-EpnHome
+  $stagedJson = if ($epnHome) { Join-Path $epnHome 'update-staged.json' } else { $null }
+  $handoverGraceMinutes = 20
+  $stagedStale = $false
+  if ($stagedJson -and (Test-Path $stagedJson)) {
+    $age = (Get-Date) - (Get-Item $stagedJson).LastWriteTime
+    if ($age.TotalMinutes -ge $handoverGraceMinutes) { $stagedStale = $true }
+  }
+  if ((Test-DaemonAnswering) -and -not $stagedStale) {
+    if (Write-StagedUpdate -Verified (Join-Path $tmp 'epnd.exe') -Bin $bin -Version $want -Sha256 $got) {
+      Write-UpdaterState -Bin $bin -Asset $asset -Action 'handover_pending' -Behind $false
+      Write-Host "staged for handover - the daemon will finish its work and swap itself" -ForegroundColor Green
+      exit 0
+    }
+    Write-Host "could not stage for handover - falling back to the hard swap" -ForegroundColor Yellow
+  } elseif ($stagedStale) {
+    Write-Host "a staged update was not taken up within $handoverGraceMinutes minutes - this build does not hand over, swapping" -ForegroundColor Yellow
+    Write-UpdaterState -Bin $bin -Asset $asset -Action 'handover_timeout' -Behind $true
+    Remove-Item -Path $stagedJson -Force -ErrorAction SilentlyContinue
   }
 
   # Stop the service, replace binary, restart. The task name must match what
