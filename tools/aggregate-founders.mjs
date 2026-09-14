@@ -14,6 +14,23 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from '
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons } from './seasons.mjs';
 
+// readFleetNodes merges every collector's fleet snapshot (data/nodes/*.fleet.json)
+// into one list of telemetry nodes, newest record per node_did.
+function readFleetNodes() {
+  const byDID = new Map();
+  if (!existsSync(NODES_DIR)) return [];
+  for (const f of readdirSync(NODES_DIR).filter((f) => f.endsWith('.fleet.json'))) {
+    let snap;
+    try { snap = JSON.parse(readFileSync(`${NODES_DIR}/${f}`, 'utf8')); } catch { continue; }
+    for (const n of snap?.nodes || []) {
+      if (!n?.node_did) continue;
+      const prev = byDID.get(n.node_did);
+      if (!prev || String(n.last_seen || '') > String(prev.last_seen || '')) byDID.set(n.node_did, n);
+    }
+  }
+  return [...byDID.values()];
+}
+
 const NODES_DIR = 'data/nodes';
 // What the published data/ directory may weigh before this run says so out loud.
 // See the check at the end of main() for why a warning and not a failure.
@@ -3225,7 +3242,13 @@ function main() {
   // Merged with the previously published copy of each season, never
   // regenerated wholesale (see tools/seasons.mjs). current.json is what every
   // gram reads to choose the least-covered artifact for its own hardware.
-  writeSeasons(buildSeasons(models, models.families, out.generated_at, undefined, out.nodes));
+  // THE SEASON'S COST, CLASS AND DEMAND TABLES READ THE FLEET, NOT THE
+  // FOUNDERS. out.nodes is the two founder nodes with proof snapshots; the
+  // probe telemetry (hardware_class, probe_ms per model, download speed) is
+  // in the collector's fleet snapshot, data/nodes/<collector>.fleet.json.
+  // Passing founders left cost/class_variance/demand empty on every publish
+  // and every gram's expected_hours blank -- backlog 10.
+  writeSeasons(buildSeasons(models, models.families, out.generated_at, undefined, readFleetNodes()));
 
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.
