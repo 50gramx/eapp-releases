@@ -526,7 +526,36 @@ try {
     # Only the version can tell, and only the daemon knows it.
     $onDisk  = Get-BinVersion -Bin $bin
     $running = Get-RunningVersion
-    if ($onDisk -and $running -and ($onDisk -ne $running)) {
+
+    # -- A DAEMON THAT IS NOT THERE IS NOT "UP TO DATE" ----------------------
+    #
+    # This branch only ever compared two versions, so it could see a gram
+    # running the WRONG build and never a gram running NO build: with the
+    # binary current and the daemon absent, $running is empty, the comparison
+    # below is false, and the updater reports "current" every fifteen minutes
+    # while the machine contributes nothing. The fleet's GPU gram went silent
+    # at 11:14 with a current binary and stayed silent, which is exactly the
+    # shape this misses.
+    #
+    # It matters more now that the daemon exits ON PURPOSE to adopt a staged
+    # update (selfupdate.ExitCodeHandover): whether a scheduled task treats a
+    # deliberate non-zero exit as a failure worth restarting is not something
+    # to rely on. The updater already runs every fifteen minutes; asking it to
+    # start a task that is not running costs nothing and closes the hole.
+    if (-not (Get-Process epnd -ErrorAction SilentlyContinue)) {
+      Write-Host "epnd is not running and the binary is current - starting it" -ForegroundColor Yellow
+      Start-ScheduledTask -TaskName $taskName -ErrorAction SilentlyContinue
+      Start-Sleep -Seconds 5
+      if (Get-Process epnd -ErrorAction SilentlyContinue) {
+        Write-UpdaterState -Bin $bin -Asset $asset -Action 'restarted_absent_daemon' -Behind $false
+        Write-Host "epnd restarted" -ForegroundColor Green
+      } else {
+        Write-UpdaterState -Bin $bin -Asset $asset -Action 'absent_and_would_not_start' -Behind $false
+        Write-UpdateFailure -Dest $dest -Reason 'the daemon was not running and the scheduled task did not start it' -RolledBack $false
+        Write-Host "ERROR: epnd is not running and would not start" -ForegroundColor Red
+      }
+    }
+    elseif ($onDisk -and $running -and ($onDisk -ne $running)) {
       Write-Host "epnd on disk is $onDisk but the running daemon is $running - restarting onto the installed build" -ForegroundColor Yellow
       Get-Process epnd -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
       Start-Sleep -Seconds 2
