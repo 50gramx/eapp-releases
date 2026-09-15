@@ -806,15 +806,20 @@ function presence(n, now = null) {
     awake_seconds: n?.env?.awake_seconds ?? null,
     // Said plainly, and only where the evidence supports it.
     slept_seconds: slept || null,
-    likely: likelyAway(state, battery, slept),
+    likely: likelyAway(state, battery, slept, absence?.kind || null),
   };
 }
 
 // likelyAway says what is probably happening, and only where the machine's own
 // record supports it. Silence about a machine that has never been seen to sleep
 // and is on mains is the honest answer, not a guess dressed as one.
-function likelyAway(state, battery, slept) {
+function likelyAway(state, battery, slept, lastAbsence) {
   if (state === 'online') return null;
+  // The gram's own verdict beats any inference: a session that recorded
+  // dozing and was never seen again says so itself.
+  if (lastAbsence === 'slept_away') {
+    return 'its last session was asleep and did not come back — a lid left shut, or the power went while suspended';
+  }
   if (slept > 0 && battery) {
     return `this machine sleeps (${Math.round(slept / 60)} min during its last session) and is on battery — most likely asleep`;
   }
