@@ -849,7 +849,35 @@ chmod +x "$tmp/epnd"
 # THE FALLBACK IS WHAT MAKES THIS SAFE: a daemon too old to know about the
 # sidecar would ignore it forever, so a stage not taken up within the grace
 # window is abandoned and this run does the old hard swap.
+#
+# -- AND THE FALLBACK WAS RESET BY THE LOOP IT EXISTS TO ESCAPE -------------
+#
+# The grace was measured from the SIDECAR'S mtime, and write_staged_update
+# rewrites the sidecar on every run. This script runs every ten minutes, well
+# inside a twenty-minute window, so the sidecar could never grow old enough to
+# be called stale and the hard swap was unreachable.
+#
+# bootstrap-01 sat on a four-day-old build because of it: staging a fresh
+# binary every ten minutes, the daemon unable to complete the rename (it runs
+# as `epnd`; /usr/local/bin is root-owned, so the swap fails with EACCES), and
+# the escape hatch reset by the same loop each time. Worse, that gram is the
+# fleet's collector -- it re-serialises every digest through its own structs,
+# so every telemetry field newer than its build was silently dropped for the
+# whole fleet.
+#
+# So the grace is measured from when a handover was FIRST asked for and not
+# yet taken up, in a marker this script does not touch while one is pending.
+# The window is about the DAEMON'S RESPONSIVENESS, not about any particular
+# build -- which matters on a day with six releases, where keying it to the
+# build would restart the clock on every push.
 HANDOVER_GRACE_MIN=20
+
+# handover_since_file records when the current, unanswered handover began.
+handover_since_file() {
+  _home=$(epnd_home)
+  [ -n "$_home" ] || return 1
+  printf '%s/update-handover-since' "$_home"
+}
 
 daemon_answering() {
   curl -fsS --max-time 3 http://127.0.0.1:53581/v1/identity >/dev/null 2>&1
@@ -858,6 +886,14 @@ daemon_answering() {
 write_staged_update() {
   _home=$(epnd_home)
   [ -n "$_home" ] && [ -d "$_home" ] || return 1
+  # START THE CLOCK ONLY WHEN ONE IS NOT ALREADY RUNNING. A pending sidecar
+  # means the daemon has not answered the previous ask, and replacing the
+  # binary it is offered does not make it any more responsive -- so the
+  # original request keeps its age and can time out.
+  _since=$(handover_since_file) || _since=""
+  if [ -n "$_since" ] && [ ! -f "$_home/update-staged.json" ]; then
+    : > "$_since" 2>/dev/null || true
+  fi
   cp -f "$1" "$BIN.staged" 2>/dev/null || return 1
   _at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
   printf '{"version":"%s","path":"%s","sha256":"%s","at":"%s"}
@@ -869,8 +905,17 @@ write_staged_update() {
 
 staged_is_stale() {
   _home=$(epnd_home)
-  _f="$_home/update-staged.json"
-  [ -f "$_f" ] || return 1
+  # A sidecar must still be pending for a timeout to mean anything: once the
+  # daemon takes one up it deletes it, and that is the healthy path.
+  [ -f "$_home/update-staged.json" ] || return 1
+  # AGED FROM THE FIRST UNANSWERED ASK, not from the last staged binary. See
+  # the comment on HANDOVER_GRACE_MIN. Missing marker: an update staged by an
+  # older copy of this script, so fall back to the sidecar's own age rather
+  # than treating it as brand new.
+  _f=$(handover_since_file) || _f=""
+  if [ -z "$_f" ] || [ ! -f "$_f" ]; then
+    _f="$_home/update-staged.json"
+  fi
   _age=$(( $(date +%s) - $(date -r "$_f" +%s 2>/dev/null || echo 0) ))
   [ "$_age" -ge $(( HANDOVER_GRACE_MIN * 60 )) ]
 }
@@ -883,9 +928,11 @@ if daemon_answering && ! staged_is_stale; then
   fi
   echo "could not stage for handover - falling back to the hard swap" >&2
 elif staged_is_stale; then
-  echo "a staged update was not taken up within ${HANDOVER_GRACE_MIN}m - this build does not hand over, swapping" >&2
+  echo "a staged update was not taken up within ${HANDOVER_GRACE_MIN}m - the daemon cannot swap itself, so this run does it" >&2
   write_updater_state "handover_timeout" true
   rm -f "$(epnd_home)/update-staged.json" 2>/dev/null || true
+  _since=$(handover_since_file) 2>/dev/null || _since=""
+  [ -n "$_since" ] && rm -f "$_since" 2>/dev/null
 fi
 
 # Atomic swap: write to .new then rename over it
