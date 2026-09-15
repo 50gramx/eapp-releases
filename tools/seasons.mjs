@@ -781,6 +781,11 @@ function presence(n, now = null) {
   const minutes = Number.isFinite(seen) ? Math.max(0, Math.round((now - seen) / 60000)) : null;
   const absence = n?.env?.absence || null;
   const battery = n?.env?.power_source === 'battery';
+  // EVIDENCE, NOT ONLY A HUNCH. A machine that has demonstrably dozed while
+  // running -- the daemon notices the wall clock jumping past the monotonic one
+  // and reports how long -- is a machine that sleeps. Saying so turns "on
+  // battery, so probably asleep" into an observation about THIS machine.
+  const slept = Number(n?.env?.slept_seconds || 0);
 
   // Three heartbeats is the threshold: a gram reports every few minutes, so
   // ten is late rather than gone, and half an hour is gone.
@@ -800,8 +805,25 @@ function presence(n, now = null) {
     power_source: n?.env?.power_source || null,
     awake_seconds: n?.env?.awake_seconds ?? null,
     // Said plainly, and only where the evidence supports it.
-    likely: state === 'offline' && battery ? 'a laptop on battery — most likely asleep' : null,
+    slept_seconds: slept || null,
+    likely: likelyAway(state, battery, slept),
   };
+}
+
+// likelyAway says what is probably happening, and only where the machine's own
+// record supports it. Silence about a machine that has never been seen to sleep
+// and is on mains is the honest answer, not a guess dressed as one.
+function likelyAway(state, battery, slept) {
+  if (state === 'online') return null;
+  if (slept > 0 && battery) {
+    return `this machine sleeps (${Math.round(slept / 60)} min during its last session) and is on battery — most likely asleep`;
+  }
+  if (slept > 0) {
+    return `this machine sleeps (${Math.round(slept / 60)} min during its last session) — most likely asleep`;
+  }
+  if (battery) return 'a laptop on battery — most likely asleep';
+
+  return null;
 }
 
 /**
