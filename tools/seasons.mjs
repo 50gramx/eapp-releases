@@ -736,6 +736,7 @@ export function gramProgress(nodes) {
       gram: String(n.node_did || '').slice(-6),
       os: n.os || null,
       class: p.hardware_class || null,
+      ...presence(n),
       engines: Object.keys(p.engines || {}).sort(),
       artifacts: p.artifacts ?? null,
       measured: p.measured ?? 0,
@@ -747,11 +748,60 @@ export function gramProgress(nodes) {
       expected_basis: p.outlook?.expected_basis ?? null,
       eta_hours: p.outlook?.eta_hours ?? null,
       blocked: p.outlook?.blocked || null,
-      last_seen: n.last_seen || null,
     });
   }
 
   return out.sort((a, b) => b.measured - a.measured || a.gram.localeCompare(b.gram));
+}
+
+/**
+ * presence: online or not, for how long, and the last cause anyone can name.
+ *
+ * ── "OFFLINE" WITHOUT A CAUSE SENDS SOMEBODY TO A MACHINE ───────────────────
+ *
+ * A fleet row that says a gram is not here answers the least useful half of
+ * the question. The daemon already records, at every start, how the PREVIOUS
+ * session ended -- clean_stop (asked to), unclean_stop (power loss, a hard
+ * reset, a crash), restart (a supervisor bounce) -- and it carries the power
+ * source and how long the machine had been awake. Published together those
+ * say the thing a person actually wants: this one was shut down on purpose,
+ * that one lost power, this laptop on battery has almost certainly gone to
+ * sleep.
+ *
+ * The honest limit, stated rather than papered over: the cause of the CURRENT
+ * absence cannot be known until the gram comes back and reports it. What is
+ * published while it is away is the last cause anyone can name, labelled as
+ * being about the previous gap.
+ */
+function presence(n, now = null) {
+  // Against the moment the COLLECTOR looked, not the aggregate's own clock.
+  const snap = n?.snapshot_at ? Date.parse(n.snapshot_at) : NaN;
+  now = now ?? (Number.isFinite(snap) ? snap : Date.now());
+  const seen = n?.last_seen ? Date.parse(n.last_seen) : NaN;
+  const minutes = Number.isFinite(seen) ? Math.max(0, Math.round((now - seen) / 60000)) : null;
+  const absence = n?.env?.absence || null;
+  const battery = n?.env?.power_source === 'battery';
+
+  // Three heartbeats is the threshold: a gram reports every few minutes, so
+  // ten is late rather than gone, and half an hour is gone.
+  let state = 'online';
+  if (minutes == null) state = 'unknown';
+  else if (minutes >= 30) state = 'offline';
+  else if (minutes >= 10) state = 'quiet';
+
+  return {
+    state,
+    offline_minutes: state === 'online' ? 0 : minutes,
+    last_seen: n?.last_seen || null,
+    as_of: n?.snapshot_at || null,
+    // What ENDED the previous session, from the gram's own record.
+    last_absence: absence?.kind || null,
+    last_absence_detail: absence?.detail || null,
+    power_source: n?.env?.power_source || null,
+    awake_seconds: n?.env?.awake_seconds ?? null,
+    // Said plainly, and only where the evidence supports it.
+    likely: state === 'offline' && battery ? 'a laptop on battery — most likely asleep' : null,
+  };
 }
 
 /**

@@ -24,6 +24,11 @@ function readFleetNodes() {
     try { snap = JSON.parse(readFileSync(`${NODES_DIR}/${f}`, 'utf8')); } catch { continue; }
     for (const n of snap?.nodes || []) {
       if (!n?.node_did) continue;
+      // WHEN THE COLLECTOR LOOKED, carried with the row. Presence is computed
+      // against this rather than against the aggregate's own clock: a snapshot
+      // an hour old would otherwise report every gram in it as offline for an
+      // hour, including the ones that were online when it was taken.
+      n.snapshot_at = snap.generated_at || null;
       const prev = byDID.get(n.node_did);
       if (!prev || String(n.last_seen || '') > String(prev.last_seen || '')) byDID.set(n.node_did, n);
     }
