@@ -583,6 +583,8 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     ...files.get(`${SEASONS_DIR}/${now}.json`),
     coverage,
     coverage_caps: coverageCaps,
+    proving: provingNow(nodes),
+    proving_note: 'proving is a LEASE, not a fact: what each gram said it was working on when it last reported. It expires on its own, confers nothing and is never coverage. It is here so the network can be watched working.',
     refusals: refusalTable(nodes, previous, now),
     refusals_note: 'refusals are signed facts about (artifact, class): gated, unloadable, or absent upstream. They are coverage of a kind -- the fleet learned it once -- and they sink the cell to the back of every gram of that class. A refusal lifts when its season closes and the engine that refused has moved on.',
     cost: mergeCost(costTable(nodes), priorCurrent?.cost, generatedAt),
@@ -661,6 +663,43 @@ export function refusalTable(nodes, previous = new Map(), now = '') {
   }
 
   return out;
+}
+
+/**
+ * provingNow: what the network has a live claim on, gram by gram.
+ *
+ * ── A LEASE, PUBLISHED AS A LEASE ───────────────────────────────────────────
+ *
+ * Every other table here is a FACT: coverage, refusals, cost, demand, all of
+ * them signed and cumulative. This one is the opposite and must read as such --
+ * it is what each gram said it was working on when it last reported, it expires
+ * on its own, it confers nothing and ranks nothing. It is published because a
+ * network nobody can watch working looks like a network that is not working:
+ * a reader gets "who is proving what, and where", from data the grams already
+ * gossip, without opening a shell on anybody's laptop.
+ *
+ * Stale rows are dropped rather than shown as current -- a claim whose lease
+ * has expired is not news about the present.
+ */
+export function provingNow(nodes, now = Date.now()) {
+  const out = [];
+  for (const n of nodes || []) {
+    const c = n?.probes?.proving;
+    if (!c?.ref) continue;
+    const until = c.until ? Date.parse(c.until) : NaN;
+    if (Number.isFinite(until) && until < now) continue;
+    out.push({
+      gram: String(n.node_did || '').slice(-6),
+      ref: c.ref,
+      family: c.family || null,
+      member: c.member || null,
+      class: c.class || n?.probes?.hardware_class || null,
+      region: c.region || null,
+      until: c.until || null,
+    });
+  }
+
+  return out.sort((a, b) => a.ref.localeCompare(b.ref));
 }
 
 /** Previously published seasons, by id. */

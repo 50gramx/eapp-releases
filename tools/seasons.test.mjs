@@ -1,6 +1,6 @@
 // node tools/seasons.test.mjs
 import assert from 'node:assert/strict';
-import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, refusalTable, demandTable, mergeCost, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
+import { buildSeasons, seasonIdOf, seasonWindow, hardwareClassOf, classVariance, classVarianceWithHistory, refinedClassOf, refusalTable, demandTable, mergeCost, provingNow, CLASS_VARIANCE_WINDOW } from './seasons.mjs';
 
 function payload(extra, ts, did) {
   return Buffer.from(JSON.stringify({ metric: 'model.probe', value: 1, unit: 'pass', ts, node_did: did, extra })).toString('base64');
@@ -175,4 +175,21 @@ console.log('ok - seasons');
   assert.equal(m.k1.engines.ollama.probe_ms_median, 10, 'a class reporting now replaces its own memory');
   assert.equal(m.k1.carried_from, null, 'a class measured this window is not carried');
   assert.equal(m.k2.engines.vllm.probe_ms_median, 5, 'a class whose grams are asleep keeps its medians');
+}
+
+// -- A LEASE IS PUBLISHED AS A LEASE ---------------------------------------
+{
+  const now = Date.parse('2026-09-15T05:00:00Z');
+  const nodes = [
+    { node_did: 'did:epn:aaaaaa84bf54', probes: { hardware_class: 'windows/amd64/nvidia/16g', proving: {
+      ref: 'hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_XS', family: 'gemma-4', member: 'e2b',
+      class: 'windows/amd64/nvidia/16g', region: 'IN_500050', until: '2026-09-15T06:00:00Z' } } },
+    { node_did: 'did:epn:bbbbbb9e3c79', probes: { proving: { ref: 'stale/one', until: '2026-09-15T04:00:00Z' } } },
+    { node_did: 'did:epn:cccccc000000', probes: {} },
+  ];
+  const rows = provingNow(nodes, now);
+  assert.equal(rows.length, 1, 'an expired lease is not news about the present');
+  assert.equal(rows[0].gram, '84bf54');
+  assert.equal(rows[0].family, 'gemma-4');
+  assert.equal(rows[0].region, 'IN_500050');
 }
