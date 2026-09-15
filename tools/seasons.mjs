@@ -584,6 +584,10 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
     coverage,
     coverage_caps: coverageCaps,
     proving: provingNow(nodes),
+    grams: gramProgress(nodes),
+    grams_note: 'one row per gram: what it is, what its hardware can never reach, how far it has got, and its OWN priced estimate for the rest. There is no single fleet ETA, because a gram only proves what it can obtain.',
+    modalities: modalities(nodes, files.get(`${SEASONS_DIR}/${now}.json`)),
+    modalities_note: 'per engine: how many artifacts this season proved, on how many hardware classes, which capabilities came back, and how many artifact-slots the fleet currently cannot reach at all (no Apple Silicon for MLX, no schedulable card for vLLM, no cluster for the speech pods). An engine with zero proved and a large unreachable count has never been shown to work on this network -- a statement about the network, not about the models.',
     proving_note: 'proving is a LEASE, not a fact: what each gram said it was working on when it last reported. It expires on its own, confers nothing and is never coverage. It is here so the network can be watched working.',
     refusals: refusalTable(nodes, previous, now),
     refusals_note: 'refusals are signed facts about (artifact, class): gated, unloadable, or absent upstream. They are coverage of a kind -- the fleet learned it once -- and they sink the cell to the back of every gram of that class. A refusal lifts when its season closes and the engine that refused has moved on.',
@@ -700,6 +704,94 @@ export function provingNow(nodes, now = Date.now()) {
   }
 
   return out.sort((a, b) => a.ref.localeCompare(b.ref));
+}
+
+/**
+ * gramProgress: one row per gram -- what it is, what it can reach, how far it
+ * has got, and when it expects to finish.
+ *
+ * ── THE QUESTION A FOUNDER ACTUALLY ASKS ────────────────────────────────────
+ *
+ * "How long until the catalog is proved" has no single answer, and publishing
+ * one number would be a lie of convenience. A gram proves the artifacts its
+ * hardware can obtain: a Windows box with no Apple Silicon will never measure
+ * an MLX build, and a machine with no schedulable card will never measure a
+ * vLLM one. So progress is per gram, and the unreachable count is published
+ * beside it rather than hidden inside a percentage.
+ *
+ * expected_hours is the gram's OWN priced estimate -- the sum over its queue
+ * of what each artifact should cost it, from its own clocks or from machines
+ * of its class. eta_hours is the trailing count, kept beside it because they
+ * disagree in a way that is informative: a machine that measured twice
+ * yesterday reports 1668 trailing hours and 24 priced ones, and the priced one
+ * is the one a person can plan with.
+ */
+export function gramProgress(nodes) {
+  const out = [];
+  for (const n of nodes || []) {
+    const p = n?.probes;
+    if (!p || p.queued == null) continue;
+    const unreachable = Object.values(p.unobtainable || {}).reduce((a, b) => a + (Number(b) || 0), 0);
+    out.push({
+      gram: String(n.node_did || '').slice(-6),
+      os: n.os || null,
+      class: p.hardware_class || null,
+      engines: Object.keys(p.engines || {}).sort(),
+      artifacts: p.artifacts ?? null,
+      measured: p.measured ?? 0,
+      failed: p.failed ?? 0,
+      queued: p.queued ?? 0,
+      unreachable,
+      unreachable_by_engine: p.unobtainable || {},
+      expected_hours: p.outlook?.expected_hours ?? null,
+      expected_basis: p.outlook?.expected_basis ?? null,
+      eta_hours: p.outlook?.eta_hours ?? null,
+      blocked: p.outlook?.blocked || null,
+      last_seen: n.last_seen || null,
+    });
+  }
+
+  return out.sort((a, b) => b.measured - a.measured || a.gram.localeCompare(b.gram));
+}
+
+/**
+ * modalities: what the catalog asks of each kind of engine, and how much of it
+ * has been proved.
+ *
+ * A reader cannot tell from a coverage table whether VIDEO models run at all,
+ * which is the first thing anyone asks about them. This groups the season's
+ * own artifacts by engine -- diffusers, vision-task, audiogen, ollama, vllm,
+ * mlx, speech -- with the capabilities actually proved on each, so "do video
+ * models work here" has an answer that is a measurement rather than a guess.
+ */
+export function modalities(nodes, current) {
+  const byEngine = new Map();
+  const touch = (e) => {
+    if (!byEngine.has(e)) {
+      byEngine.set(e, { engine: e, proved_artifacts: 0, measured: 0, unreachable: 0, capabilities: {}, grams: new Set() });
+    }
+
+    return byEngine.get(e);
+  };
+  for (const a of current?.artifacts || []) {
+    if (!a.engine) continue;
+    const row = touch(a.engine);
+    row.proved_artifacts++;
+    for (const [klass, by] of Object.entries(a.by_class || {})) {
+      row.measured += by.grams || 0;
+      row.grams.add(klass);
+      for (const [c, n] of Object.entries(by.caps || {})) row.capabilities[c] = (row.capabilities[c] || 0) + n;
+    }
+  }
+  for (const n of nodes || []) {
+    for (const [engine, count] of Object.entries(n?.probes?.unobtainable || {})) {
+      touch(engine).unreachable += Number(count) || 0;
+    }
+  }
+
+  return [...byEngine.values()]
+    .map((r) => ({ ...r, classes: r.grams.size, grams: undefined }))
+    .sort((a, b) => b.proved_artifacts - a.proved_artifacts || a.engine.localeCompare(b.engine));
 }
 
 /** Previously published seasons, by id. */
