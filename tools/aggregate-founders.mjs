@@ -16,6 +16,20 @@ import { buildSeasons, writeSeasons } from './seasons.mjs';
 
 // readFleetNodes merges every collector's fleet snapshot (data/nodes/*.fleet.json)
 // into one list of telemetry nodes, newest record per node_did.
+// fleetNodeByDID indexes the collector's fleet snapshot by node DID, so any
+// surface that already knows a DID can reach that gram's own record without
+// re-reading the directory.
+const fleetNodeByDID = new Map();
+
+// fleetNode answers for one DID, reading the snapshots on first use. Lazy
+// because the communities are built before the seasons are, and neither should
+// have to know which of them ran first.
+function fleetNode(did) {
+  if (fleetNodeByDID.size === 0) readFleetNodes();
+
+  return fleetNodeByDID.get(did) || null;
+}
+
 function readFleetNodes() {
   const byDID = new Map();
   if (!existsSync(NODES_DIR)) return [];
@@ -30,7 +44,10 @@ function readFleetNodes() {
       // hour, including the ones that were online when it was taken.
       n.snapshot_at = snap.generated_at || null;
       const prev = byDID.get(n.node_did);
-      if (!prev || String(n.last_seen || '') > String(prev.last_seen || '')) byDID.set(n.node_did, n);
+      if (!prev || String(n.last_seen || '') > String(prev.last_seen || '')) {
+        byDID.set(n.node_did, n);
+        fleetNodeByDID.set(n.node_did, n);
+      }
     }
   }
   return [...byDID.values()];
@@ -2479,6 +2496,19 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
     // carries real presence and `null` is reserved for a reporter on an older build
     // that genuinely says nothing.
     const meshKnows = !isReporter && entry.online !== undefined;
+    // WHY IT IS AWAY, WHERE THE PEOPLE OF A REGION LOOK.
+    //
+    // A region page says "away · last seen ..." and stops, which is the least
+    // useful half of the answer: a machine shut down on purpose, one that lost
+    // power, and a laptop doing what laptops do at night are three different
+    // situations and only one of them is worth anybody's evening. The daemon
+    // records how the PREVIOUS session ended at every start, and reports its
+    // power source; the fleet view has shown both for a while. Same facts,
+    // same words, on the page a region's own people read.
+    //
+    // The limit is stated rather than papered over: the cause of the CURRENT
+    // absence cannot be known until the gram comes back and says so.
+    const fleet = fleetNode(did);
     byDid.set(did, {
       did,
       name: entry.name || null,
@@ -2486,6 +2516,13 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
       last_seen: entry.last_seen || null,
       reporter: isReporter,
       region,
+      last_absence: fleet?.env?.absence?.kind || null,
+      last_absence_detail: fleet?.env?.absence?.detail || null,
+      power_source: fleet?.env?.power_source || null,
+      os: fleet?.os || null,
+      hardware_class: fleet?.probes?.hardware_class || null,
+      measured: fleet?.probes?.measured ?? null,
+      queued: fleet?.probes?.queued ?? null,
     });
   };
   for (const n of nodes) addNode(n, true);
@@ -2550,6 +2587,20 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
       score: typeof region.score === 'number' ? region.score : null,
       online: n.online,
       reporter: n.reporter,
+      // WHY IT IS AWAY, AND WHAT IT IS, where a region's own people read.
+      // "away · last seen" is the least useful half of the answer: a machine
+      // shut down on purpose, one that lost power, and a laptop asleep are
+      // three situations and only one is worth somebody's evening. These come
+      // from the gram's own record (absence kind, power source, class, its
+      // measured/queued counts) and are null for a node this collector has
+      // never had a snapshot of.
+      last_absence: n.last_absence || null,
+      last_absence_detail: n.last_absence_detail || null,
+      power_source: n.power_source || null,
+      os: n.os || null,
+      hardware_class: n.hardware_class || null,
+      measured: n.measured ?? null,
+      queued: n.queued ?? null,
     });
     byId.set(id, cur);
   }
