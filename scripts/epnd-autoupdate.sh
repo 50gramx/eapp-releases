@@ -890,8 +890,15 @@ write_staged_update() {
   # means the daemon has not answered the previous ask, and replacing the
   # binary it is offered does not make it any more responsive -- so the
   # original request keeps its age and can time out.
+  #
+  # AND START IT ON A MACHINE ALREADY STUCK IN THE OLD LOOP. Without the second
+  # test this fix could never reach the machines that need it: bootstrap-01 has
+  # a sidecar that is rewritten every ten minutes, so "only when the sidecar is
+  # absent" would never fire there and the deadlock would survive its own
+  # remedy. A missing marker beside a pending sidecar means this script has just
+  # been upgraded underneath an unanswered handover; the clock starts now.
   _since=$(handover_since_file) || _since=""
-  if [ -n "$_since" ] && [ ! -f "$_home/update-staged.json" ]; then
+  if [ -n "$_since" ] && { [ ! -f "$_home/update-staged.json" ] || [ ! -f "$_since" ]; }; then
     : > "$_since" 2>/dev/null || true
   fi
   cp -f "$1" "$BIN.staged" 2>/dev/null || return 1
