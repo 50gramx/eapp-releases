@@ -319,30 +319,57 @@ jobs:
           sha256sum epnd-* install.sh install.ps1 report-bootstrap-status.sh             epn.wasm wasm_exec.js epn-shell.js world-viewer.html > checksums.txt
 
       - name: Publish (rolling epnd-latest)
-        uses: softprops/action-gh-release@v3
-        with:
-          tag_name: epnd-latest
-          name: epnd — Latest Build (Rolling)
-          body_path: epn-daemon/scripts/release-notes.md
-          files: |
-            epn-daemon/dist/epnd-windows-amd64.exe
-            epn-daemon/dist/epnd-linux-amd64
-            epn-daemon/dist/epnd-linux-arm64
-            epn-daemon/dist/epnd-darwin-amd64
-            epn-daemon/dist/epnd-darwin-arm64
-            epn-daemon/dist/epnd-android-arm64-v8a
-            epn-daemon/dist/epnd-android-armeabi-v7a
-            epn-daemon/dist/epnd-android-x86_64
-            epn-daemon/dist/install.sh
-            epn-daemon/dist/install.ps1
-            epn-daemon/dist/report-bootstrap-status.sh
-            epn-daemon/dist/epnd-autoupdate.sh
-            epn-daemon/dist/epnd-autoupdate.ps1
-            epn-daemon/dist/epn.wasm
-            epn-daemon/dist/wasm_exec.js
-            epn-daemon/dist/epn-shell.js
-            epn-daemon/dist/world-viewer.html
-            epn-daemon/dist/checksums.txt
+        # -- ONE ASSET AT A TIME, RETRIED, AND NEVER DELETED BEFORE REPLACED --
+        #
+        # From 17:00 UTC on 2026-09-17, 8 of 10 runs failed here with
+        # "Headers Timeout Error" from GitHub's asset-upload endpoint while
+        # the previous action fired all eighteen uploads at once. Nothing in
+        # this workflow had changed in twelve days and the binaries were the
+        # same ~77 MB they had been through thirty straight successes -- a
+        # platform-side timeout, intermittent, and the two successes in the
+        # same window said so.
+        #
+        # What made a blip into an outage was the action's order of work: it
+        # DELETED every existing asset first, then uploaded. A run that timed
+        # out mid-upload left the rolling release with binaries missing --
+        # epnd-linux-arm64 and epnd-android-x86_64 were absent from it when
+        # this was written -- so a gram checking for an update on that
+        # architecture found nothing to download at all.
+        #
+        # gh release upload --clobber replaces an asset in place, so the old
+        # binary stays servable until the new one is up. Sequential, so one
+        # slow upload is one slow upload rather than six contending for the
+        # same endpoint. Retried per asset with backoff, so a timeout costs a
+        # minute and not the release.
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd epn-daemon/dist
+          tag=epnd-latest
+          # The release itself is only created if missing; its notes are
+          # refreshed every run, which is cheap and cannot strip an asset.
+          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$GITHUB_REPOSITORY"               --title "epnd — Latest Build (Rolling)"               --notes-file ../scripts/release-notes.md
+          else
+            gh release edit "$tag" --repo "$GITHUB_REPOSITORY"               --title "epnd — Latest Build (Rolling)"               --notes-file ../scripts/release-notes.md
+          fi
+          failed=""
+          for f in epnd-windows-amd64.exe epnd-linux-amd64 epnd-linux-arm64                    epnd-darwin-amd64 epnd-darwin-arm64                    epnd-android-arm64-v8a epnd-android-armeabi-v7a epnd-android-x86_64                    install.sh install.ps1 report-bootstrap-status.sh                    epnd-autoupdate.sh epnd-autoupdate.ps1                    epn.wasm wasm_exec.js epn-shell.js world-viewer.html checksums.txt; do
+            ok=0
+            for attempt in 1 2 3 4 5; do
+              if gh release upload "$tag" "$f" --repo "$GITHUB_REPOSITORY" --clobber; then
+                ok=1; break
+              fi
+              echo "::warning file=$f::upload attempt $attempt failed; retrying"
+              sleep $((attempt * 20))
+            done
+            if [ "$ok" != 1 ]; then failed="$failed $f"; fi
+          done
+          if [ -n "$failed" ]; then
+            echo "::error::assets not published after retries:$failed"
+            exit 1
+          fi
 
       - name: Update built-marker
         run: echo "${{ needs.check.outputs.marker }}" > epnd-last-built.txt
