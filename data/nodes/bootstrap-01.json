@@ -6,7 +6,7 @@
   "peer_count": 3,
   "peers_online": 3,
   "peers_distinct_total": 263,
-  "uptime_seconds": 11659,
+  "uptime_seconds": 12569,
   "epnd_version": "4f46e9a3368b526b90c47758f5192c251a9abeb6",
   "addrs": [
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/tcp/443/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -32,7 +32,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-09-17T16:36:03Z",
+    "generated_at": "2026-09-17T16:51:13Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -869,17 +869,6 @@
             "artifacts": [
               {
                 "engine": "vllm",
-                "ref": "google/gemma-4-31B-it-qat-w4a16-ct",
-                "quant": "W4A16",
-                "disk_mib": 22187,
-                "attribution": "vendor",
-                "by": "google",
-                "base": "google/gemma-4-31B-it-qat-q4_0-unquantized",
-                "cohort": 2,
-                "rung": 1
-              },
-              {
-                "engine": "vllm",
                 "ref": "nvidia/Gemma-4-31B-IT-NVFP4",
                 "quant": "NVFP4",
                 "disk_mib": 31121,
@@ -1713,6 +1702,17 @@
                 "base": "meta-llama/Llama-3.2-1B-Instruct",
                 "cohort": 3,
                 "rung": 3
+              },
+              {
+                "engine": "vllm",
+                "ref": "unsloth/Llama-3.2-1B-Instruct-bnb-4bit",
+                "quant": "BITSANDBYTES",
+                "disk_mib": 980,
+                "attribution": "derivative",
+                "by": "unsloth",
+                "base": "meta-llama/Llama-3.2-1B-Instruct",
+                "cohort": 3,
+                "rung": 9
               }
             ],
             "derivative": true,
@@ -1815,6 +1815,25 @@
             "aliases": [
               "llama3.2:3b"
             ]
+          },
+          {
+            "id": "3b~aquaduck",
+            "display_name": "Llama 3.2 3B · aquaduck",
+            "artifacts": [
+              {
+                "engine": "mlx",
+                "platform": "darwin/arm64",
+                "ref": "aquaduck/Llama-3.2-3B-Instruct-MLX",
+                "quant": "4BIT",
+                "disk_mib": 3658,
+                "attribution": "derivative",
+                "by": "aquaduck",
+                "cohort": 3,
+                "rung": 0
+              }
+            ],
+            "derivative": true,
+            "base": "3b"
           },
           {
             "id": "3b~bartowski",
@@ -1980,9 +1999,9 @@
               },
               {
                 "engine": "vllm",
-                "ref": "unsloth/Llama-3.2-3B-Instruct-unsloth-bnb-4bit",
+                "ref": "unsloth/Llama-3.2-3B-Instruct-bnb-4bit",
                 "quant": "BITSANDBYTES",
-                "disk_mib": 2245,
+                "disk_mib": 2138,
                 "attribution": "derivative",
                 "by": "unsloth",
                 "base": "meta-llama/Llama-3.2-3B-Instruct",
@@ -3300,6 +3319,67 @@
                 "base": "Qwen/Qwen3-1.7B",
                 "cohort": 2,
                 "rung": 3
+              }
+            ]
+          },
+          {
+            "id": "14b",
+            "display_name": "Qwen 3 14B",
+            "artifacts": [
+              {
+                "engine": "ollama",
+                "ref": "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 8584,
+                "attribution": "quantizer",
+                "by": "MaziyarPanahi",
+                "base": "Qwen/Qwen3-14B",
+                "cohort": 2,
+                "rung": 0
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q3_K_M",
+                "quant": "Q3_K_M",
+                "disk_mib": 6982,
+                "attribution": "quantizer",
+                "by": "MaziyarPanahi",
+                "base": "Qwen/Qwen3-14B",
+                "cohort": 2,
+                "rung": 2
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q5_K_M",
+                "quant": "Q5_K_M",
+                "disk_mib": 10027,
+                "attribution": "quantizer",
+                "by": "MaziyarPanahi",
+                "base": "Qwen/Qwen3-14B",
+                "cohort": 2,
+                "rung": 3
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q2_K",
+                "quant": "Q2_K",
+                "disk_mib": 5487,
+                "attribution": "quantizer",
+                "by": "MaziyarPanahi",
+                "base": "Qwen/Qwen3-14B",
+                "cohort": 2,
+                "rung": 5
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/MaziyarPanahi/Qwen3-14B-GGUF:Q3_K_L",
+                "quant": "Q3_K_L",
+                "disk_mib": 7534,
+                "attribution": "quantizer",
+                "by": "MaziyarPanahi",
+                "base": "Qwen/Qwen3-14B",
+                "cohort": 2,
+                "rung": 9
               }
             ]
           },
@@ -4862,5 +4942,5 @@
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS"
   ],
   "catalog": [],
-  "checked_at": "2026-09-17T16:36:02Z"
+  "checked_at": "2026-09-17T16:51:12Z"
 }
