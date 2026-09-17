@@ -1,17 +1,6 @@
 {
-  "generated_at": "2026-09-17T22:11:37.203Z",
-  "unplaced_models": [
-    "claude-haiku-4-5",
-    "claude-opus-5",
-    "claude-sonnet-5",
-    "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M",
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_NL",
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q3_K_S",
-    "lfm2.5-thinking:1.2b",
-    "phi3:3.8b",
-    "rhasspy/piper-voices",
-    "tinyllama:1.1b"
-  ],
+  "generated_at": "2026-09-17T22:26:22.925Z",
+  "unplaced_models": [],
   "trust_model": "every field verified against the signature of the node that produced it, and re-verifiable by you: each signed figure carries the exact bytes the node signed (signing_payload_b64) and the signature over them, and the ed25519 public key is embedded in node_did. effective_ctx is the context length a node PROVED by recall, never the length a model card advertises",
   "model_count": 94,
   "models": [
@@ -13462,7 +13451,7 @@
           "params": null,
           "artifacts": [
             {
-              "engine": "speech-host",
+              "engine": "speech-pod",
               "ref": "kokoro",
               "disk_mib": 312,
               "attribution": "vendor",
@@ -13835,8 +13824,8 @@
             },
             {
               "engine": "ollama",
-              "ref": "hf.co/unsloth/Llama-3.2-3B-Instruct-GGUF:F16",
-              "quant": "F16",
+              "ref": "hf.co/unsloth/Llama-3.2-3B-Instruct-GGUF:BF16",
+              "quant": "BF16",
               "disk_mib": 6135,
               "attribution": "quantizer",
               "by": "unsloth",
@@ -13907,8 +13896,8 @@
             },
             {
               "engine": "ollama",
-              "ref": "hf.co/bartowski/Llama-3.2-3B-Instruct-uncensored-GGUF:Q4_0_4_4",
-              "quant": "Q4_0_4_4",
+              "ref": "hf.co/bartowski/Llama-3.2-3B-Instruct-uncensored-GGUF:Q4_0_8_8",
+              "quant": "Q4_0_8_8",
               "disk_mib": 2039,
               "attribution": "derivative",
               "by": "bartowski",
@@ -16810,25 +16799,86 @@
           "id": "base",
           "display_name": "whisper base",
           "params": null,
-          "artifacts": []
+          "artifacts": [
+            {
+              "engine": "speech-pod",
+              "ref": "Systran/faster-whisper-base",
+              "disk_mib": 138,
+              "attribution": "vendor",
+              "by": "Systran",
+              "cohort": 1,
+              "rung": 9
+            },
+            {
+              "engine": "speech-host",
+              "ref": "base",
+              "disk_mib": 141,
+              "attribution": "vendor",
+              "by": "base",
+              "cohort": 1,
+              "rung": 9
+            }
+          ]
         },
         {
           "id": "base-en",
           "display_name": "whisper base-en",
           "params": null,
-          "artifacts": []
+          "artifacts": [
+            {
+              "engine": "speech-pod",
+              "ref": "Systran/faster-whisper-base.en",
+              "disk_mib": 138,
+              "attribution": "vendor",
+              "by": "Systran",
+              "cohort": 2,
+              "rung": 9
+            },
+            {
+              "engine": "speech-host",
+              "ref": "base.en",
+              "disk_mib": 141,
+              "attribution": "vendor",
+              "by": "base.en",
+              "cohort": 2,
+              "rung": 9
+            }
+          ]
         },
         {
           "id": "large-v3",
           "display_name": "Whisper large-v3",
           "params": "1.5B",
-          "artifacts": []
+          "artifacts": [
+            {
+              "engine": "speech-pod",
+              "ref": "Systran/faster-whisper-large-v3",
+              "quant": "FP16",
+              "disk_mib": 2947,
+              "attribution": "quantizer",
+              "by": "Systran",
+              "base": "openai/whisper-large-v3",
+              "cohort": 2,
+              "rung": 0
+            }
+          ]
         },
         {
           "id": "large-v3-turbo",
           "display_name": "Whisper large-v3-turbo",
           "params": "809M",
           "artifacts": [
+            {
+              "engine": "speech-pod",
+              "ref": "deepdml/faster-whisper-large-v3-turbo-ct2",
+              "quant": "FP16",
+              "disk_mib": 1546,
+              "attribution": "quantizer",
+              "by": "deepdml",
+              "base": "openai/whisper-large-v3-turbo",
+              "cohort": 2,
+              "rung": 0
+            },
             {
               "engine": "speech-hf",
               "ref": "openai/whisper-large-v3-turbo",
@@ -16875,7 +16925,26 @@
           "id": "tiny-en",
           "display_name": "whisper tiny-en",
           "params": null,
-          "artifacts": []
+          "artifacts": [
+            {
+              "engine": "speech-pod",
+              "ref": "Systran/faster-whisper-tiny.en",
+              "disk_mib": 72,
+              "attribution": "vendor",
+              "by": "Systran",
+              "cohort": 2,
+              "rung": 9
+            },
+            {
+              "engine": "speech-host",
+              "ref": "tiny.en",
+              "disk_mib": 74,
+              "attribution": "vendor",
+              "by": "tiny.en",
+              "cohort": 2,
+              "rung": 9
+            }
+          ]
         }
       ]
     },
