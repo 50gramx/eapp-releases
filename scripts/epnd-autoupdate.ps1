@@ -629,9 +629,24 @@ try {
   $stagedJson = if ($epnHome) { Join-Path $epnHome 'update-staged.json' } else { $null }
   $handoverGraceMinutes = 20
   $stagedStale = $false
+  # THE GRACE IS MEASURED FROM THE FIRST PENDING STAGE, NOT THE LATEST FILE.
+  # A stream of releases re-staged the sidecar every fifteen minutes, so its
+  # LastWriteTime never aged past the grace and a daemon whose own swap kept
+  # failing (2026-09-19: "Access is denied" on the moved-aside binary) was
+  # never hard-swapped. A marker records when a handover first became
+  # pending; it is cleared once the running build catches up.
+  $pendingSince = if ($epnHome) { Join-Path $epnHome 'update-pending-since.txt' } else { $null }
   if ($stagedJson -and (Test-Path $stagedJson)) {
-    $age = (Get-Date) - (Get-Item $stagedJson).LastWriteTime
+    $firstAt = (Get-Item $stagedJson).LastWriteTime
+    if ($pendingSince -and (Test-Path $pendingSince)) {
+      try { $firstAt = [DateTime]::Parse((Get-Content $pendingSince -Raw).Trim()) } catch {}
+    } elseif ($pendingSince) {
+      $firstAt.ToString('o') | Set-Content -Path $pendingSince -Encoding ASCII
+    }
+    $age = (Get-Date) - $firstAt
     if ($age.TotalMinutes -ge $handoverGraceMinutes) { $stagedStale = $true }
+  } elseif ($pendingSince -and (Test-Path $pendingSince)) {
+    Remove-Item -Path $pendingSince -Force -ErrorAction SilentlyContinue
   }
   if ((Test-DaemonAnswering) -and -not $stagedStale) {
     if (Write-StagedUpdate -Verified (Join-Path $tmp 'epnd.exe') -Bin $bin -Version $want -Sha256 $got) {
@@ -644,6 +659,7 @@ try {
     Write-Host "a staged update was not taken up within $handoverGraceMinutes minutes - this build does not hand over, swapping" -ForegroundColor Yellow
     Write-UpdaterState -Bin $bin -Asset $asset -Action 'handover_timeout' -Behind $true
     Remove-Item -Path $stagedJson -Force -ErrorAction SilentlyContinue
+    if ($pendingSince) { Remove-Item -Path $pendingSince -Force -ErrorAction SilentlyContinue }
   }
 
   # Stop the service, replace binary, restart. The task name must match what
