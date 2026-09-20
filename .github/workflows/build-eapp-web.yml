@@ -123,6 +123,16 @@ jobs:
             --github-output "$GITHUB_OUTPUT" \
             --output "brand-delivery.json"
 
+      # Stage the interaction contracts into the bundle. Without this the web
+      # build ships with NO community: the orchestrator's asset fetches 404,
+      # no organisation or app loads, and /<community>/<org>/<app> resolves to
+      # an empty shell. Desktop survives it by reading contracts off disk; a
+      # browser tab has no disk.
+      - name: Stage interaction contracts into the bundle
+        run: |
+          node tool/ci/stage_contracts.mjs \
+            --contracts-root ".ci/eapp-interaction-contracts"
+
       - name: Setup Flutter
         uses: subosito/flutter-action@v2
         with:
