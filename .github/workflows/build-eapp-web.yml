@@ -176,6 +176,37 @@ jobs:
             --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}" \
             --dart-define=BRAND_NAVIGATION_JSON_B64=${{ steps.brand.outputs.brand_navigation_json_b64 }}
 
+      # Pick the service account that can deploy to the project the contract
+      # names. The deploy was guarded on a FIREBASE_SERVICE_ACCOUNT secret that
+      # has never existed in this repo or the org, so every web build that got
+      # this far built the bundle and then silently skipped the deploy. The
+      # credentials that CAN deploy are per project, and already here.
+      - name: Select the deploy credentials for ${{ steps.brand.outputs.web_firebase_project }}
+        id: sa
+        env:
+          PROJECT: ${{ steps.brand.outputs.web_firebase_project }}
+          SA_BHARATSPHERE: ${{ secrets.BHARATSPHERE_FIREBASE_SERVICE_ACCOUNT }}
+          SA_CLOUD_50GRAMX: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CLOUD_50GRAMX }}
+          SA_DEFAULT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          case "$PROJECT" in
+            bharatsphere-183e7) sa="$SA_BHARATSPHERE" ;;
+            cloud-50gramx)      sa="$SA_CLOUD_50GRAMX" ;;
+            *)                  sa="$SA_DEFAULT" ;;
+          esac
+          if [ -z "${sa:-}" ]; then
+            echo "::warning::no service account secret for project '$PROJECT' — the bundle will build and the deploy will be skipped"
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "::add-mask::$sa"
+            {
+              echo "value<<SA_EOF"
+              echo "$sa"
+              echo "SA_EOF"
+            } >> "$GITHUB_OUTPUT"
+          fi
+
       # Bind the checked-out firebase.json to the site the contract names.
       # eapp-live's firebase.json has one unnamed hosting block, which would
       # deploy to the project's DEFAULT site; `hosting.site` pins it to the
@@ -199,23 +230,18 @@ jobs:
       # account secret -> build-only, production untouched. channelId=live means
       # production (evo -> live.50gramx.com); any other channel is a preview URL.
       - name: Deploy to Firebase Hosting (${{ steps.brand.outputs.web_firebase_site }} / ${{ steps.brand.outputs.web_firebase_channel }})
-        if: env.FIREBASE_SERVICE_ACCOUNT != ''
+        if: steps.sa.outputs.present == 'true'
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          firebaseServiceAccount: ${{ steps.sa.outputs.value }}
           projectId: ${{ steps.brand.outputs.web_firebase_project }}
           channelId: ${{ steps.brand.outputs.web_firebase_channel }}
           expires: 30d
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-
       - name: Deploy skipped notice
-        if: env.FIREBASE_SERVICE_ACCOUNT == ''
-        env:
-          FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        if: steps.sa.outputs.present != 'true'
         run: |
-          echo "::notice::FIREBASE_SERVICE_ACCOUNT not set — web built for '${{ steps.brand.outputs.brand_id }}' but deploy skipped. Target would be channel '${{ steps.brand.outputs.web_firebase_channel }}' on site '${{ steps.brand.outputs.web_firebase_site }}' in project '${{ steps.brand.outputs.web_firebase_project }}' (${{ steps.brand.outputs.web_url }})."
+          echo "::notice::no deploy credentials for this project — web built for '${{ steps.brand.outputs.brand_id }}' but deploy skipped. Target would be channel '${{ steps.brand.outputs.web_firebase_channel }}' on site '${{ steps.brand.outputs.web_firebase_site }}' in project '${{ steps.brand.outputs.web_firebase_project }}' (${{ steps.brand.outputs.web_url }})."
 
       - name: Checkout eapp-releases (to write build marker)
         uses: actions/checkout@v4
