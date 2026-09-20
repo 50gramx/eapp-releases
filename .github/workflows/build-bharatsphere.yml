@@ -351,12 +351,28 @@ jobs:
           npm install firebase-admin csv-parser
           node scripts/ingest_pincodes.js bharatsphere_mobile/assets/5c2f62fe-5afa-4119-a499-fec9d604d5bd.csv
 
+      # HOSTING IS NO LONGER DEPLOYED FROM HERE (founder, 2026-09-20).
+      #
+      # `hosting:app` is the site bharatsphere-app, which carries
+      # live.50gramx.com. That origin now serves the eapp-live web bundle
+      # (build-eapp-web.yml, brand evo) with bharatsphere integrated inside
+      # it, so deploying hosting:app from here would overwrite the live
+      # experience on every bharatsphere release. `hosting:demo` is the
+      # HunarManch landing page, and that domain is being let go.
+      #
+      # Everything else this workflow owns -- rules, indexes, storage,
+      # functions, remote config, database -- still ships, because the
+      # identity and data project is still bharatsphere-183e7.
+      #
+      # The two web build steps above are left in place so a hosting deploy
+      # can be restored by putting the targets back; drop them once live is
+      # confirmed on the eapp-live bundle.
       - name: Deploy to Firebase (live)
         working-directory: bharatsphere
         run: |
           cp remote_config/remote_config_prod.json remote_config/remote_config_template.json
           firebase deploy \
-            --only hosting:app,hosting:demo,firestore:rules,firestore:indexes,storage,functions,remoteconfig,database \
+            --only firestore:rules,firestore:indexes,storage,functions,remoteconfig,database \
             --project bharatsphere-183e7 --force
 
       - name: Update Firestore version record

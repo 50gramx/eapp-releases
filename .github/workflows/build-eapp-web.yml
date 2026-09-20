@@ -4,13 +4,16 @@ name: Build and Deploy Web App
 # Replaces the generic per-push web deploy in eapp-live with a contract-driven,
 # per-brand build + Firebase Hosting deploy.
 #
-# v1 delivery model (works with eapp-live's existing single-site firebase.json,
-# no multi-site setup required): each brand deploys to a named Hosting *channel*
-# on the project's default site. evo -> `live` (production, live.50gramx.com);
-# other brands -> a per-brand preview channel (e.g. epn.web.app-style preview
-# URL) that this cadence keeps refreshed. Upgrade path to real per-brand custom
-# domains is a Firebase multi-site change later (contract already carries
-# web.firebase-site for it).
+# Delivery model: ONE web bundle per brand build, deployed to the Hosting site
+# and channel the contract names. Brands are not pre-assembled into the bundle
+# -- eapp-live/lib/main.dart reads /<community>/<org>/<app> off the URL at
+# runtime and activates com.50gramx.<community>.<org>.<app>, so every other
+# brand is reachable by address on the same origin.
+#
+# evo -> site `bharatsphere-app`, channel `live` = https://live.50gramx.com.
+# That site sits in the identity project (bharatsphere-183e7) because Google
+# sign-in redirects to live.50gramx.com/__/auth/handler, which only answers
+# from the project that owns Auth. Other brands -> their own site/channel.
 #
 # The deploy step is GUARDED on the FIREBASE_SERVICE_ACCOUNT secret: without it
 # the job still builds (validating the brand) and simply skips deploy, so a repo
@@ -163,10 +166,29 @@ jobs:
             --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}" \
             --dart-define=BRAND_NAVIGATION_JSON_B64=${{ steps.brand.outputs.brand_navigation_json_b64 }}
 
+      # Bind the checked-out firebase.json to the site the contract names.
+      # eapp-live's firebase.json has one unnamed hosting block, which would
+      # deploy to the project's DEFAULT site; `hosting.site` pins it to the
+      # named one without needing .firebaserc targets in this runner.
+      - name: Bind Hosting site from contract (${{ steps.brand.outputs.web_firebase_site }})
+        env:
+          SITE: ${{ steps.brand.outputs.web_firebase_site }}
+        run: |
+          node -e '
+            const fs = require("fs");
+            const cfg = JSON.parse(fs.readFileSync("firebase.json", "utf8"));
+            if (!cfg.hosting || Array.isArray(cfg.hosting)) {
+              throw new Error("expected a single hosting block in firebase.json");
+            }
+            cfg.hosting.site = process.env.SITE;
+            fs.writeFileSync("firebase.json", JSON.stringify(cfg, null, 2));
+            console.log("hosting.site =", cfg.hosting.site);
+          '
+
       # Deploy to the brand's Firebase Hosting channel. Guarded: no service
       # account secret -> build-only, production untouched. channelId=live means
       # production (evo -> live.50gramx.com); any other channel is a preview URL.
-      - name: Deploy to Firebase Hosting (${{ steps.brand.outputs.web_firebase_channel }})
+      - name: Deploy to Firebase Hosting (${{ steps.brand.outputs.web_firebase_site }} / ${{ steps.brand.outputs.web_firebase_channel }})
         if: env.FIREBASE_SERVICE_ACCOUNT != ''
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -183,7 +205,7 @@ jobs:
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
         run: |
-          echo "::notice::FIREBASE_SERVICE_ACCOUNT not set — web built for '${{ steps.brand.outputs.brand_id }}' but deploy skipped. Target would be channel '${{ steps.brand.outputs.web_firebase_channel }}' on project '${{ steps.brand.outputs.web_firebase_project }}' (${{ steps.brand.outputs.web_url }})."
+          echo "::notice::FIREBASE_SERVICE_ACCOUNT not set — web built for '${{ steps.brand.outputs.brand_id }}' but deploy skipped. Target would be channel '${{ steps.brand.outputs.web_firebase_channel }}' on site '${{ steps.brand.outputs.web_firebase_site }}' in project '${{ steps.brand.outputs.web_firebase_project }}' (${{ steps.brand.outputs.web_url }})."
 
       - name: Checkout eapp-releases (to write build marker)
         uses: actions/checkout@v4
