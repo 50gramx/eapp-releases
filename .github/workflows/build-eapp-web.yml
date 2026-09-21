@@ -148,7 +148,10 @@ jobs:
 
       - name: Build Web App
         run: |
+          # --build-number lands in /version.json; the running app compares it
+          # against what the origin serves to know a newer deploy exists.
           flutter build web --release \
+            --build-number=${{ github.run_number }} \
             --dart-define=BUILD_ID=${{ github.run_number }} \
             --dart-define=BRAND_ID=${{ steps.brand.outputs.brand_id }} \
             --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}" \
