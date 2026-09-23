@@ -910,6 +910,39 @@ write_staged_update() {
   return 0
 }
 
+# ── THE DAEMON CAN SAY "I CANNOT", AND THAT IS NOT A TIMEOUT ────────────────
+#
+# The grace window exists because "the daemon has not answered" is ambiguous:
+# it might be draining a five-minute call, or it might be incapable. Waiting
+# twenty minutes is the right answer to the first and a pure waste on the
+# second -- and on bootstrap-01 it was always the second. ProtectSystem=strict
+# makes the whole filesystem read-only inside the unit, so every swap failed in
+# milliseconds with "read-only file system", and this script waited out the
+# full window on every single deploy anyway.
+#
+# The daemon now writes down that it cannot, in EPN_HOME, which is the one
+# directory a confined unit is always granted. A verdict beats a timeout: if
+# the daemon has ruled itself out for the build we are about to stage, do the
+# hard swap on this tick instead of twenty minutes from now.
+#
+# It must name THE SAME build. A record about some older staged binary says
+# nothing about this one, and hard-swapping on a stale verdict would take the
+# fallback path for a daemon that is merely busy.
+handover_blocked_file() {
+  _home=$(epnd_home)
+  [ -n "$_home" ] || return 1
+  printf '%s/update-handover-blocked.json' "$_home"
+}
+
+daemon_ruled_itself_out() {
+  _b=$(handover_blocked_file) || return 1
+  [ -f "$_b" ] || return 1
+  # The record is small JSON: {"version":"...","reason":"...","at":"..."}.
+  # Matched with a plain grep rather than a JSON parser, because this script
+  # runs on machines where none is guaranteed to exist.
+  grep -q "\"version\"[[:space:]]*:[[:space:]]*\"$1\"" "$_b" 2>/dev/null
+}
+
 staged_is_stale() {
   _home=$(epnd_home)
   # A sidecar must still be pending for a timeout to mean anything: once the
@@ -927,7 +960,13 @@ staged_is_stale() {
   [ "$_age" -ge $(( HANDOVER_GRACE_MIN * 60 )) ]
 }
 
-if daemon_answering && ! staged_is_stale; then
+if daemon_ruled_itself_out "$TAG"; then
+  echo "the daemon says it cannot swap itself onto $TAG - not waiting out the grace, doing it here" >&2
+  write_updater_state "handover_refused" true
+  rm -f "$(epnd_home)/update-staged.json" 2>/dev/null || true
+  _since=$(handover_since_file) 2>/dev/null || _since=""
+  [ -n "$_since" ] && rm -f "$_since" 2>/dev/null
+elif daemon_answering && ! staged_is_stale; then
   if write_staged_update "$tmp/epnd" "$TAG" "$got"; then
     write_updater_state "handover_pending" false
     echo "staged for handover - the daemon will finish its work and swap itself" >&2
