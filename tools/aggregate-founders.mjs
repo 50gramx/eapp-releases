@@ -1090,7 +1090,12 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
     const v = verifyEpochStatement(statement, fromDID);
     if (!v.ok) { rejected++; continue; }
 
-    const dedupe = fromDID + '|' + room + '|' + statement.resource_type + '|' + statement.epoch_start;
+    // A LATE statement (gram build 2026-10-19) is a second, additive record for an
+    // hour already settled: it carries only the receipts the first one did not.
+    // Keyed apart from the original, and from any other late pass, so neither is
+    // dropped as a duplicate of the other.
+    const dedupe = fromDID + '|' + room + '|' + statement.resource_type + '|' + statement.epoch_start +
+      (statement.late === true ? '|late|' + statement.generated_at + '|' + statement.receipt_count : '');
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
 
