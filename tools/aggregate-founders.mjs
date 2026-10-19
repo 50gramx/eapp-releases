@@ -1895,6 +1895,10 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       const node = nodeEntry(m, signed.result.node_did);
       node.effective_ctx = Number(extra.effective_ctx) || 0;
       node.runtime = extra.runtime ?? null;
+      // HOW the runtime was delivered: "host" (a process on the machine) or
+      // "pod" (the gram's cluster). Signed since gram build 2026-10-19; two
+      // figures for one engine compare only within one delivery.
+      node.runtime_backend = extra.runtime_backend ?? null;
       node.runtime_version = extra.runtime_version ?? null;
       node.probe_version = extra.probe_version ?? null;
       node.probe_ctx_ladder = extra.probe_ctx_ladder ?? null;

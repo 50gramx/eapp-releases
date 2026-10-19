@@ -124,6 +124,7 @@ function observations(models) {
       out.push({
         ref: m.name, node_did: n.node_did, klass: hardwareClassOf(hw), ts,
         engine: extra.runtime || n.runtime || null,
+        engine_backend: extra.runtime_backend || n.runtime_backend || null,
         effective_ctx: Number(extra.effective_ctx || n.effective_ctx || 0) || 0,
         ctx_stop: extra.ctx_stop || null,
         ctx_ladder: extra.probe_ctx_ladder || null,
@@ -142,11 +143,12 @@ function observations(models) {
 }
 
 function emptyClassRow() {
-  return { grams: 0, held_probes: 0, tokens_per_sec_best: null, effective_ctx_best: null, effective_ctx_stop: null, effective_ctx_ladder: null, ctx_trained: null, ctx_affordable: null, caps: {}, first_at: null, last_at: null, dids: new Set() };
+  return { grams: 0, held_probes: 0, tokens_per_sec_best: null, effective_ctx_best: null, effective_ctx_stop: null, effective_ctx_ladder: null, ctx_trained: null, ctx_affordable: null, caps: {}, first_at: null, last_at: null, dids: new Set(), backends: new Set() };
 }
 
 function fold(row, o) {
   row.dids.add(o.node_did);
+  if (o.engine_backend) row.backends.add(o.engine_backend);
   row.held_probes += 1;
   if (o.tokens_per_sec > 0 && (row.tokens_per_sec_best === null || o.tokens_per_sec > row.tokens_per_sec_best)) row.tokens_per_sec_best = Number(o.tokens_per_sec.toFixed(2));
   if (o.effective_ctx > 0 && (row.effective_ctx_best === null || o.effective_ctx > row.effective_ctx_best)) {
@@ -170,6 +172,9 @@ function finishRow(row) {
     effective_ctx_stop: row.effective_ctx_stop, effective_ctx_ladder: row.effective_ctx_ladder,
     ctx_trained: row.ctx_trained, ctx_affordable: row.ctx_affordable,
     caps: Object.fromEntries(Object.entries(row.caps).sort()),
+    // Which deliveries these proofs came from -- a host process beside the
+    // GPU and a pod inside a VM are different machines for one engine.
+    engine_backends: [...row.backends].sort(),
     first_at: row.first_at, last_at: row.last_at,
   };
 }
@@ -188,6 +193,7 @@ function mergeRows(prev, cur) {
     out.ctx_affordable = prev.ctx_affordable ?? null;
   }
   if (prev.ctx_trained && (!out.ctx_trained || prev.ctx_trained > out.ctx_trained)) out.ctx_trained = prev.ctx_trained;
+  out.engine_backends = [...new Set([...(prev.engine_backends || []), ...(cur.engine_backends || [])])].sort();
   out.caps = { ...cur.caps };
   for (const [k, v] of Object.entries(prev.caps || {})) out.caps[k] = Math.max(out.caps[k] || 0, v);
   if (prev.first_at && (!out.first_at || prev.first_at < out.first_at)) out.first_at = prev.first_at;

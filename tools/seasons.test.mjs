@@ -27,7 +27,7 @@ const hwMac = { os: 'darwin', arch: 'arm64', gpu: 'apple', ram_gib: 16 };
 const models = { models: [
   { name: 'hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M', nodes: [
     { node_did: 'did:epn:a', capabilities: { tools: true, vision: false }, tokens_per_sec: 40, probe_signing_payload_b64: payload({ hardware: hwWin, effective_ctx: 8192, runtime: 'ollama' }, W37 * 1e6, 'did:epn:a') },
-    { node_did: 'did:epn:b', capabilities: { tools: true }, tokens_per_sec: 55, probe_signing_payload_b64: payload({ hardware: hwWin, effective_ctx: 4096, runtime: 'ollama' }, W37 * 1e6, 'did:epn:b') },
+    { node_did: 'did:epn:b', capabilities: { tools: true }, tokens_per_sec: 55, probe_signing_payload_b64: payload({ hardware: hwWin, effective_ctx: 4096, runtime: 'ollama', runtime_backend: 'host' }, W37 * 1e6, 'did:epn:b') },
     { node_did: 'did:epn:c', capabilities: { tools: true }, tokens_per_sec: 12, probe_signing_payload_b64: payload({ hardware: hwMac, effective_ctx: 8192, runtime: 'ollama' }, W36 * 1e6, 'did:epn:c') },
   ] },
   { name: 'hf.co/someone/gemma-4-E2B-lawyer-GGUF:Q4_K_M', nodes: [
@@ -48,6 +48,7 @@ assert.equal(win.grams, 2);
 assert.equal(win.tokens_per_sec_best, 55, 'best of the class, not the mean');
 assert.equal(win.effective_ctx_best, 8192);
 assert.deepEqual(win.caps, { tools: 2 }, 'a capability that failed is not counted as held');
+assert.deepEqual(win.engine_backends, ['host'], 'the delivery a proof came from travels with the class row; unsigned is not guessed');
 assert.equal(e2b.by_class['darwin/arm64/apple/16g'], undefined, 'the mac probe was last season');
 const deriv = w37.artifacts.find((a) => a.ref.includes('lawyer'));
 assert.equal(deriv.derivative, true);
