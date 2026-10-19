@@ -1893,6 +1893,12 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       node.runtime_version = extra.runtime_version ?? null;
       node.probe_version = extra.probe_version ?? null;
       node.probe_ctx_ladder = extra.probe_ctx_ladder ?? null;
+      // WHY THE CONTEXT WALK STOPPED (gram build 2026-10-19). Carried so a
+      // reader can tell "the model lost the needle" from "this machine could
+      // not serve the size" -- before it, both printed as a smaller number.
+      node.ctx_stop = extra.ctx_stop ?? null;
+      node.ctx_trained = Number(extra.ctx_trained) || null;
+      node.ctx_affordable = Number(extra.ctx_affordable) || null;
       node.probed_at = signed.result.ts;
       node.probe_payload_sha256 = v.payload_sha256;
       // A digest alone is not checkable — it is a claim about bytes the reader
@@ -1942,6 +1948,10 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
           signature: signed.signature,
           signing_payload_b64: v.payload_b64 || undefined,
           probe_version: extra.probe_version ?? null,
+          stop: extra.ctx_stop ?? null,
+          trained: Number(extra.ctx_trained) || null,
+          affordable: Number(extra.ctx_affordable) || null,
+          ladder: extra.probe_ctx_ladder ?? null,
         };
       }
 

@@ -125,6 +125,10 @@ function observations(models) {
         ref: m.name, node_did: n.node_did, klass: hardwareClassOf(hw), ts,
         engine: extra.runtime || n.runtime || null,
         effective_ctx: Number(extra.effective_ctx || n.effective_ctx || 0) || 0,
+        ctx_stop: extra.ctx_stop || null,
+        ctx_ladder: extra.probe_ctx_ladder || null,
+        ctx_trained: Number(extra.ctx_trained) || null,
+        ctx_affordable: Number(extra.ctx_affordable) || null,
         tokens_per_sec: Number(n.tokens_per_sec || 0) || 0,
         held: held.sort(),
         hw,
@@ -138,14 +142,21 @@ function observations(models) {
 }
 
 function emptyClassRow() {
-  return { grams: 0, held_probes: 0, tokens_per_sec_best: null, effective_ctx_best: null, caps: {}, first_at: null, last_at: null, dids: new Set() };
+  return { grams: 0, held_probes: 0, tokens_per_sec_best: null, effective_ctx_best: null, effective_ctx_stop: null, effective_ctx_ladder: null, ctx_trained: null, ctx_affordable: null, caps: {}, first_at: null, last_at: null, dids: new Set() };
 }
 
 function fold(row, o) {
   row.dids.add(o.node_did);
   row.held_probes += 1;
   if (o.tokens_per_sec > 0 && (row.tokens_per_sec_best === null || o.tokens_per_sec > row.tokens_per_sec_best)) row.tokens_per_sec_best = Number(o.tokens_per_sec.toFixed(2));
-  if (o.effective_ctx > 0 && (row.effective_ctx_best === null || o.effective_ctx > row.effective_ctx_best)) row.effective_ctx_best = o.effective_ctx;
+  if (o.effective_ctx > 0 && (row.effective_ctx_best === null || o.effective_ctx > row.effective_ctx_best)) {
+    row.effective_ctx_best = o.effective_ctx;
+    // The best proof's own account of itself travels with it.
+    row.effective_ctx_stop = o.ctx_stop;
+    row.effective_ctx_ladder = o.ctx_ladder;
+    row.ctx_affordable = o.ctx_affordable;
+  }
+  if (o.ctx_trained && (!row.ctx_trained || o.ctx_trained > row.ctx_trained)) row.ctx_trained = o.ctx_trained;
   for (const c of o.held) row.caps[c] = (row.caps[c] || 0) + 1;
   const iso = o.ts ? new Date(o.ts > 1e14 ? Math.floor(o.ts / 1e6) : o.ts).toISOString() : null;
   if (iso && (!row.first_at || iso < row.first_at)) row.first_at = iso;
@@ -156,6 +167,8 @@ function finishRow(row) {
   return {
     grams: row.dids.size, held_probes: row.held_probes,
     tokens_per_sec_best: row.tokens_per_sec_best, effective_ctx_best: row.effective_ctx_best,
+    effective_ctx_stop: row.effective_ctx_stop, effective_ctx_ladder: row.effective_ctx_ladder,
+    ctx_trained: row.ctx_trained, ctx_affordable: row.ctx_affordable,
     caps: Object.fromEntries(Object.entries(row.caps).sort()),
     first_at: row.first_at, last_at: row.last_at,
   };
@@ -168,7 +181,13 @@ function mergeRows(prev, cur) {
   out.grams = Math.max(prev.grams || 0, cur.grams || 0);
   out.held_probes = Math.max(prev.held_probes || 0, cur.held_probes || 0);
   if (prev.tokens_per_sec_best !== null && prev.tokens_per_sec_best !== undefined && (out.tokens_per_sec_best === null || prev.tokens_per_sec_best > out.tokens_per_sec_best)) out.tokens_per_sec_best = prev.tokens_per_sec_best;
-  if (prev.effective_ctx_best && (!out.effective_ctx_best || prev.effective_ctx_best > out.effective_ctx_best)) out.effective_ctx_best = prev.effective_ctx_best;
+  if (prev.effective_ctx_best && (!out.effective_ctx_best || prev.effective_ctx_best > out.effective_ctx_best)) {
+    out.effective_ctx_best = prev.effective_ctx_best;
+    out.effective_ctx_stop = prev.effective_ctx_stop ?? null;
+    out.effective_ctx_ladder = prev.effective_ctx_ladder ?? null;
+    out.ctx_affordable = prev.ctx_affordable ?? null;
+  }
+  if (prev.ctx_trained && (!out.ctx_trained || prev.ctx_trained > out.ctx_trained)) out.ctx_trained = prev.ctx_trained;
   out.caps = { ...cur.caps };
   for (const [k, v] of Object.entries(prev.caps || {})) out.caps[k] = Math.max(out.caps[k] || 0, v);
   if (prev.first_at && (!out.first_at || prev.first_at < out.first_at)) out.first_at = prev.first_at;
