@@ -107,8 +107,16 @@ echo "registering epnd as a system service…" >&2
 # and a claim that cannot be checked is not printed.
 svc_ok=0
 upd_ok=0
+no_service=0
 
-if [ "$os" = "linux" ]; then
+# NO SERVICE MANAGER. A container or notebook (Kaggle, Colab, a plain docker
+# run) has no systemd as PID 1, so every systemctl call below fails with "System
+# has not been booted with systemd" and the install LOOKED failed, though the
+# binary was in place and verified. Say what is true there instead: installed,
+# start it yourself, update by re-running this.
+if [ "$os" = "linux" ] && [ ! -d /run/systemd/system ]; then
+  no_service=1
+elif [ "$os" = "linux" ]; then
   # systemd service file
   service_file="/etc/systemd/system/epnd.service"
   service_content="[Unit]
@@ -365,6 +373,16 @@ EOF
 fi
 
 echo "" >&2
+if [ "$no_service" = 1 ]; then
+  echo "✓ epnd is installed at $dest/epnd" >&2
+  echo "  This host has no service manager (a container or notebook), so nothing" >&2
+  echo "  was registered to start it or update it. That is expected here." >&2
+  echo "  • start it:  epnd serve" >&2
+  echo "    (in a Jupyter/Kaggle notebook, from Python, because '!cmd &' is refused:" >&2
+  echo "     import subprocess; subprocess.Popen('epnd serve', shell=True, start_new_session=True))" >&2
+  echo "  • update it: re-run this installer" >&2
+  exit 0
+fi
 if [ "$svc_ok" = 1 ] && [ "$upd_ok" = 1 ]; then
   echo "✓ epnd is installed and running as a system service" >&2
   echo "  • auto-starts on boot" >&2
