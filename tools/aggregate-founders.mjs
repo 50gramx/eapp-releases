@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons } from './seasons.mjs';
+import { labelFor, loadDirectory } from './region-labels.mjs';
 
 // readFleetNodes merges every collector's fleet snapshot (data/nodes/*.fleet.json)
 // into one list of telemetry nodes, newest record per node_did.
@@ -2487,7 +2488,7 @@ function collectCatalog(nodes) {
  * always carries the ts it was measured at and the DID that signed it, so an
  * old record from a departed machine reads as exactly what it is.
  */
-export function mergeCommunityLedger(previous, current) {
+export function mergeCommunityLedger(previous, current, directory = { entries: {} }) {
   const prevById = new Map((previous?.communities || []).map((c) => [c.id, c]));
   const now = current.generated_at;
   const out = [];
@@ -2519,8 +2520,69 @@ export function mergeCommunityLedger(previous, current) {
     });
   }
 
+  settleLedger(out, directory);
   out.sort((a, b) => b.node_count - a.node_count || a.id.localeCompare(b.id));
   return { ...current, community_count: out.length, communities: out };
+}
+
+/** A region is a pincode: COUNTRY_PINCODE, and nothing else is one. */
+export function isRegionId(id) {
+  return typeof id === 'string' && /^[A-Z]{2}_[0-9A-Z]{3,10}$/.test(id);
+}
+
+/**
+ * ONE GRAM, ONE PLACE AT A TIME — AND THE WORK STAYS WHERE IT WAS DONE.
+ *
+ * A gram travels. The ledger used to add it to every region it was ever placed
+ * in and count it in all of them, so 16 machines read as 72 across 45 regions
+ * (one machine in 13). Now a gram is HERE in exactly one region -- the one it was
+ * most recently placed in -- and every other region it passed through keeps it as
+ * a gram that worked there (here: false, now_in), with the work it signed there.
+ * node_count counts the grams here; worked_here_count counts everyone.
+ *
+ * And a region is named by its pincode, not by an estimate (region-labels.mjs).
+ * When that corrects a label, the region's address follows the correct name and
+ * the old address is kept in url_aliases, so a link to it still lands here: an
+ * address is a promise, and a promise kept by forwarding is still kept. A label
+ * that was only re-estimated (label_source 'reported') never moves the address.
+ */
+function settleLedger(communities, directory) {
+  const home = new Map();
+  for (const c of communities) {
+    for (const n of c.nodes || []) {
+      if (!n.node_did) continue;
+      const at = Date.parse(n.last_seen_at || '') || 0;
+      const held = home.get(n.node_did);
+      if (!held || at > held.at || (at === held.at && n.visible && !held.visible)) {
+        home.set(n.node_did, { id: c.id, at, visible: !!n.visible });
+      }
+    }
+  }
+  for (const c of communities) {
+    c.nodes = (c.nodes || []).map((n) => {
+      const where = n.node_did ? home.get(n.node_did)?.id : c.id;
+      const { now_in: _drop, ...rest } = n;
+      return where && where !== c.id ? { ...rest, here: false, now_in: where } : { ...rest, here: true };
+    });
+    const here = c.nodes.filter((n) => n.here);
+    c.node_count = here.length;
+    c.worked_here_count = c.nodes.length;
+    c.verified_count = here.filter((n) => n.confidence === 'verified').length;
+
+    const label = labelFor(c, directory);
+    c.city = label.city;
+    c.state = label.state;
+    c.label_source = label.label_source;
+    const canonical = communitySlug(c);
+    if (label.label_source !== 'reported' && c.url_slug && c.url_slug !== canonical) {
+      c.url_aliases = [...new Set([...(c.url_aliases || []), c.url_slug])];
+      c.url_slug = canonical;
+    }
+    if (c.url_aliases) {
+      c.url_aliases = c.url_aliases.filter((a) => a !== c.url_slug);
+      if (!c.url_aliases.length) delete c.url_aliases;
+    }
+  }
 }
 
 /**
@@ -2594,8 +2656,13 @@ function mergeOne(prev, cur, now) {
 
   return {
     ...cur,
+    // A region seen this run only through work measured in it (a stub: nobody is
+    // placed there now) keeps the label it already had.
+    city: cur.city || prev.city || '',
+    state: cur.state || prev.state || '',
+    country: cur.country || prev.country || '',
     first_seen_at: prev.first_seen_at || now,
-    last_seen_at: now,
+    last_seen_at: cur.nodes.length ? now : prev.last_seen_at || now,
     // The address this region is reachable at, fixed the first time we saw it.
     //
     // A node's city is ESTIMATED (two IP-geolocation providers, majority vote —
@@ -2630,7 +2697,8 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
     const ps = entry?.proof_snapshot;
     const did = ps?.node_did;
     const region = ps?.region;
-    if (!did || !region?.community_id) return;
+    // No pincode, no region: a placement that resolved only a country is not one.
+    if (!did || !isRegionId(region?.community_id)) return;
     const existing = byDid.get(did);
     // A reporter's self-report wins over a second-hand DHT sighting: it is the
     // node speaking for itself, and it knows whether it is online.
@@ -2684,7 +2752,10 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
   const bestsByCommunity = new Map();
   for (const item of verified) {
     const r = item.signed_result.result;
-    const id = communityOfDid.get(r.node_did);
+    // Where the work was DONE, when the result says (every result signed since
+    // epn-daemon's placement.go does); otherwise where its gram is now.
+    const at = r.extra?.measured_in;
+    const id = isRegionId(at) ? at : communityOfDid.get(r.node_did);
     if (!id || item.resource_type === 'inference') continue;
     if (!bestsByCommunity.has(id)) bestsByCommunity.set(id, new Map());
     if (isRetiredRecord(item.resource_type, r.unit)) continue;
@@ -2754,6 +2825,16 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
     byId.set(id, cur);
   }
 
+  // Work measured in a region no gram is placed in right now still belongs to it.
+  for (const id of bestsByCommunity.keys()) {
+    if (byId.has(id)) continue;
+    const [country, pincode] = id.split('_');
+    byId.set(id, {
+      id, pincode, city: '', state: '', country,
+      node_count: 0, online_count: 0, verified_count: 0, reporter_count: 0,
+      nodes: [], bests: {}, rejected_results: [],
+    });
+  }
   for (const [id, community] of byId) {
     const bests = bestsByCommunity.get(id);
     if (bests) {
@@ -3424,7 +3505,8 @@ function main() {
   );
   const communities = mergeCommunityLedger(
     previousCommunities,
-    buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected)
+    buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected),
+    loadDirectory()
   );
   writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
 

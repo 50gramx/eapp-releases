@@ -37,6 +37,9 @@ jobs:
           for i in $(seq 1 6); do
             git fetch -q origin main
             git reset -q --hard origin/main
+            # Name any new pincode from the pincode itself (tools/region-labels.mjs):
+            # cached in data/pincode-directory.json, one lookup a second, never fatal.
+            node tools/region-labels.mjs resolve || true
             node tools/aggregate-founders.mjs
             # Stage first, then ask whether anything changed. data/communities.json
             # did not exist in the tree, and `git diff` on an untracked path reports
