@@ -88,6 +88,84 @@ function isResourceType(type) {
 }
 const COMMISSIONING_STATUS = 'configured_not_yet_benchmarked';
 
+// ── WHICH WAY IS "BEST", AND WHAT MAY BE ONE ─────────────────────────────────
+//
+// Every best was "highest verified value". For energy -- joules per token --
+// higher is WORSE, so the most wasteful gram was published as every region's
+// best and as the network's (125 J/token beating 9). And a joules-per-token
+// figure was summed across grams into a network "aggregate", which is a sum of
+// ratios and means nothing.
+//
+// Energy figures also carry a tier (verified > sensor > modelled; none on
+// figures signed before tiers existed). A better tier always wins; within one,
+// fewer joules per token wins. A retired unit (gpu in "percent", the idle
+// utilisation sample retired 2026-09-12) is never a best again.
+
+/** True for resources where a smaller value is better. */
+export function lowerIsBetter(type) {
+  return type === 'energy';
+}
+
+/** True for resources whose values may be summed into a network total. */
+export function summable(type) {
+  return type !== 'energy';
+}
+
+const RETIRED_UNITS = { gpu: ['percent'] };
+
+/** True for a record under a unit its resource no longer signs. */
+export function isRetiredRecord(type, unit) {
+  return (RETIRED_UNITS[type] || []).includes(unit);
+}
+
+const TIER_RANK = { verified: 3, sensor: 2, modelled: 1 };
+
+/** The energy tier a signed result states; null when it predates tiers. */
+export function energyTierOf(result) {
+  const t = result?.extra?.tier;
+  return typeof t === 'string' && TIER_RANK[t] ? t : null;
+}
+
+/**
+ * Whether cand ({value, tier}) should replace held as a resource's best.
+ * Energy: better tier, else lower value. Everything else: higher value.
+ */
+export function betterBest(type, held, cand) {
+  if (!cand) return false;
+  if (!held) return true;
+  if (type === 'energy') {
+    const a = TIER_RANK[held.tier] || 0;
+    const b = TIER_RANK[cand.tier] || 0;
+    if (a !== b) return b > a;
+    return Number(cand.value) < Number(held.value);
+  }
+  return Number(cand.value) > Number(held.value);
+}
+
+/**
+ * Whether a HELD best (from a previous run) may be carried forward.
+ *
+ * Bests are high-water marks, so a record chosen under a wrong rule would be
+ * held forever. Two are retracted: a retired unit, and an energy best with no
+ * tier -- every one of those was picked as the HIGHEST joules per token, i.e.
+ * the worst, from modelled figures. They are re-derived from this run's
+ * signed results by the corrected rule; a region with none this run shows
+ * none, rather than the worst figure it ever saw.
+ */
+export function keepHeldBest(type, best) {
+  if (!isResourceType(type) || !best) return false;
+  if (isRetiredRecord(type, best.unit)) return false;
+  if (type === 'energy' && !best.tier) return false;
+  return true;
+}
+
+/** A bests map with every best that may not be carried forward removed. */
+function scrubHeldBests(bests) {
+  return Object.fromEntries(Object.entries(bests || {}).filter(([type, b]) => keepHeldBest(type, b)));
+}
+
+const itemBestKey = (item) => ({ value: item.signed_result.result.value, tier: energyTierOf(item.signed_result.result) });
+
 // ---------------------------------------------------------------------------
 // Pure functions (unit-tested by aggregate-founders.test.mjs) — no fs access.
 // ---------------------------------------------------------------------------
@@ -395,10 +473,13 @@ function bestRecord(candidate, verification) {
   return {
     status: 'signed',
     resource_type: candidate.resource_type,
-    model: candidate.model || undefined,
+    model: candidate.model || r.extra?.model || undefined,
     metric: r.metric,
     value: r.value,
     unit: r.unit,
+    // How an energy figure was obtained (verified/sensor/modelled), so a
+    // merge can rank it and a reader can see it; absent on other resources.
+    tier: candidate.resource_type === 'energy' ? energyTierOf(r) || undefined : undefined,
     node_did: r.node_did,
     node_name: candidate.node_name,
     ts: r.ts,
@@ -461,22 +542,36 @@ export function buildProofOutputs(nodes, generatedAt = new Date().toISOString(),
     if (resourceType === 'inference') continue;
     const items = byResource.get(resourceType) || [];
     if (items.length === 0) continue;
-    const metric = items[0].signed_result.result.metric;
-    const unit = items[0].signed_result.result.unit;
-    const value = items.reduce((sum, item) => sum + (Number(item.signed_result.result.value) || 0), 0);
-    const best = items.reduce((top, item) => (item.signed_result.result.value > top.signed_result.result.value ? item : top), items[0]);
+    const live = items.filter((item) => !isRetiredRecord(resourceType, item.signed_result.result.unit));
+    if (live.length === 0) continue;
+    const metric = live[0].signed_result.result.metric;
+    const unit = live[0].signed_result.result.unit;
+    const values = live.map((item) => Number(item.signed_result.result.value) || 0).sort((a, b) => a - b);
+    const value = summable(resourceType)
+      ? values.reduce((sum, v) => sum + v, 0)
+      : values[Math.floor((values.length - 1) / 2)];
+    const best = live.reduce((top, item) => (betterBest(resourceType, itemBestKey(top), itemBestKey(item)) ? item : top), live[0]);
     networkResources[resourceType] = {
       resource_type: resourceType,
       status: 'signed',
-      aggregate: {
-        strategy: 'sum_of_verified_signed_results',
-        metric,
-        value: +value.toFixed(6),
-        unit,
-        sample_count: items.length,
-        label: 'sum of verified signed node results',
-      },
-      sample_count: items.length,
+      aggregate: summable(resourceType)
+        ? {
+            strategy: 'sum_of_verified_signed_results',
+            metric,
+            value: +value.toFixed(6),
+            unit,
+            sample_count: live.length,
+            label: 'sum of verified signed node results',
+          }
+        : {
+            strategy: 'median_of_verified_signed_results',
+            metric,
+            value: +value.toFixed(6),
+            unit,
+            sample_count: live.length,
+            label: 'median of verified signed node results (a ratio is never summed)',
+          },
+      sample_count: live.length,
     };
     bestResources[resourceType] = bestRecord(best, best.verification);
   }
@@ -618,9 +713,10 @@ export function mergeBests(previous, current) {
     // stay on the page as capacity.
     if (!isResourceType(resourceType)) continue;
     if (held?.status !== 'signed' || typeof held.value !== 'number') continue;
+    if (!keepHeldBest(resourceType, held)) continue;
     const now = merged[resourceType];
     const nowIsSigned = now?.status === 'signed' && typeof now.value === 'number';
-    if (!nowIsSigned || held.value > now.value) merged[resourceType] = held;
+    if (!nowIsSigned || betterBest(resourceType, now, held)) merged[resourceType] = held;
   }
   return { ...current, resources: merged };
 }
@@ -2033,6 +2129,38 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       node.throughput_signing_payload_b64 = v.payload_b64 || undefined;
     }
 
+    // Energy per model on the fixed test (epnd agent/model_energy.go): a fact
+    // about a model on an engine on a machine, so it lives on the model's node
+    // row beside its tokens/sec, with its tier and conditions.
+    const energy = snap.resources?.energy;
+    const energyPayloads = energy?.model_signing_payloads || {};
+    for (const [model, signed] of Object.entries(energy?.models || {})) {
+      const v = verifySignedResult(signed, energyPayloads[model] || '');
+      if (!v.ok) {
+        rejected.push({
+          node_name: name || null,
+          node_did: signed?.result?.node_did || null,
+          model,
+          kind: 'energy',
+          reason: v.reason,
+        });
+        continue;
+      }
+      const extra = signed.result.extra || {};
+      const m = upsert(model, signed.result.node_did);
+      const node = nodeEntry(m, signed.result.node_did);
+      node.joules_per_token = signed.result.value;
+      node.energy_tier = extra.tier ?? null;
+      node.energy_workload = extra.workload ?? null;
+      node.energy_backend = extra.backend ?? null;
+      node.energy_boundary = extra.boundary ?? null;
+      node.joules_per_request = Number(extra.joules_per_request) || null;
+      node.batch_joules_per_token = Number(extra.batch_joules_per_token) || null;
+      node.energy_measured_at = signed.result.ts;
+      node.energy_signature = signed.signature;
+      node.energy_signing_payload_b64 = v.payload_b64 || undefined;
+    }
+
     // Batch variants — proved serving capacity at a specific (slots, context)
     // operating point (internal/agent.SignBatchVariant / BatchVariantCache on
     // the daemon). Verified with the SAME verifySignedResult every other
@@ -2386,6 +2514,7 @@ export function mergeCommunityLedger(previous, current) {
       online_count: 0,
       reporter_count: 0,
       nodes: (prev.nodes || []).map((n) => ({ ...n, online: false, visible: false })),
+      bests: scrubHeldBests(prev.bests),
       rejected_results: prev.rejected_results || [],
     });
   }
@@ -2452,13 +2581,13 @@ function mergeOne(prev, cur, now) {
   // whether a reader can check it, and more checkable at the same value is
   // always the record to keep.
   // Carried forward only for types that are still resource nets — see mergeBests.
-  const bests = Object.fromEntries(Object.entries(prev.bests || {}).filter(([type]) => isResourceType(type)));
+  const bests = scrubHeldBests(prev.bests);
   for (const [resourceType, candidate] of Object.entries(cur.bests)) {
     const held = bests[resourceType];
     const sameMeasurement =
       held && candidate.payload_sha256 && candidate.payload_sha256 === held.payload_sha256;
     const gainsProvenance = sameMeasurement && !!candidate.signing_payload_b64 && !held.signing_payload_b64;
-    if (!held || Number(candidate.value) > Number(held.value) || gainsProvenance) {
+    if (!held || betterBest(resourceType, held, candidate) || gainsProvenance) {
       bests[resourceType] = { ...candidate, first_proved_at: held?.first_proved_at || now };
     }
   }
@@ -2558,8 +2687,9 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
     const id = communityOfDid.get(r.node_did);
     if (!id || item.resource_type === 'inference') continue;
     if (!bestsByCommunity.has(id)) bestsByCommunity.set(id, new Map());
+    if (isRetiredRecord(item.resource_type, r.unit)) continue;
     const top = bestsByCommunity.get(id).get(item.resource_type);
-    if (!top || Number(r.value) > Number(top.signed_result.result.value)) {
+    if (!top || betterBest(item.resource_type, itemBestKey(top), itemBestKey(item))) {
       bestsByCommunity.get(id).set(item.resource_type, item);
     }
   }

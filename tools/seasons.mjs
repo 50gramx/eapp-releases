@@ -125,6 +125,8 @@ function observations(models) {
         ref: m.name, node_did: n.node_did, klass: hardwareClassOf(hw), ts,
         engine: extra.runtime || n.runtime || null,
         engine_backend: extra.runtime_backend || n.runtime_backend || null,
+        joules_per_token: Number(n.joules_per_token) || null,
+        energy_tier: n.energy_tier || null,
         effective_ctx: Number(extra.effective_ctx || n.effective_ctx || 0) || 0,
         ctx_stop: extra.ctx_stop || null,
         ctx_ladder: extra.probe_ctx_ladder || null,
@@ -143,12 +145,22 @@ function observations(models) {
 }
 
 function emptyClassRow() {
-  return { grams: 0, held_probes: 0, tokens_per_sec_best: null, effective_ctx_best: null, effective_ctx_stop: null, effective_ctx_ladder: null, ctx_trained: null, ctx_affordable: null, caps: {}, first_at: null, last_at: null, dids: new Set(), backends: new Set() };
+  return { grams: 0, held_probes: 0, tokens_per_sec_best: null, effective_ctx_best: null, effective_ctx_stop: null, effective_ctx_ladder: null, ctx_trained: null, ctx_affordable: null, caps: {}, first_at: null, last_at: null, dids: new Set(), backends: new Set(), joules_per_token_best: null, energy_tier: null };
 }
 
 function fold(row, o) {
   row.dids.add(o.node_did);
   if (o.engine_backend) row.backends.add(o.engine_backend);
+  // Energy: lowest joules per token wins within a tier, a better tier always.
+  if (o.joules_per_token > 0) {
+    const rank = { verified: 3, sensor: 2, modelled: 1 };
+    const a = rank[row.energy_tier] || 0;
+    const b = rank[o.energy_tier] || 0;
+    if (row.joules_per_token_best === null || b > a || (b === a && o.joules_per_token < row.joules_per_token_best)) {
+      row.joules_per_token_best = Number(o.joules_per_token.toFixed(3));
+      row.energy_tier = o.energy_tier;
+    }
+  }
   row.held_probes += 1;
   if (o.tokens_per_sec > 0 && (row.tokens_per_sec_best === null || o.tokens_per_sec > row.tokens_per_sec_best)) row.tokens_per_sec_best = Number(o.tokens_per_sec.toFixed(2));
   if (o.effective_ctx > 0 && (row.effective_ctx_best === null || o.effective_ctx > row.effective_ctx_best)) {
@@ -175,6 +187,8 @@ function finishRow(row) {
     // Which deliveries these proofs came from -- a host process beside the
     // GPU and a pod inside a VM are different machines for one engine.
     engine_backends: [...row.backends].sort(),
+    joules_per_token_best: row.joules_per_token_best,
+    energy_tier: row.energy_tier,
     first_at: row.first_at, last_at: row.last_at,
   };
 }
@@ -194,6 +208,15 @@ function mergeRows(prev, cur) {
   }
   if (prev.ctx_trained && (!out.ctx_trained || prev.ctx_trained > out.ctx_trained)) out.ctx_trained = prev.ctx_trained;
   out.engine_backends = [...new Set([...(prev.engine_backends || []), ...(cur.engine_backends || [])])].sort();
+  {
+    const rank = { verified: 3, sensor: 2, modelled: 1 };
+    const a = rank[out.energy_tier] || 0;
+    const b = rank[prev.energy_tier] || 0;
+    if (prev.joules_per_token_best && (!out.joules_per_token_best || b > a || (b === a && prev.joules_per_token_best < out.joules_per_token_best))) {
+      out.joules_per_token_best = prev.joules_per_token_best;
+      out.energy_tier = prev.energy_tier ?? null;
+    }
+  }
   out.caps = { ...cur.caps };
   for (const [k, v] of Object.entries(prev.caps || {})) out.caps[k] = Math.max(out.caps[k] || 0, v);
   if (prev.first_at && (!out.first_at || prev.first_at < out.first_at)) out.first_at = prev.first_at;
