@@ -2695,8 +2695,13 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
   const byDid = new Map();
   const addNode = (entry, isReporter) => {
     const ps = entry?.proof_snapshot;
-    const did = ps?.node_did;
-    const region = ps?.region;
+    // The proof snapshot reaches a reporter over the DHT; the peer's own ad (did,
+    // region) reaches it over the connection. When the DHT cannot hold records --
+    // bootstrap-01 stuck as a DHT client on 2026-10-19 -- every peer arrived
+    // without a snapshot and vanished from the site while the reporter still saw
+    // it online. The ad says the same who and where, signed by the same key.
+    const did = ps?.node_did || entry?.did;
+    const region = ps?.region || entry?.region;
     // No pincode, no region: a placement that resolved only a country is not one.
     if (!did || !isRegionId(region?.community_id)) return;
     const existing = byDid.get(did);
