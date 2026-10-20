@@ -46,6 +46,10 @@ jobs:
   build_and_deploy:
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    env:
+      # Next's anonymous usage telemetry is on by default; a build of this site
+      # reports nothing to anyone.
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
       - name: Checkout eapp-nextjs repo
         uses: actions/checkout@v4
@@ -53,11 +57,27 @@ jobs:
           repository: 50gramx/eapp-nextjs-implementation-firebase
           token: ${{ secrets.SITE_DISPATCH_TOKEN }}
 
+      # The site says which Node and npm build it: .nvmrc and packageManager.
+      # Node 20 was below what libp2p's p-retry needs (EBADENGINE), and an npm
+      # older than the one that wrote the lockfile refuses `npm ci`.
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version-file: .nvmrc
           cache: 'npm'
+
+      - name: Setup npm
+        run: npm install -g "$(node -p 'require("./package.json").packageManager')"
+
+      # The compiler's cache only. .next/cache/fetch-cache is left out on
+      # purpose: a fetch cached by an earlier build would render that build's
+      # network state into this one.
+      - name: Restore Next.js compiler cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache/webpack
+          key: next-webpack-${{ hashFiles('package-lock.json') }}-${{ github.run_id }}
+          restore-keys: next-webpack-${{ hashFiles('package-lock.json') }}-
 
       # ── THE VIEWER, DOWNLOADED FROM THE BUILD THAT PRODUCED IT ──────
       #
