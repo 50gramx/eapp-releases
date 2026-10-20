@@ -29,8 +29,22 @@ permissions:
   contents: read
   actions: read
 
+# ONE DEPLOY AT A TIME, AND ONLY OF DATA THAT WAS PUBLISHED.
+#
+# bootstrap-01 reports in four commits within seconds (snapshot, mesh, fleet,
+# heartbeat), each one an aggregate-founders run, and every one of those runs
+# -- including the ones GitHub cancelled as superseded -- fired a deploy here.
+# Four site builds ran side by side on 2026-10-20 09:07 UTC, each racing the
+# others to Firebase. A newer deploy now cancels an older one (the newest data
+# is the only one worth shipping), and a cancelled or failed aggregate deploys
+# nothing because it published nothing.
+concurrency:
+  group: deploy-site
+  cancel-in-progress: true
+
 jobs:
   build_and_deploy:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout eapp-nextjs repo
