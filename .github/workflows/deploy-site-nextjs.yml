@@ -160,3 +160,12 @@ jobs:
           channelId: live
           projectId: cloud-50gramx
           expires: 7d
+          # PINNED, NOT `latest`. firebase-tools 15.34.1 (published
+          # 2026-10-21 22:18 UTC) checks the Hosting API through
+          # serviceusage.googleapis.com before deploying, which the deploy
+          # service account has no permission for: every deploy from 22:19 UTC
+          # on failed with "403, Permission denied to get service
+          # [firebasehosting.googleapis.com]". 15.34.0 deployed this site
+          # at 22:03. Move the pin deliberately, after granting the account
+          # roles/serviceusage.serviceUsageConsumer if the new CLI needs it.
+          firebaseToolsVersion: 15.34.0
