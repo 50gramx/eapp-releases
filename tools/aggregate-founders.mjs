@@ -13,6 +13,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons } from './seasons.mjs';
+import { fileModelsByCatalog } from './model-filing.mjs';
 import { labelFor, loadDirectory } from './region-labels.mjs';
 
 // readFleetNodes merges every collector's fleet snapshot (data/nodes/*.fleet.json)
@@ -924,6 +925,8 @@ function mergeOneModel(prev, cur) {
     served_ctx: pickGreaterProof(prev.served_ctx, cur.served_ctx, 'value'),
     family: prev.family || cur.family || null,
     member: prev.member || cur.member || null,
+    signed_family: cur.signed_family || prev.signed_family || null,
+    signed_member: cur.signed_member || prev.signed_member || null,
     best_throughput: pickGreaterProof(prev.best_throughput, cur.best_throughput, 'tokens_per_sec'),
     declared: cur.declared || prev.declared || null,
     capabilities: mergeModelCaps(prev.capabilities, cur.capabilities),
@@ -987,7 +990,10 @@ export function mergeModels(previous, current) {
   }
 
   out.sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
-  return { ...current, model_count: out.length, models: out };
+  // A run where no reporting node published its catalog must not erase the
+  // catalog every model is filed by; the last one stands until a newer arrives.
+  const families = current.families && current.families.length ? current.families : previous.families || current.families;
+  return { ...current, families, model_count: out.length, models: out };
 }
 
 function readHistory(name) {
@@ -2042,6 +2048,11 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       if (typeof extra.family === 'string' && extra.family) {
         m.family = m.family || extra.family;
         if (typeof extra.member === 'string' && extra.member) m.member = m.member || extra.member;
+        // What the gram SIGNED, kept apart from where today's catalog files the
+        // model (tools/model-filing.mjs): the re-filing is ours, the receipt is
+        // theirs.
+        m.signed_family = m.signed_family || extra.family;
+        if (typeof extra.member === 'string' && extra.member) m.signed_member = m.signed_member || extra.member;
       }
 
       const ctx = Number(extra.effective_ctx) || 0;
@@ -2250,6 +2261,8 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       served_ctx: m.served_ctx,
       family: m.family,
       member: m.member,
+      signed_family: m.signed_family || null,
+      signed_member: m.signed_member || null,
       declared: m.declared,
       capabilities: m.capabilities,
       // The best measurement per capability, each carrying the machine that
@@ -2400,14 +2413,22 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
  * saying the same thing, and a tie-break that preferred the newest would make
  * the file churn for no reason.
  */
-function collectCatalog(nodes) {
+export function collectCatalog(nodes) {
   const byFamily = new Map();
   for (const n of nodes || []) {
     for (const f of n?.proof_snapshot?.families || []) {
       if (!f?.id) continue;
-      const fam = byFamily.get(f.id) || {
+      // THE NEWEST FILING OF A FAMILY WINS. A gram publishes which discovery
+      // logic filed its members (schema_version; absent = older build). Grams on
+      // different builds name the same weights differently -- e2b~bartowski on an
+      // old one, e2b on a new one -- and a union of both kept retired member ids
+      // alive for as long as any old gram reported. Equal versions still merge.
+      const version = Number(f.schema_version) || 0;
+      const held = byFamily.get(f.id);
+      if (held && version < held.schema_version) continue;
+      const fam = held && version === held.schema_version ? held : {
         id: f.id, display_name: f.display_name || f.id, vendor: f.vendor || null,
-        purpose: f.purpose || [], members: new Map(),
+        purpose: f.purpose || [], members: new Map(), schema_version: version,
       };
       if (!fam.vendor && f.vendor) fam.vendor = f.vendor;
       if ((!fam.purpose || fam.purpose.length === 0) && f.purpose) fam.purpose = f.purpose;
@@ -2416,6 +2437,11 @@ function collectCatalog(nodes) {
         const mem = fam.members.get(m.id) || {
           id: m.id, display_name: m.display_name || m.id, params: m.params || null,
           artifacts: new Map(), aliases: new Set(),
+          // A derivative is filed beside the vendor member it came from (base);
+          // the site lists it in its own section, never in the base's numbers.
+          derivative: m.derivative === true, base: m.base || null,
+          // Who CHANGED the weights of a derivative (not who packaged it).
+          author: m.author || null,
         };
         if (!mem.aliases) mem.aliases = new Set();
         for (const a of m.artifacts || []) {
@@ -2439,11 +2465,15 @@ function collectCatalog(nodes) {
       display_name: f.display_name,
       vendor: f.vendor,
       purpose: f.purpose,
+      schema_version: f.schema_version || undefined,
       members: [...f.members.values()]
         .map((m) => ({
           id: m.id,
           display_name: m.display_name,
           params: m.params,
+          derivative: m.derivative || undefined,
+          base: m.base || undefined,
+          author: m.author || undefined,
           artifacts: [...m.artifacts.values()].sort((a, b) => (a.disk_mib || 0) - (b.disk_mib || 0)),
           aliases: m.aliases && m.aliases.size ? [...m.aliases].sort() : undefined,
         }))
@@ -3526,7 +3556,17 @@ function main() {
   // Merge, never regenerate — a signed probe does not un-happen when its prober sleeps
   // (see mergeModels / mergeCommunityLedger). This is what stops the model matrix from
   // blinking empty and 404-ing /inference/models/[slug].
-  const models = mergeModels(readPublished('data/models.json'), buildModels(out.nodes, out.generated_at, meshViews));
+  const previousModels = readPublished('data/models.json');
+  const models = mergeModels(previousModels, buildModels(out.nodes, out.generated_at, meshViews));
+  // FILED BY TODAY'S CATALOG, BY REF, and given its build address
+  // (/inferences/<family>/<member>/<build>). A build keeps the address it was
+  // published under. See tools/model-filing.mjs.
+  const previousBuilds = new Map(
+    (previousModels?.models || []).filter((m) => m.build).map((m) => [m.name, { family: m.family, member: m.member, build: m.build }])
+  );
+  const filing = fileModelsByCatalog(models.models, models.families, previousBuilds);
+  console.log(`[models] ${filing.filed} model(s) filed by the current catalog, ${filing.refiled} re-filed from where their gram signed them`);
+  models.unplaced_models = models.models.filter((m) => !m.family).map((m) => m.name);
   writeFileSync('data/models.json', JSON.stringify(models, null, 2) + '\n');
 
   // The catalog's SEASONS: what the network proved, per artifact and hardware
