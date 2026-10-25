@@ -6,7 +6,7 @@
   "peer_count": 3,
   "peers_online": 3,
   "peers_distinct_total": 1081,
-  "uptime_seconds": 4438,
+  "uptime_seconds": 5340,
   "epnd_version": "0561f570d33475fd35fd37c5da14a05716d3e782",
   "addrs": [
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/tcp/53590/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -28,7 +28,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-10-25T00:55:00Z",
+    "generated_at": "2026-10-25T01:10:02Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -35742,7 +35742,7 @@
             "author": "PrimeIntellect"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "minimax-m2-1",
@@ -36120,8 +36120,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/mradermacher/gpt-oss-20b-heretic-distilled-MiniMax-M2.1-i1-GGUF:IQ1_M",
-                "quant": "IQ1_M",
+                "ref": "hf.co/mradermacher/gpt-oss-20b-heretic-distilled-MiniMax-M2.1-i1-GGUF:IQ1_S",
+                "quant": "IQ1_S",
                 "disk_mib": 11460,
                 "attribution": "derivative",
                 "by": "mradermacher",
@@ -36578,8 +36578,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/TeichAI/Qwen3-4B-Thinking-MiniMax-M2.1-Coder-GGUF:BF16",
-                "quant": "BF16",
+                "ref": "hf.co/TeichAI/Qwen3-4B-Thinking-MiniMax-M2.1-Coder-GGUF:F16",
+                "quant": "F16",
                 "disk_mib": 7678,
                 "attribution": "derivative",
                 "by": "TeichAI",
@@ -36750,7 +36750,7 @@
             "author": "mradermacher"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "minimax-m2-5",
@@ -36908,12 +36908,13 @@
             "display_name": "MiniMax-M2.5 BASE",
             "artifacts": [
               {
-                "engine": "llamacpp",
-                "ref": "unsloth/MiniMax-M2.5-GGUF:Q4_K_M",
-                "quant": "Q4_K_M",
-                "disk_mib": 131933,
+                "engine": "mlx",
+                "platform": "darwin/arm64",
+                "ref": "lmstudio-community/MiniMax-M2.5-MLX-4bit",
+                "quant": "4BIT",
+                "disk_mib": 122706,
                 "attribution": "quantizer",
-                "by": "unsloth",
+                "by": "lmstudio-community",
                 "base": "MiniMaxAI/MiniMax-M2.5",
                 "cohort": 0,
                 "rung": 0
@@ -36928,6 +36929,51 @@
                 "base": "MiniMaxAI/MiniMax-M2.5",
                 "cohort": 0,
                 "rung": 0
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/MiniMax-M2.5-GGUF:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 131933,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 0,
+                "rung": 0
+              },
+              {
+                "engine": "vllm",
+                "ref": "MiniMaxAI/MiniMax-M2.5",
+                "quant": "FP8",
+                "disk_mib": 219473,
+                "attribution": "vendor",
+                "by": "MiniMaxAI",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 0,
+                "rung": 0
+              },
+              {
+                "engine": "vllm",
+                "ref": "cyankiwi/MiniMax-M2.5-AWQ-4bit",
+                "quant": "W4A16",
+                "disk_mib": 124450,
+                "attribution": "quantizer",
+                "by": "cyankiwi",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 1,
+                "rung": 1
+              },
+              {
+                "engine": "mlx",
+                "platform": "darwin/arm64",
+                "ref": "lmstudio-community/MiniMax-M2.5-MLX-8bit",
+                "quant": "8BIT",
+                "disk_mib": 231730,
+                "attribution": "quantizer",
+                "by": "lmstudio-community",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 1,
+                "rung": 1
               },
               {
                 "engine": "llamacpp",
@@ -36958,6 +37004,17 @@
                 "disk_mib": 94118,
                 "attribution": "quantizer",
                 "by": "mradermacher",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 1,
+                "rung": 2
+              },
+              {
+                "engine": "vllm",
+                "ref": "nvidia/MiniMax-M2.5-NVFP4",
+                "quant": "NVFP4",
+                "disk_mib": 133406,
+                "attribution": "quantizer",
+                "by": "nvidia",
                 "base": "MiniMaxAI/MiniMax-M2.5",
                 "cohort": 1,
                 "rung": 2
@@ -37038,8 +37095,51 @@
                 "base": "MiniMaxAI/MiniMax-M2.5",
                 "cohort": 1,
                 "rung": 9
+              },
+              {
+                "engine": "vllm",
+                "ref": "amd/MiniMax-M2.5-MXFP4",
+                "quant": "QUARK",
+                "disk_mib": 121491,
+                "attribution": "quantizer",
+                "by": "amd",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 1,
+                "rung": 9
+              },
+              {
+                "engine": "mlx",
+                "platform": "darwin/arm64",
+                "ref": "lmstudio-community/MiniMax-M2.5-MLX-6bit",
+                "quant": "6BIT",
+                "disk_mib": 177218,
+                "attribution": "quantizer",
+                "by": "lmstudio-community",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 1,
+                "rung": 9
               }
             ]
+          },
+          {
+            "id": "base~intel-autoround",
+            "display_name": "MiniMax-M2.5-int4-AutoRound",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "Intel/MiniMax-M2.5-int4-AutoRound",
+                "quant": "INT4",
+                "disk_mib": 115130,
+                "attribution": "derivative",
+                "by": "Intel",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 3,
+                "rung": 1
+              }
+            ],
+            "derivative": true,
+            "base": "base",
+            "author": "Intel"
           },
           {
             "id": "base~mradermacher-i1",
@@ -37104,6 +37204,66 @@
             "derivative": true,
             "base": "base",
             "author": "mradermacher"
+          },
+          {
+            "id": "base~thoughtworks-eagle3",
+            "display_name": "MiniMax-M2.5-Eagle3",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "thoughtworks/MiniMax-M2.5-Eagle3",
+                "quant": "BF16",
+                "disk_mib": 463,
+                "attribution": "derivative",
+                "by": "thoughtworks",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "base",
+            "author": "thoughtworks"
+          },
+          {
+            "id": "base~togethercomputer-aurora-spec",
+            "display_name": "Aurora-Spec-Minimax-M2.5",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "togethercomputer/Aurora-Spec-Minimax-M2.5",
+                "quant": "BF16",
+                "disk_mib": 1636,
+                "attribution": "derivative",
+                "by": "togethercomputer",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "base",
+            "author": "togethercomputer"
+          },
+          {
+            "id": "base~yujiepan-tiny-random",
+            "display_name": "minimax-m2.5-tiny-random",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "yujiepan/minimax-m2.5-tiny-random",
+                "quant": "BF16",
+                "disk_mib": 7,
+                "attribution": "derivative",
+                "by": "yujiepan",
+                "base": "MiniMaxAI/MiniMax-M2.5",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "base",
+            "author": "yujiepan"
           },
           {
             "id": "carve~vpyn",
@@ -37234,7 +37394,7 @@
             "author": "RadicalNotionAI"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "minimax-m2-7",
@@ -38178,7 +38338,7 @@
             "author": "llmfan46"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "minimax-m3",
@@ -38308,17 +38468,6 @@
                 "base": "MiniMaxAI/MiniMax-M3",
                 "cohort": 1,
                 "rung": 3
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/vultr/MiniMax-M3-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 1652,
-                "attribution": "quantizer",
-                "by": "vultr",
-                "base": "MiniMaxAI/MiniMax-M3",
-                "cohort": 1,
-                "rung": 4
               },
               {
                 "engine": "llamacpp",
@@ -38572,17 +38721,6 @@
                 "rung": 2
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/prometheusAIR/MiniMax-M3-sm120-safe-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 1654,
-                "attribution": "derivative",
-                "by": "prometheusAIR",
-                "base": "MiniMaxAI/MiniMax-M3",
-                "cohort": 3,
-                "rung": 4
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "prometheusAIR/MiniMax-M3-sm120-safe-GGUF:IQ2_XS",
                 "quant": "IQ2_XS",
@@ -38808,7 +38946,7 @@
             "author": "ressl"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "minimax-m3-1",
@@ -38861,17 +38999,6 @@
                 "rung": 3
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/mondk/MiniMax-M3.1-Flash-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 1652,
-                "attribution": "quantizer",
-                "by": "mondk",
-                "base": "MiniMaxAI/MiniMax-M3.1-Flash",
-                "cohort": 1,
-                "rung": 4
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "LyJonathan/MiniMax-M3.1-Flash-GGUF:IQ1_S",
                 "quant": "IQ1_S",
@@ -38886,7 +39013,7 @@
                 "engine": "llamacpp",
                 "ref": "LyJonathan/MiniMax-M3.1-Flash-GGUF:IQ2_KT",
                 "quant": "IQ2_KT",
-                "disk_mib": 8059,
+                "disk_mib": 118083,
                 "attribution": "quantizer",
                 "by": "LyJonathan",
                 "base": "MiniMaxAI/MiniMax-M3.1-Flash",
@@ -38930,17 +39057,6 @@
             "id": "flash~baekpica-vq",
             "display_name": "MiniMax-M3.1-Flash-VQ-GGUF",
             "artifacts": [
-              {
-                "engine": "ollama",
-                "ref": "hf.co/Baekpica/MiniMax-M3.1-Flash-VQ-GGUF:Q8_0",
-                "quant": "Q8_0",
-                "disk_mib": 2076,
-                "attribution": "derivative",
-                "by": "Baekpica",
-                "base": "MiniMaxAI/MiniMax-M3.1-Flash",
-                "cohort": 3,
-                "rung": 1
-              },
               {
                 "engine": "ollama",
                 "ref": "hf.co/Baekpica/MiniMax-M3.1-Flash-VQ-GGUF:BF16",
@@ -38991,17 +39107,6 @@
                 "base": "LyJonathan/MiniMax-M3.1-Flash-GGUF",
                 "cohort": 3,
                 "rung": 0
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/AMAImedia/MiniMax-M3.1-Flash-NVFP4-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 1652,
-                "attribution": "derivative",
-                "by": "AMAImedia",
-                "base": "LyJonathan/MiniMax-M3.1-Flash-GGUF",
-                "cohort": 3,
-                "rung": 4
               },
               {
                 "engine": "llamacpp",
@@ -39191,22 +39296,13 @@
             "display_name": "MiniMax-M3.1-Flash-Q2_K-GGUF",
             "artifacts": [
               {
-                "engine": "ollama",
-                "ref": "hf.co/smalinin/MiniMax-M3.1-Flash-Q2_K-GGUF:BF16",
-                "quant": "BF16",
-                "disk_mib": 4059,
-                "attribution": "derivative",
-                "by": "smalinin",
-                "cohort": 3,
-                "rung": 4
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "smalinin/MiniMax-M3.1-Flash-Q2_K-GGUF:Q2_K",
                 "quant": "Q2_K",
                 "disk_mib": 154749,
                 "attribution": "derivative",
                 "by": "smalinin",
+                "base": "MiniMaxAI/MiniMax-M3.1-Flash",
                 "cohort": 3,
                 "rung": 5
               }
@@ -39219,17 +39315,6 @@
             "id": "flash~webmp3-sakura-k",
             "display_name": "Sakura-MiniMax-M3.1-Flash-Q2_K-GGUF",
             "artifacts": [
-              {
-                "engine": "ollama",
-                "ref": "hf.co/webmp3/Sakura-MiniMax-M3.1-Flash-Q2_K-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 1652,
-                "attribution": "derivative",
-                "by": "webmp3",
-                "base": "MiniMaxAI/MiniMax-M3.1-Flash",
-                "cohort": 3,
-                "rung": 4
-              },
               {
                 "engine": "llamacpp",
                 "ref": "webmp3/Sakura-MiniMax-M3.1-Flash-Q2_K-GGUF:Q2_K",
@@ -39282,17 +39367,6 @@
                 "base": "MiniMaxAI/MiniMax-M3.1-Flash",
                 "cohort": 3,
                 "rung": 3
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/webmp3/Sakura-MiniMax-M3.1-Flash-Q3_K_M-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 1652,
-                "attribution": "derivative",
-                "by": "webmp3",
-                "base": "MiniMaxAI/MiniMax-M3.1-Flash",
-                "cohort": 3,
-                "rung": 4
               }
             ],
             "derivative": true,
@@ -39300,7 +39374,7 @@
             "author": "webmp3"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "ministral-3",
@@ -40054,7 +40128,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "mistral-large-3",
@@ -40320,7 +40394,7 @@
             "author": "mradermacher"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "mistral-medium-3-5",
@@ -40352,23 +40426,23 @@
                 "rung": 0
               },
               {
-                "engine": "llamacpp",
-                "ref": "unsloth/Mistral-Medium-3.5-128B-GGUF:Q4_K_M",
-                "quant": "Q4_K_M",
-                "disk_mib": 71427,
-                "attribution": "quantizer",
-                "by": "unsloth",
-                "base": "mistralai/Mistral-Medium-3.5-128B",
-                "cohort": 0,
-                "rung": 0
-              },
-              {
                 "engine": "ollama",
                 "ref": "hf.co/mradermacher/Mistral-Medium-3.5-128B-GGUF:Q4_K_M",
                 "quant": "Q4_K_M",
                 "disk_mib": 71427,
                 "attribution": "quantizer",
                 "by": "mradermacher",
+                "base": "mistralai/Mistral-Medium-3.5-128B",
+                "cohort": 0,
+                "rung": 0
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/Mistral-Medium-3.5-128B-GGUF:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 71427,
+                "attribution": "quantizer",
+                "by": "unsloth",
                 "base": "mistralai/Mistral-Medium-3.5-128B",
                 "cohort": 0,
                 "rung": 0
@@ -40460,17 +40534,6 @@
                 "base": "mistralai/Mistral-Medium-3.5-128B",
                 "cohort": 1,
                 "rung": 3
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/NeuralNotwerk/Mistral-Medium-3.5-128B-GGUF:BF16",
-                "quant": "BF16",
-                "disk_mib": 5131,
-                "attribution": "quantizer",
-                "by": "NeuralNotwerk",
-                "base": "mistralai/Mistral-Medium-3.5-128B",
-                "cohort": 1,
-                "rung": 4
               },
               {
                 "engine": "llamacpp",
@@ -40908,7 +40971,7 @@
             "author": "UnstableLlama"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "mistral-small-4",
@@ -40961,23 +41024,23 @@
                 "rung": 0
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/Mistral-Small-4-119B-2603-GGUF:Q8_0",
-                "quant": "Q8_0",
-                "disk_mib": 120614,
-                "attribution": "quantizer",
-                "by": "mradermacher",
-                "base": "mistralai/Mistral-Small-4-119B-2603",
-                "cohort": 1,
-                "rung": 1
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "unsloth/Mistral-Small-4-119B-2603-GGUF:Q8_0",
                 "quant": "Q8_0",
                 "disk_mib": 120614,
                 "attribution": "quantizer",
                 "by": "unsloth",
+                "base": "mistralai/Mistral-Small-4-119B-2603",
+                "cohort": 1,
+                "rung": 1
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/Mistral-Small-4-119B-2603-GGUF:Q8_0",
+                "quant": "Q8_0",
+                "disk_mib": 120614,
+                "attribution": "quantizer",
+                "by": "mradermacher",
                 "base": "mistralai/Mistral-Small-4-119B-2603",
                 "cohort": 1,
                 "rung": 1
@@ -41048,17 +41111,6 @@
                 "base": "mistralai/Mistral-Small-4-119B-2603",
                 "cohort": 1,
                 "rung": 3
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/Mistral-Small-4-119B-2603-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 817,
-                "attribution": "quantizer",
-                "by": "mradermacher",
-                "base": "mistralai/Mistral-Small-4-119B-2603",
-                "cohort": 1,
-                "rung": 4
               },
               {
                 "engine": "llamacpp",
@@ -41200,9 +41252,9 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/Rioky/Mistral-Small-4-119B-2603-heretic-i1-gguf:Q8_0",
+                "ref": "hf.co/Rioky/Mistral-Small-4-119B-2603-heretic-gguf:Q8_0",
                 "quant": "Q8_0",
-                "disk_mib": 1575,
+                "disk_mib": 120614,
                 "attribution": "derivative",
                 "by": "Rioky",
                 "base": "darkc0de/Mistral-Small-4-119B-2603-heretic",
@@ -41244,9 +41296,9 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/Rioky/Mistral-Small-4-119B-2603-heretic-i1-gguf:F16",
-                "quant": "F16",
-                "disk_mib": 1594,
+                "ref": "hf.co/Rioky/Mistral-Small-4-119B-2603-heretic-gguf:BF16",
+                "quant": "BF16",
+                "disk_mib": 226966,
                 "attribution": "derivative",
                 "by": "Rioky",
                 "base": "darkc0de/Mistral-Small-4-119B-2603-heretic",
@@ -41716,7 +41768,7 @@
             "author": "timteh673"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "moonshine",
@@ -41946,23 +41998,23 @@
                 "rung": 3
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/NANI-Nithin/Muse-Glimmer-30B-GGUF:BF16",
-                "quant": "BF16",
-                "disk_mib": 53143,
-                "attribution": "quantizer",
-                "by": "NANI-Nithin",
-                "base": "meta-models/Muse-Glimmer-30B",
-                "cohort": 1,
-                "rung": 4
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "unsloth/Muse-Glimmer-30B-GGUF:BF16",
                 "quant": "BF16",
                 "disk_mib": 53143,
                 "attribution": "quantizer",
                 "by": "unsloth",
+                "base": "meta-models/Muse-Glimmer-30B",
+                "cohort": 1,
+                "rung": 4
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/NANI-Nithin/Muse-Glimmer-30B-GGUF:F16",
+                "quant": "F16",
+                "disk_mib": 53143,
+                "attribution": "quantizer",
+                "by": "NANI-Nithin",
                 "base": "meta-models/Muse-Glimmer-30B",
                 "cohort": 1,
                 "rung": 4
@@ -42064,8 +42116,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/0bserverx/Muse-Glimmer-30B-Heretic-Uncensored-GGUF:F16",
-                "quant": "F16",
+                "ref": "hf.co/0bserverx/Muse-Glimmer-30B-Heretic-Uncensored-GGUF:BF16",
+                "quant": "BF16",
                 "disk_mib": 53143,
                 "attribution": "derivative",
                 "by": "0bserverx",
@@ -42446,16 +42498,6 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/The-freezer/Muse-Glimmer-30B-Abliterated-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 4887,
-                "attribution": "derivative",
-                "by": "The-freezer",
-                "cohort": 3,
-                "rung": 4
-              },
-              {
-                "engine": "ollama",
                 "ref": "hf.co/The-freezer/Muse-Glimmer-30B-Abliterated-GGUF:Q2_K",
                 "quant": "Q2_K",
                 "disk_mib": 10191,
@@ -42635,7 +42677,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "muse-spark",
@@ -43096,7 +43138,7 @@
             "author": "IlyasMoutawwakil"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "musicgen",
@@ -43141,7 +43183,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "nemotron-3-diarization",
@@ -43419,23 +43461,23 @@
                 "rung": 3
               },
               {
-                "engine": "llamacpp",
-                "ref": "unsloth/North-Mini-Code-1.0-GGUF:BF16",
-                "quant": "BF16",
-                "disk_mib": 58178,
-                "attribution": "quantizer",
-                "by": "unsloth",
-                "base": "CohereLabs/North-Mini-Code-1.0",
-                "cohort": 2,
-                "rung": 4
-              },
-              {
                 "engine": "ollama",
                 "ref": "hf.co/Fr4nkSt3in/North-Mini-Code-1.0-BF16-GGUF:BF16",
                 "quant": "BF16",
                 "disk_mib": 58178,
                 "attribution": "quantizer",
                 "by": "Fr4nkSt3in",
+                "base": "CohereLabs/North-Mini-Code-1.0",
+                "cohort": 2,
+                "rung": 4
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/North-Mini-Code-1.0-GGUF:BF16",
+                "quant": "BF16",
+                "disk_mib": 58178,
+                "attribution": "quantizer",
+                "by": "unsloth",
                 "base": "CohereLabs/North-Mini-Code-1.0",
                 "cohort": 2,
                 "rung": 4
@@ -43791,7 +43833,7 @@
             "author": "North-ML1"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "openhathi",
@@ -44563,7 +44605,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "pocket-tts",
@@ -44654,9 +44696,9 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/Reza2kn/Qianfan-OCR-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 615,
+                "ref": "hf.co/Reza2kn/Qianfan-OCR-GGUF:BF16",
+                "quant": "BF16",
+                "disk_mib": 8437,
                 "attribution": "quantizer",
                 "by": "Reza2kn",
                 "base": "baidu/Qianfan-OCR",
@@ -44984,7 +45026,7 @@
             "author": "beaupi"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "qwen-2-5",
@@ -45755,7 +45797,7 @@
             "author": "prithivMLmods"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "qwen-3-5",
@@ -46764,7 +46806,7 @@
             "author": "khazarai"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "qwen-3-6",
@@ -46829,17 +46871,6 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/tvall43/Qwen3.6-14B-A3B-FableVibes-GGUF:F16",
-                "quant": "F16",
-                "disk_mib": 857,
-                "attribution": "derivative",
-                "by": "tvall43",
-                "base": "tvall43/Qwen3.6-14B-A3B-FableVibes",
-                "cohort": 3,
-                "rung": 4
-              },
-              {
-                "engine": "ollama",
                 "ref": "hf.co/tvall43/Qwen3.6-14B-A3B-FableVibes-GGUF:Q2_K",
                 "quant": "Q2_K",
                 "disk_mib": 5077,
@@ -46848,6 +46879,17 @@
                 "base": "tvall43/Qwen3.6-14B-A3B-FableVibes",
                 "cohort": 3,
                 "rung": 5
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/tvall43/Qwen3.6-14B-A3B-FableVibes-GGUF:MXFP4",
+                "quant": "MXFP4",
+                "disk_mib": 8239,
+                "attribution": "derivative",
+                "by": "tvall43",
+                "base": "tvall43/Qwen3.6-14B-A3B-FableVibes",
+                "cohort": 3,
+                "rung": 9
               }
             ],
             "derivative": true,
@@ -47294,7 +47336,7 @@
                 "engine": "ollama",
                 "ref": "hf.co/LuffyTheFox/Qwen3.6-35B-A3B-Uncensored-Genesis-Hermes-GGUF:Q8_K_P",
                 "quant": "Q8_K_P",
-                "disk_mib": 42441,
+                "disk_mib": 41584,
                 "attribution": "derivative",
                 "by": "LuffyTheFox",
                 "base": "HauhauCS/Qwen3.6-35B-A3B-Uncensored-HauhauCS-Aggressive",
@@ -47498,7 +47540,7 @@
             "author": "nightmedia"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "qwen-3-8",
@@ -47687,17 +47729,6 @@
                 "disk_mib": 21722,
                 "attribution": "quantizer",
                 "by": "lmstudio-community",
-                "base": "Qwen/Qwen3.8-27B",
-                "cohort": 1,
-                "rung": 9
-              },
-              {
-                "engine": "vllm",
-                "ref": "unsloth/Qwen3.8-27B-NVFP4",
-                "quant": "W4A4",
-                "disk_mib": 22332,
-                "attribution": "quantizer",
-                "by": "unsloth",
                 "base": "Qwen/Qwen3.8-27B",
                 "cohort": 1,
                 "rung": 9
@@ -47946,9 +47977,9 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/JonathanColetti/Qwen3.8-27B-Uncensored-GGUF:Q4_0",
-                "quant": "Q4_0",
-                "disk_mib": 1602,
+                "ref": "hf.co/JonathanColetti/Qwen3.8-27B-Uncensored-GGUF:Q5_K_M",
+                "quant": "Q5_K_M",
+                "disk_mib": 18630,
                 "attribution": "derivative",
                 "by": "JonathanColetti",
                 "base": "Qwen/Qwen3.8-27B",
@@ -48306,7 +48337,7 @@
             "author": "Youssofal"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "qwen-image",
@@ -48413,7 +48444,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "rasa-vits",
@@ -48475,7 +48506,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "sana",
@@ -48503,7 +48534,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "sarvam",
@@ -48617,7 +48648,7 @@
             ]
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "shrutam",
@@ -49642,7 +49673,7 @@
             "author": "amitdutta121"
           }
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "sooktam",
@@ -49680,7 +49711,7 @@
         "purpose": [
           "audio.music"
         ],
-        "schema_version": 8
+        "schema_version": 9
       },
       {
         "id": "stable-diffusion-3-5",
@@ -52581,5 +52612,5 @@
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS"
   ],
   "catalog": [],
-  "checked_at": "2026-10-25T00:55:00Z"
+  "checked_at": "2026-10-25T01:10:02Z"
 }
