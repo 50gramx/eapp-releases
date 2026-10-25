@@ -910,8 +910,11 @@ function mergeOneModel(prev, cur) {
       n.peak_signing_payload_b64 = p.peak_signing_payload_b64;
     }
     // Cost facts a node signed once stay until it signs them again.
-    for (const k of ['resident_mib', 'resident_vram_mib', 'weights_mib', 'cold_start_ms']) {
+    for (const k of ['resident_mib', 'resident_vram_mib', 'weights_mib', 'cold_start_ms', 'obtained_bytes', 'obtained_ms']) {
       if (!(Number(n[k]) > 0) && p && Number(p[k]) > 0) n[k] = p[k];
+    }
+    for (const k of ['obtained_from', 'obtained_size_basis', 'resident_basis']) {
+      if (!n[k] && p && p[k]) n[k] = p[k];
     }
     byNode.set(n.node_did, n);
   }
@@ -2039,6 +2042,16 @@ export function buildModels(nodes, generatedAt = new Date().toISOString(), meshV
       // model AS THIS MACHINE LOADED IT.
       for (const k of ['resident_mib', 'resident_vram_mib', 'weights_mib', 'cold_start_ms']) {
         if (Number(extra[k]) > 0) node[k] = Number(extra[k]);
+      }
+      // HOW THE WEIGHTS ARRIVED (gram build 2026-10-25): from upstream, from a
+      // gram's copy, or already here; the bytes and the time it took. Signed by
+      // the host beside the probe, so the cost of fetching a model is a fact on
+      // its page and not only a line on one gram's meter.
+      for (const k of ['obtained_bytes', 'obtained_ms']) {
+        if (Number(extra[k]) > 0) node[k] = Number(extra[k]);
+      }
+      for (const k of ['obtained_from', 'obtained_size_basis', 'resident_basis']) {
+        if (typeof extra[k] === 'string' && extra[k]) node[k] = extra[k];
       }
 
       // FAMILY, FROM THE SIGNED PAYLOAD. Attested rather than inferred here: the
