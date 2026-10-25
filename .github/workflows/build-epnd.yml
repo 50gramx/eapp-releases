@@ -108,6 +108,8 @@ jobs:
           token: ${{ secrets.CI_READ_TOKEN }}
           ref: ${{ needs.check.outputs.sha }}
           path: epn-daemon
+          # Enough history for epnd-commits.txt (staged below).
+          fetch-depth: 500
 
       - uses: actions/setup-go@v5
         with:
@@ -294,6 +296,11 @@ jobs:
           cp epn-daemon/web/shell/dist/wasm_exec.js epn-daemon/dist/wasm_exec.js
           cp epn-daemon/web/shell/dist/epn-shell.js epn-daemon/dist/epn-shell.js
           cp epn-daemon/web/shell/dist/world-viewer.html epn-daemon/dist/world-viewer.html
+          # The commits this build contains, newest (the build's own) first,
+          # shas only. A run that needs "at least commit X" can then accept a
+          # newer build: `epnd version` names one sha, and the source repo is
+          # private, so nothing public could say a newer build contains X.
+          git -C epn-daemon log --format=%H -n 500 > epn-daemon/dist/epnd-commits.txt
           cd epn-daemon/dist
           # The viewer files are named individually rather than folded into the
           # epnd-* glob: a consumer that downloads them over the network needs
@@ -355,7 +362,7 @@ jobs:
             gh release edit "$tag" --repo "$GITHUB_REPOSITORY"               --title "epnd — Latest Build (Rolling)"               --notes-file ../scripts/release-notes.md
           fi
           failed=""
-          for f in epnd-windows-amd64.exe epnd-linux-amd64 epnd-linux-arm64                    epnd-darwin-amd64 epnd-darwin-arm64                    epnd-android-arm64-v8a epnd-android-armeabi-v7a epnd-android-x86_64                    install.sh install.ps1 report-bootstrap-status.sh                    epnd-autoupdate.sh epnd-autoupdate.ps1                    epn.wasm wasm_exec.js epn-shell.js world-viewer.html checksums.txt; do
+          for f in epnd-windows-amd64.exe epnd-linux-amd64 epnd-linux-arm64                    epnd-darwin-amd64 epnd-darwin-arm64                    epnd-android-arm64-v8a epnd-android-armeabi-v7a epnd-android-x86_64                    install.sh install.ps1 report-bootstrap-status.sh                    epnd-autoupdate.sh epnd-autoupdate.ps1                    epn.wasm wasm_exec.js epn-shell.js world-viewer.html checksums.txt epnd-commits.txt; do
             ok=0
             for attempt in 1 2 3 4 5; do
               if gh release upload "$tag" "$f" --repo "$GITHUB_REPOSITORY" --clobber; then
