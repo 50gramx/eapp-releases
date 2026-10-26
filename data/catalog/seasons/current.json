@@ -4,7 +4,7 @@
   "starts_at": "2026-10-26T00:00:00.000Z",
   "ends_at": "2026-11-02T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-10-26T04:13:14.150Z",
+  "published_at": "2026-10-26T04:28:04.954Z",
   "contributors": {
     "grams": 1,
     "classes": [
@@ -12,10 +12,11 @@
     ]
   },
   "counts": {
-    "artifacts": 5,
-    "publishers": 3,
+    "artifacts": 7,
+    "publishers": 4,
     "by_cohort": {
-      "1": 3,
+      "0": 1,
+      "1": 4,
       "2": 2
     }
   },
@@ -65,6 +66,42 @@
           "energy_tier": "modelled",
           "first_at": "2026-10-26T02:33:45.356Z",
           "last_at": "2026-10-26T02:33:45.356Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/gaianet/embeddinggemma-300m-GGUF:Q4_K_M",
+      "family": "embeddinggemma",
+      "member": "300m",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "gaianet",
+      "attribution": "quantizer",
+      "base": "google/embeddinggemma-300m",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 225,
+      "by_class": {
+        "linux/amd64/none/32g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "embed.vector": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-10-26T04:18:19.570Z",
+          "last_at": "2026-10-26T04:18:19.570Z"
         }
       }
     },
@@ -239,19 +276,72 @@
           "last_at": "2026-10-26T03:33:20.172Z"
         }
       }
+    },
+    {
+      "ref": "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_0",
+      "family": "granite-4-0",
+      "member": "1b",
+      "engine": "ollama",
+      "quant": "Q4_0",
+      "publisher": "ibm-granite",
+      "attribution": "vendor",
+      "base": "ibm-granite/granite-4.0-1b",
+      "derivative": false,
+      "cohort": 1,
+      "rung": 3,
+      "disk_mib": 929,
+      "by_class": {
+        "linux/amd64/none/32g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 8.75,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "too-slow-here",
+          "effective_ctx_ladder": "4096",
+          "ctx_trained": 131072,
+          "ctx_affordable": null,
+          "caps": {
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "structured_output": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 6.077,
+          "energy_tier": "modelled",
+          "first_at": "2026-10-26T04:12:49.423Z",
+          "last_at": "2026-10-26T04:12:49.423Z"
+        }
+      }
     }
   ],
   "publishers": [
     {
       "publisher": "ibm-granite",
-      "held": 3,
+      "held": 4,
       "grams": 1,
       "engines": {
-        "ollama": 3
+        "ollama": 4
       }
     },
     {
       "publisher": "bartowski",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "ollama": 1
+      }
+    },
+    {
+      "publisher": "gaianet",
       "held": 1,
       "grams": 1,
       "engines": {
@@ -490,6 +580,10 @@
     "hf.co/bartowski/sarvamai_sarvam-m-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": 1
     },
+    "hf.co/gaianet/embeddinggemma-300m-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": 1,
+      "linux/amd64/none/32g": 1
+    },
     "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q4_K_M": {
       "darwin/arm64/apple/8g": 1,
       "windows/amd64/amd/8g": 1
@@ -656,9 +750,6 @@
     "hf.co/gaianet/embeddinggemma-300m-GGUF:Q3_K_S": {
       "linux/amd64/none/32g": 1
     },
-    "hf.co/gaianet/embeddinggemma-300m-GGUF:Q4_K_M": {
-      "windows/amd64/intel/16g": 1
-    },
     "hf.co/ggml-org/embeddinggemma-300M-GGUF:Q8_0": {
       "linux/amd64/none/32g": 1
     },
@@ -681,6 +772,9 @@
       "linux/amd64/none/32g": 1
     },
     "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q3_K_S": {
+      "linux/amd64/none/32g": 1
+    },
+    "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_0": {
       "linux/amd64/none/32g": 1
     },
     "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_K_M": {
@@ -2388,6 +2482,14 @@
         "thinking": 1
       }
     },
+    "hf.co/gaianet/embeddinggemma-300m-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": {
+        "embed.vector": 1
+      },
+      "linux/amd64/none/32g": {
+        "embed.vector": 1
+      }
+    },
     "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q4_K_M": {
       "darwin/arm64/apple/8g": {
         "code.reason": 1,
@@ -3371,11 +3473,6 @@
         "embed.vector": 1
       }
     },
-    "hf.co/gaianet/embeddinggemma-300m-GGUF:Q4_K_M": {
-      "windows/amd64/intel/16g": {
-        "embed.vector": 1
-      }
-    },
     "hf.co/ggml-org/embeddinggemma-300M-GGUF:Q8_0": {
       "linux/amd64/none/32g": {
         "embed.vector": 1
@@ -3484,6 +3581,20 @@
         "structured_output": 1,
         "tools": 1,
         "tools.call": 1
+      }
+    },
+    "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_0": {
+      "linux/amd64/none/32g": {
+        "code.write": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.long": 1,
+        "output.schema": 1,
+        "structured_output": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
       }
     },
     "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_K_M": {
@@ -5313,12 +5424,12 @@
   "proving": [
     {
       "gram": "e61d3b",
-      "ref": "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_0",
-      "family": "granite-4-0",
-      "member": "1b",
+      "ref": "hf.co/unsloth/Qwen3.5-0.8B-GGUF:Q4_K_M",
+      "family": "qwen-3-5",
+      "member": "0.8b",
       "class": "linux/amd64/none/32g",
       "region": "US_51503",
-      "until": "2026-10-26T05:53:41.143842817Z"
+      "until": "2026-10-26T06:18:40.768349492Z"
     }
   ],
   "grams": [
@@ -5327,9 +5438,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 1217,
+      "offline_minutes": 1232,
       "last_seen": "2026-10-25T07:55:25.960825361Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -5370,12 +5481,12 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-10-26T04:12:32.237795024Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "last_seen": "2026-10-26T04:27:32.987712095Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
-      "awake_seconds": 32693,
+      "awake_seconds": 33593,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -5390,9 +5501,9 @@
         "8"
       ],
       "artifacts": 3699,
-      "measured": 31,
+      "measured": 33,
       "failed": 2,
-      "queued": 1585,
+      "queued": 1574,
       "unreachable": 14,
       "unreachable_by_engine": {
         "mlx": 3,
@@ -5401,9 +5512,9 @@
         "speech-host": 4,
         "vllm": 4
       },
-      "expected_hours": 411.3666666666667,
+      "expected_hours": 391.28333333333336,
       "expected_basis": "own samples",
-      "eta_hours": 1312,
+      "eta_hours": 1889,
       "blocked": "fetch"
     },
     {
@@ -5411,9 +5522,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 2006,
+      "offline_minutes": 2021,
       "last_seen": "2026-10-24T18:46:48.273497951Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -5453,9 +5564,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/16g",
       "state": "offline",
-      "offline_minutes": 14071,
+      "offline_minutes": 14087,
       "last_seen": "2026-10-16T09:41:09.337393806Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -5495,12 +5606,12 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-10-26T04:12:22.219423695Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "last_seen": "2026-10-26T04:27:43.449926604Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
-      "awake_seconds": 28205,
+      "awake_seconds": 29127,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -5537,9 +5648,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/8g",
       "state": "offline",
-      "offline_minutes": 25480,
+      "offline_minutes": 25495,
       "last_seen": "2026-10-08T11:32:43.123137899Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "battery",
@@ -5578,9 +5689,9 @@
       "os": "windows",
       "class": "windows/amd64/intel/16g",
       "state": "offline",
-      "offline_minutes": 105,
+      "offline_minutes": 120,
       "last_seen": "2026-10-26T02:27:40.564695128Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -5620,9 +5731,9 @@
       "os": "darwin",
       "class": "darwin/amd64/apple/8g",
       "state": "offline",
-      "offline_minutes": 135,
+      "offline_minutes": 150,
       "last_seen": "2026-10-26T01:57:19.811962459Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -5662,9 +5773,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 9638,
+      "offline_minutes": 9653,
       "last_seen": "2026-10-19T11:34:49.856273646Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -5703,9 +5814,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/8g",
       "state": "offline",
-      "offline_minutes": 6318,
+      "offline_minutes": 6333,
       "last_seen": "2026-10-21T18:54:26.305874913Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "ac",
@@ -5742,9 +5853,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/8g",
       "state": "offline",
-      "offline_minutes": 675,
+      "offline_minutes": 690,
       "last_seen": "2026-10-25T16:57:37.53906395Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -5783,9 +5894,9 @@
       "os": "windows",
       "class": "windows/amd64/intel/16g",
       "state": "offline",
-      "offline_minutes": 3654,
+      "offline_minutes": 3669,
       "last_seen": "2026-10-23T15:18:38.96547469Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -5824,9 +5935,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/16g",
       "state": "offline",
-      "offline_minutes": 6666,
+      "offline_minutes": 6681,
       "last_seen": "2026-10-21T13:06:53.22615129Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -5865,9 +5976,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/16g",
       "state": "offline",
-      "offline_minutes": 1285,
+      "offline_minutes": 1301,
       "last_seen": "2026-10-25T06:47:12.705499902Z",
-      "as_of": "2026-10-26T04:12:37Z",
+      "as_of": "2026-10-26T04:27:47Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -5906,23 +6017,24 @@
   "modalities": [
     {
       "engine": "ollama",
-      "proved_artifacts": 5,
-      "measured": 5,
+      "proved_artifacts": 7,
+      "measured": 7,
       "unreachable": 0,
       "capabilities": {
-        "code.write": 4,
+        "code.write": 5,
         "faithful_tool_result": 1,
-        "instruct.follow": 4,
-        "lang.en": 5,
+        "instruct.follow": 5,
+        "lang.en": 6,
         "lang.hi": 2,
-        "output.long": 4,
-        "output.schema": 5,
-        "structured_output": 5,
-        "tools": 3,
-        "tools.call": 3,
+        "output.long": 5,
+        "output.schema": 6,
+        "structured_output": 6,
+        "tools": 4,
+        "tools.call": 4,
         "tools.faithful": 1,
-        "tools.loop_ends": 2,
-        "tools_loop_terminated": 2,
+        "tools.loop_ends": 3,
+        "tools_loop_terminated": 3,
+        "embed.vector": 1,
         "lang.bn": 1,
         "lang.gu": 1,
         "lang.mr": 1,
@@ -6137,6 +6249,38 @@
         "version": "64a4d3278789b2abac036c327fed3538f9988019",
         "first_at": "2026-10-25T21:37:25.509621306Z",
         "last_at": "2026-10-25T21:37:25.509621306Z"
+      }
+    },
+    "hf.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF:Q2_K_XL": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "64a4d3278789b2abac036c327fed3538f9988019",
+        "first_at": "2026-10-26T04:16:00.338596724Z",
+        "last_at": "2026-10-26T04:16:00.338596724Z"
+      },
+      "linux/amd64/nvidia/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "bd8c334490b2b8dc833a64223537bc8233a814dd",
+        "first_at": "2026-10-24T08:52:56.61396203Z",
+        "last_at": "2026-10-24T08:52:56.61396203Z"
+      }
+    },
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "64a4d3278789b2abac036c327fed3538f9988019",
+        "first_at": "2026-10-26T04:16:25.026064403Z",
+        "last_at": "2026-10-26T04:16:25.026064403Z"
+      },
+      "linux/amd64/nvidia/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "bd8c334490b2b8dc833a64223537bc8233a814dd",
+        "first_at": "2026-10-24T08:53:16.307037318Z",
+        "last_at": "2026-10-24T08:53:16.307037318Z"
       }
     },
     "bharatgenai/sooktam2": {
@@ -6486,24 +6630,6 @@
         "last_at": "2026-10-24T08:52:37.28100891Z"
       }
     },
-    "hf.co/unsloth/gemma-4-E2B-it-qat-mobile-GGUF:Q2_K_XL": {
-      "linux/amd64/nvidia/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "bd8c334490b2b8dc833a64223537bc8233a814dd",
-        "first_at": "2026-10-24T08:52:56.61396203Z",
-        "last_at": "2026-10-24T08:52:56.61396203Z"
-      }
-    },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ3_XXS": {
-      "linux/amd64/nvidia/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "bd8c334490b2b8dc833a64223537bc8233a814dd",
-        "first_at": "2026-10-24T08:53:16.307037318Z",
-        "last_at": "2026-10-24T08:53:16.307037318Z"
-      }
-    },
     "hf.co/unsloth/gemma-4-E4B-it-GGUF:IQ2_M": {
       "linux/amd64/nvidia/32g": {
         "cause": "unavailable",
@@ -6586,7 +6712,7 @@
       "download_mib_per_sec_median": 63.6,
       "download_samples": 2,
       "carried_from": null,
-      "at": "2026-10-26T04:13:14.150Z"
+      "at": "2026-10-26T04:28:04.954Z"
     },
     "darwin/amd64/apple/8g": {
       "engines": {},
@@ -6623,14 +6749,14 @@
       },
       "download_mib_per_sec_median": 11.4,
       "download_samples": 1,
-      "at": "2026-10-26T04:13:14.150Z",
+      "at": "2026-10-26T04:28:04.954Z",
       "carried_from": null
     },
     "windows/amd64/nvidia/8g": {
       "engines": {},
       "download_mib_per_sec_median": 7.3,
       "download_samples": 1,
-      "at": "2026-10-26T04:13:14.150Z",
+      "at": "2026-10-26T04:28:04.954Z",
       "carried_from": null
     },
     "windows/amd64/none/8g": {
@@ -6663,12 +6789,12 @@
         "ollama-host": {
           "probe_ms_median": 1736545,
           "samples": 2,
-          "at": "2026-10-26T04:13:14.150Z"
+          "at": "2026-10-26T04:28:04.954Z"
         }
       },
       "download_mib_per_sec_median": 9,
       "download_samples": 1,
-      "at": "2026-10-26T04:13:14.150Z",
+      "at": "2026-10-26T04:28:04.954Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/32g": {
@@ -6691,14 +6817,14 @@
       },
       "download_mib_per_sec_median": 127.9,
       "download_samples": 1,
-      "at": "2026-10-26T04:13:14.150Z",
+      "at": "2026-10-26T04:28:04.954Z",
       "carried_from": null
     },
     "linux/amd64/none/32g": {
       "engines": {},
-      "download_mib_per_sec_median": 141.6,
+      "download_mib_per_sec_median": 119.8,
       "download_samples": 2,
-      "at": "2026-10-26T04:13:14.150Z",
+      "at": "2026-10-26T04:28:04.954Z",
       "carried_from": null
     }
   },
@@ -6711,15 +6837,15 @@
       "proposed": "hold",
       "history": [
         {
-          "at": "2026-10-26T03:58:03.105Z",
-          "proposal": "hold"
-        },
-        {
           "at": "2026-10-26T04:13:01.346Z",
           "proposal": "hold"
         },
         {
           "at": "2026-10-26T04:13:14.150Z",
+          "proposal": "hold"
+        },
+        {
+          "at": "2026-10-26T04:28:04.954Z",
           "proposal": "hold"
         }
       ],
@@ -6976,6 +7102,9 @@
     },
     "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q3_K_S": {
       "linux/amd64/none/32g": 2554
+    },
+    "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_0": {
+      "linux/amd64/none/32g": 4314
     },
     "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_K_M": {
       "linux/amd64/none/32g": 3780
