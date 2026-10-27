@@ -12,7 +12,9 @@
 // no independent verification — and every card on the page must say so.
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
-import { buildSeasons, writeSeasons } from './seasons.mjs';
+import { buildSeasons, writeSeasons, readSeasons, readCurrent } from './seasons.mjs';
+import { buildValueTable, TABLE_PATH } from './value-table.mjs';
+import { readMarket } from './market.mjs';
 import { fileModelsByCatalog } from './model-filing.mjs';
 import { labelFor, loadDirectory } from './region-labels.mjs';
 
@@ -3594,6 +3596,17 @@ function main() {
   // Passing founders left cost/class_variance/demand empty on every publish
   // and every gram's expected_hours blank -- backlog 10.
   writeSeasons(buildSeasons(models, models.families, out.generated_at, undefined, readFleetNodes()));
+
+  // EVERY SEASON, ONE TABLE (tools/value-table.mjs): what was proved, what a
+  // million tokens cost on each class, what is only estimated, and what the
+  // hosted API and the licence say -- cited from data/catalog/market.json,
+  // which `node tools/market.mjs refresh` keeps in CI.
+  const valueTable = buildValueTable({
+    seasons: readSeasons(), families: models.families, current: readCurrent(),
+    market: readMarket(), generatedAt: out.generated_at,
+  });
+  writeFileSync(TABLE_PATH, JSON.stringify(valueTable, null, 2) + '\n');
+  console.log('[value table]', JSON.stringify(valueTable.counts));
 
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.

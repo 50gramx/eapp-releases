@@ -40,6 +40,9 @@ jobs:
             # Name any new pincode from the pincode itself (tools/region-labels.mjs):
             # cached in data/pincode-directory.json, one lookup a second, never fatal.
             node tools/region-labels.mjs resolve || true
+            # Cited market facts (OpenRouter prices, hub licences) for the value
+            # table: refreshed on their own clocks, never fatal (tools/market.mjs).
+            node tools/market.mjs refresh || true
             node tools/aggregate-founders.mjs
             # Stage first, then ask whether anything changed. data/communities.json
             # did not exist in the tree, and `git diff` on an untracked path reports

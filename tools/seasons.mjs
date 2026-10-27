@@ -243,9 +243,26 @@ function mergeRows(prev, cur) {
 export function costTable(nodes, prior = null) {
   const probe = new Map(); // class -> engine -> ms[]
   const speed = new Map(); // class -> MiB/s[]
+  // class -> engine -> { bw: [], perGiB: [] }: each gram's own decode
+  // calibration (its report's `throughput`), so a gram with no build of a
+  // size measured can price one from the class's rate, and the value table
+  // can estimate every build for the class. epn-daemon throughput_estimate.go.
+  const calib = new Map();
+  const prices = new Map(); // class -> [token_prices]
   for (const n of nodes || []) {
     const p = n?.probes;
     const klass = p?.hardware_class || 'unknown';
+    for (const [eng, t] of Object.entries(p?.throughput || {})) {
+      if (!calib.has(klass)) calib.set(klass, new Map());
+      const byEng = calib.get(klass);
+      if (!byEng.has(eng)) byEng.set(eng, { bw: [], perGiB: [] });
+      if (Number(t?.eff_bytes_per_sec) > 0) byEng.get(eng).bw.push(Number(t.eff_bytes_per_sec));
+      if (Number(t?.ms_per_active_gib) > 0) byEng.get(eng).perGiB.push(Number(t.ms_per_active_gib));
+    }
+    if (p?.token_prices && Number(p.token_prices.threads) > 0) {
+      if (!prices.has(klass)) prices.set(klass, []);
+      prices.get(klass).push(p.token_prices);
+    }
     if (Number(p?.download_mib_per_sec) > 0) {
       if (!speed.has(klass)) speed.set(klass, []);
       speed.get(klass).push(Number(p.download_mib_per_sec));
@@ -267,6 +284,26 @@ export function costTable(nodes, prior = null) {
   for (const [klass, byEng] of probe) {
     out[klass] = out[klass] || { engines: {} };
     for (const [eng, xs] of byEng) out[klass].engines[eng] = { probe_ms_median: Math.round(median(xs)), samples: xs.length };
+  }
+  for (const [klass, byEng] of calib) {
+    out[klass] = out[klass] || { engines: {} };
+    for (const [eng, c] of byEng) {
+      const row = out[klass].engines[eng] || {};
+      if (c.bw.length) { row.eff_bytes_per_sec = Math.round(median(c.bw)); row.bandwidth_grams = c.bw.length; }
+      if (c.perGiB.length) { row.ms_per_active_gib = Math.round(median(c.perGiB)); row.probe_rate_grams = c.perGiB.length; }
+      if (row.probe_ms_median === undefined) { row.probe_ms_median = 0; row.samples = 0; }
+      out[klass].engines[eng] = row;
+    }
+  }
+  // The unit prices a class's grams meter at: the most common basis, so a
+  // reader prices a historical rate the way metering would have.
+  for (const [klass, xs] of prices) {
+    out[klass] = out[klass] || { engines: {} };
+    const key = (t) => JSON.stringify([t.threads, Boolean(t.gpu_backed), t.vcpu_second_uusd, t.gib_hour_uusd, t.gpu_second_uusd || 0, t.kwh_uusd, t.tariff_basis]);
+    const count = new Map();
+    for (const t of xs) count.set(key(t), (count.get(key(t)) || 0) + 1);
+    const top = [...count.entries()].sort((a, b) => b[1] - a[1])[0][0];
+    out[klass].token_prices = { ...xs.find((t) => key(t) === top), grams: xs.length };
   }
   for (const [klass, xs] of speed) {
     out[klass] = out[klass] || { engines: {} };
