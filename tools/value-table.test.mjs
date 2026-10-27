@@ -130,6 +130,21 @@ console.log('ok - value table');
   assert.equal(licenceName({ id: 'other', name: 'qwen-community-1.0' }), 'Qwen Community 1.0 licence');
   assert.equal(licenceName({ id: 'apache-2.0' }), 'Apache 2.0');
 
+  const { machineOf, meteredUsdPerM, isRepackage } = await import('./value-models.mjs');
+  const kaggle = { os: 'linux', arch: 'amd64', cpus: 4, ram_gib: 31.3, gpu: 'nvidia', vram_gib: 15, gpu_model: 'Tesla T4', gpu_count: 2, host: 'Kaggle' };
+  assert.equal(machineOf(kaggle).name, 'Linux · 2× Tesla T4 15 GB · 4 CPUs · 31 GB RAM', 'the card and its memory, not the system memory, name a GPU machine');
+  assert.equal(machineOf(kaggle).host_org, 'kaggle');
+  assert.equal(machineOf({ os: 'windows', cpus: 16, ram_gib: 15.9, gpu: 'nvidia', vram_gib: 12 }).name, 'Windows · NVIDIA 12 GB · 16 CPUs · 16 GB RAM');
+  assert.notEqual(machineOf({ os: 'windows', cpus: 12, ram_gib: 15.7, gpu: 'nvidia', vram_gib: 4 }).key,
+    machineOf({ os: 'windows', cpus: 16, ram_gib: 15.9, gpu: 'nvidia', vram_gib: 12 }).key, 'a 4 GB card and a 12 GB card are two machines');
+  // 3 threads × 10 + 1 GiB × 3000/3600 + 100 (card) + (3×5+150) W × $0.10/kWh, ÷ 100 tok/s
+  assert.equal(meteredUsdPerM({ cpus: 4, gpu: 'nvidia' }, 1024, 100), +((30 + 3000 / 3600 + 100 + 165 / 3.6e6 * 100000) / 100).toFixed(4));
+  assert.equal(meteredUsdPerM({ gpu: 'nvidia' }, 1024, 100), null, 'no signed CPU count, no price');
+  assert.ok(isRepackage('Llama-3.2-1B-Instruct-Q4_K_M-GGUF', ['meta-llama/Llama-3.2-1B-Instruct']), 'another file of the same weights is a build');
+  assert.ok(isRepackage('Llama-3.2-3B-Instruct', ['meta-llama/Llama-3.2-3B-Instruct']));
+  assert.ok(!isRepackage('Llama-3.2-3B-Instruct-abliterated-GGUF', ['meta-llama/Llama-3.2-3B-Instruct']), 'changed weights are a variant');
+  assert.ok(!isRepackage('Llama-3.2-1B-Instruct-LinkLlama-Cap50', ['meta-llama/Llama-3.2-1B-Instruct']));
+
   const { paramsOf } = await import('./value-models.mjs');
   assert.deepEqual(paramsOf({ member: '26b-a4b' }), { params_b: 26, active_params_b: 4, params_basis: 'named' }, 'a mixture of experts names both sizes');
   assert.deepEqual(paramsOf({ declared: '5.1B', member: 'e2b' }), { params_b: 5.1, active_params_b: 2, params_basis: 'named' }, '"E2B" is the effective size of a larger model');

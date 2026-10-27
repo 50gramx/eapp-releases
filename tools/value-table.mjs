@@ -25,7 +25,7 @@
 //
 // docs/CATALOG_VALUE_TABLE_PLAN_2026-10-27.md (epn-daemon), increment 5.
 
-import { licenceClass, serveScopes, hubRepoOf } from './market.mjs';
+import { licenceClass, serveScopes, hubRepoOf, HARDWARE_ORGS } from './market.mjs';
 import { catalogIndex, placementOf, refRepo } from './model-filing.mjs';
 import { modelView, machineMemoryGB } from './value-models.mjs';
 
@@ -148,7 +148,7 @@ function verdict(cls, api, modality) {
  * plus every catalog build a hosted API also sells (the market's leaders,
  * proved or not), with per-class proved, priced, estimated and cited columns.
  */
-export function buildValueTable({ seasons, families, current, market, generatedAt = new Date().toISOString() }) {
+export function buildValueTable({ seasons, families, current, market, evidence = null, generatedAt = new Date().toISOString() }) {
   const catalog = new Map();
   for (const f of families || []) {
     for (const m of f.members || []) {
@@ -304,6 +304,7 @@ export function buildValueTable({ seasons, families, current, market, generatedA
 
     rows.push({
       ref, family: a.family || null, member: a.member || null, quant: a.quant || null, engine, modality,
+      base: a.base || null, hub_repo: repo || null,
       publisher: a.by || a.publisher || null, derivative: Boolean(a.derivative), cohort: a.cohort ?? null, rung: a.rung ?? null,
       disk_mib: disk, active_share: share < 1 ? +share.toFixed(4) : 1,
       licence: { id: lic?.id || null, name: lic?.name || null, class: licClass, serve_scopes: serveScopes(licClass), gated: Boolean(lic?.gated), source: lic?.source || null, fetched_at: lic?.fetched_at || null },
@@ -317,11 +318,11 @@ export function buildValueTable({ seasons, families, current, market, generatedA
 
   const count = (pred) => rows.filter(pred).length;
   const memories = rows.flatMap((r) => Object.keys(r.classes).map(machineMemoryGB)).filter((v) => v > 0);
-  const models = modelView(rows, { families, largestMachineGB: memories.length ? Math.max(...memories) : null });
+  const models = modelView(rows, { families, largestMachineGB: memories.length ? Math.max(...memories) : null, evidence, market });
   return {
     generated_at: generatedAt,
     seasons: ids,
-    note: 'Proved columns are signed by the grams that measured them, across every season. Prices are derived from those rates at each class\'s metered unit prices (USD per million tokens = µUSD per second / tokens per second). Estimates are labelled and never signed. API prices and licences are cited from OpenRouter and the Hugging Face hub with the time they were read.',
+    note: 'Proved columns are signed by the grams that measured them, across every season. Prices here are each machine\'s signed size (CPUs, memory, card) at the network\'s metered price list (USD per million tokens = µUSD per second / tokens per second). Estimates are labelled and never signed. API prices and licences are cited from OpenRouter and the Hugging Face hub with the time they were read.',
     usable_tokens_per_sec: USABLE_TOKENS_PER_SEC,
     counts: {
       rows: rows.length,
@@ -338,6 +339,14 @@ export function buildValueTable({ seasons, families, current, market, generatedA
       measured_and_no_api_sells_it: models.filter((m) => m.status === 'measured' && !m.hosted_api).length,
       cheaper_here_than_the_api: models.filter((m) => m.cheapest && m.hosted_api?.output_usd_per_million > 0 && m.cheapest.cost_usd_per_million <= m.hosted_api.output_usd_per_million).length,
       too_big_for_every_machine: models.filter((m) => m.too_big_for_the_network).length,
+    },
+    // Logos for the hardware and hosts a machine names: each company's own
+    // Hugging Face avatar (market.json).
+    logos: Object.fromEntries(Object.entries(market?.avatars || {})
+      .filter(([org, v]) => v?.url && HARDWARE_ORGS.includes(org)).map(([org, v]) => [org, v.url])),
+    price_list: {
+      usd_per_cpu_hour: 0.036, usd_per_gb_ram_hour: 0.003, usd_per_gpu_hour: 0.36, usd_per_kwh: 0.1,
+      source: 'epn-daemon config.DefaultPriceFloors: what metering charges every gram',
     },
     models,
     rows,

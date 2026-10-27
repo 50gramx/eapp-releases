@@ -3603,7 +3603,7 @@ function main() {
   // which `node tools/market.mjs refresh` keeps in CI.
   const valueTable = buildValueTable({
     seasons: readSeasons(), families: models.families, current: readCurrent(),
-    market: readMarket(), generatedAt: out.generated_at,
+    market: readMarket(), evidence: models.models, generatedAt: out.generated_at,
   });
   writeFileSync(TABLE_PATH, JSON.stringify(valueTable, null, 2) + '\n');
   console.log('[value table]', JSON.stringify(valueTable.counts));

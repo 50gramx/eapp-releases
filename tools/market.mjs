@@ -38,14 +38,26 @@ const LICENCE_TTL_MS = 7 * 24 * 3600 * 1000;
 // one at a time, clears a catalog of a few hundred repos within a day.
 const LICENCES_PER_RUN = 60;
 const LICENCE_GAP_MS = 300;
+// Every provider OpenRouter routes a model to, with its own price, precision
+// and uptime: the "who sells it, at what" a buyer compares against this
+// network's machines. On the same clock as the model list.
+const ENDPOINTS_PER_RUN = 80;
+// Logos: the Hugging Face avatar of a model's maker, of a packager, and of the
+// companies behind the hardware and the host (nvidia, Intel, apple, kaggle).
+const AVATAR_TTL_MS = 30 * 24 * 3600 * 1000;
+const AVATARS_PER_RUN = 80;
+export const HARDWARE_ORGS = ['nvidia', 'amd', 'Intel', 'apple', 'kaggle', 'google', 'microsoft', 'aws'];
 
 export function readMarket(path = MARKET_PATH) {
-  if (!existsSync(path)) return { openrouter: null, licences: {} };
+  if (!existsSync(path)) return { openrouter: null, licences: {}, endpoints: {}, avatars: {} };
   try {
     const m = JSON.parse(readFileSync(path, 'utf8'));
-    return { openrouter: m.openrouter || null, licences: m.licences || {}, generated_at: m.generated_at };
+    return {
+      openrouter: m.openrouter || null, licences: m.licences || {}, generated_at: m.generated_at,
+      endpoints: m.endpoints || {}, avatars: m.avatars || {},
+    };
   } catch {
-    return { openrouter: null, licences: {} };
+    return { openrouter: null, licences: {}, endpoints: {}, avatars: {} };
   }
 }
 
@@ -173,6 +185,32 @@ async function fetchJSON(url, timeoutMs = 20000) {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** One provider OpenRouter routes a model to. */
+export function endpointRow(e) {
+  const p = e.pricing || {};
+  return {
+    provider: e.provider_name || e.name || null,
+    tag: e.tag || null,
+    quantization: e.quantization && e.quantization !== 'unknown' ? e.quantization : null,
+    usd_per_m_in: perM(p.prompt),
+    usd_per_m_out: perM(p.completion),
+    context_length: Number(e.context_length) || null,
+    uptime_1d: Number.isFinite(e.uptime_last_1d) ? +e.uptime_last_1d.toFixed(1) : null,
+    tools: Array.isArray(e.supported_parameters) && e.supported_parameters.includes('tools'),
+    latency_ms: Number(e.latency_last_30m) || null,
+    tokens_per_sec: Number(e.throughput_last_30m) || null,
+  };
+}
+
+/** The hub orgs whose logo a page shows: makers and packagers of catalog builds. */
+function catalogOrgs(models) {
+  const orgs = new Set(HARDWARE_ORGS);
+  for (const f of models?.families || []) for (const m of f.members || []) for (const a of m.artifacts || []) {
+    for (const r of [a.base, hubRepoOf(a)]) if (r && /^[\w.-]+\/[\w.-]+$/.test(r)) orgs.add(r.split('/')[0]);
+  }
+  return [...orgs];
+}
+
 export async function refresh(now = Date.now()) {
   const market = readMarket();
   const models = existsSync(MODELS_PATH) ? JSON.parse(readFileSync(MODELS_PATH, 'utf8')) : null;
@@ -199,6 +237,8 @@ export async function refresh(now = Date.now()) {
   // The hosted API's own repo too: a quantizer's repo often declares no
   // licence, and the weights it packages are the original's.
   const repos = new Set(catalogRepos(models));
+  market.endpoints = market.endpoints || {};
+  market.avatars = market.avatars || {};
   for (const m of market.openrouter?.models || []) if (m.hugging_face_id) repos.add(m.hugging_face_id);
   // Oldest first: a repo never looked up, then the stalest.
   const due = [...repos]
@@ -222,11 +262,58 @@ export async function refresh(now = Date.now()) {
   }
   console.log(`[market] licences: ${got} resolved this run, ${Object.keys(market.licences).length} held`);
 
+  // EVERY PROVIDER OF EVERY MODEL THE CATALOG CARRIES, stalest first.
+  const names = new Set([...repos].map((r) => r.toLowerCase().split('/')[1]?.replace(/-(gguf|mlx|awq|gptq|fp8|bnb.*|\d+bit)$/i, '')));
+  const wanted = (market.openrouter?.models || [])
+    .filter((m) => m.hugging_face_id && !m.variant && (repos.has(m.hugging_face_id) || names.has(m.hugging_face_id.toLowerCase().split('/')[1])))
+    .map((m) => ({ id: m.id, at: Date.parse(market.endpoints[m.id]?.fetched_at || '') || 0 }))
+    .filter((x) => now - x.at > OPENROUTER_TTL_MS)
+    .sort((a, b) => a.at - b.at)
+    .slice(0, ENDPOINTS_PER_RUN);
+  let eps = 0;
+  for (const { id } of wanted) {
+    try {
+      const url = `https://openrouter.ai/api/v1/models/${id}/endpoints`;
+      const r = await fetchJSON(url, 10000);
+      if (r.status === 429) break;
+      if (r.body?.data?.endpoints) {
+        market.endpoints[id] = {
+          source: url, fetched_at: new Date(now).toISOString(),
+          providers: r.body.data.endpoints.map(endpointRow).sort((a, b) => (a.usd_per_m_out ?? Infinity) - (b.usd_per_m_out ?? Infinity)),
+        };
+        eps++;
+      }
+    } catch { /* next run */ }
+    await sleep(LICENCE_GAP_MS);
+  }
+  console.log(`[market] providers: ${eps} models refreshed, ${Object.keys(market.endpoints).length} held`);
+
+  // LOGOS, from each org's own Hugging Face avatar.
+  const dueOrgs = catalogOrgs(models)
+    .map((org) => ({ org, at: Date.parse(market.avatars[org]?.fetched_at || '') || 0 }))
+    .filter((x) => now - x.at > AVATAR_TTL_MS)
+    .sort((a, b) => a.at - b.at)
+    .slice(0, AVATARS_PER_RUN);
+  let av = 0;
+  for (const { org } of dueOrgs) {
+    try {
+      let r = await fetchJSON(`https://huggingface.co/api/organizations/${org}/avatar`, 8000);
+      if (!r.body?.avatarUrl) r = await fetchJSON(`https://huggingface.co/api/users/${org}/avatar`, 8000);
+      if (r.status === 429) break;
+      market.avatars[org] = { url: r.body?.avatarUrl || null, fetched_at: new Date(now).toISOString() };
+      av++;
+    } catch { /* next run */ }
+    await sleep(LICENCE_GAP_MS);
+  }
+  console.log(`[market] logos: ${av} read this run, ${Object.keys(market.avatars).length} held`);
+
   writeFileSync(MARKET_PATH, JSON.stringify({
     generated_at: new Date(now).toISOString(),
-    note: 'Cited facts about models from their own sources -- prices (OpenRouter) and licences (the Hugging Face hub). Not measured by this network; every row names its source and when it was read.',
+    note: 'Cited facts about models from their own sources -- prices and providers (OpenRouter), licences and logos (the Hugging Face hub). Not measured by this network; every row names its source and when it was read.',
     openrouter: market.openrouter,
     licences: Object.fromEntries(Object.entries(market.licences).sort()),
+    endpoints: Object.fromEntries(Object.entries(market.endpoints).sort()),
+    avatars: Object.fromEntries(Object.entries(market.avatars).sort()),
   }, null, 2) + '\n');
 }
 

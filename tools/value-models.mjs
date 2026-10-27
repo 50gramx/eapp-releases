@@ -236,52 +236,196 @@ function bottomLine(m) {
   return `${speed}.${sells}`;
 }
 
+// ── THE MACHINE, AS ITS SIGNED RESULT DESCRIBES IT ───────────────────────────
+//
+// A hardware class pooled a 12 GB desktop card with a 4 GB laptop one and put
+// the SYSTEM memory in the name, so "Windows PC with an NVIDIA GPU, 16 GB"
+// read as a 16 GB card. Every signed result carries the machine itself: its
+// CPUs, its memory, its card and that card's memory -- and, from e9f1c13,
+// the card's and processor's names and who hosts the machine.
+
+const GPU_VENDOR = { nvidia: 'NVIDIA', amd: 'AMD', intel: 'Intel', apple: 'Apple', tpu: 'Google TPU' };
+const HW_ORG = { nvidia: 'nvidia', amd: 'amd', intel: 'Intel', apple: 'apple', tpu: 'google' };
+const HOST_ORG = { Kaggle: 'kaggle', 'Google Colab': 'google', 'Google Cloud': 'google', 'AWS EC2': 'aws', 'Microsoft Azure': 'microsoft' };
+
+/** The machine a signed result names, in words and as parts a page can show. */
+export function machineOf(hw) {
+  if (!hw || !hw.os) return null;
+  const os = hw.os === 'darwin' ? 'Mac' : hw.os === 'windows' ? 'Windows' : hw.os === 'linux' ? 'Linux' : hw.os;
+  const gpu = hw.gpu && hw.gpu !== 'none' && hw.gpu !== 'other' ? hw.gpu : null;
+  const count = hw.gpu_count > 1 ? `${hw.gpu_count}× ` : '';
+  const card = gpu
+    ? gpu === 'apple'
+      ? (hw.gpu_model || 'Apple silicon')
+      : `${count}${hw.gpu_model || GPU_VENDOR[gpu] || gpu}${hw.vram_gib > 0 ? ` ${Math.round(hw.vram_gib)} GB` : ''}`
+    : 'no GPU';
+  const parts = [os, card, hw.cpus ? `${hw.cpus} CPUs` : null, hw.ram_gib ? `${Math.round(hw.ram_gib)} GB RAM` : null].filter(Boolean);
+  return {
+    name: parts.join(' · '),
+    os, os_version: hw.os_version || null, cpus: hw.cpus || null, cpu_model: hw.cpu_model || null,
+    ram_gb: hw.ram_gib ? Math.round(hw.ram_gib) : null,
+    gpu_vendor: gpu ? GPU_VENDOR[gpu] || gpu : null, gpu_model: hw.gpu_model || null, gpu_count: hw.gpu_count || (gpu ? 1 : 0),
+    vram_gb: hw.vram_gib > 0 ? Math.round(hw.vram_gib) : null,
+    host: hw.host || null,
+    vendor_org: gpu ? HW_ORG[gpu] || null : (hw.os === 'darwin' ? 'apple' : null),
+    host_org: HOST_ORG[hw.host] || null,
+    key: [hw.os, hw.arch, hw.cpus, Math.round(hw.ram_gib || 0), gpu || 'none', Math.round(hw.vram_gib || 0), hw.gpu_model || '', hw.gpu_count || '', hw.host || ''].join('|'),
+  };
+}
+
+// The network's price list (epn-daemon config.DefaultPriceFloors): what metering
+// charges every gram, in µUSD. One list, posted, the same everywhere.
+export const PRICE_LIST = { vcpu_second_uusd: 10, gib_hour_uusd: 3000, gpu_second_uusd: 100, kwh_uusd: 100000 };
+
 /**
- * modelView — one plain-language entry per catalog member (or per unfiled ref),
- * from the per-build rows buildValueTable made.
+ * What a million output tokens cost on THIS machine at the metered rates:
+ * epn-daemon internal/cmd/token_price.go, with the machine's own signed CPUs
+ * (the engine drives every thread but one), the build resident in memory and
+ * the card when it has one. µUSD per second ÷ tokens per second.
  */
-export function modelView(rows, { families = [], largestMachineGB = null } = {}) {
+export function meteredUsdPerM(hw, diskMiB, tokensPerSec) {
+  if (!hw?.cpus || !(tokensPerSec > 0)) return null;
+  const threads = Math.max(1, hw.cpus - 1);
+  const card = ['nvidia', 'amd', 'apple', 'tpu'].includes(hw.gpu);
+  const vcpu = threads * PRICE_LIST.vcpu_second_uusd;
+  const ram = (diskMiB || 0) / 1024 * PRICE_LIST.gib_hour_uusd / 3600;
+  const gpu = card ? PRICE_LIST.gpu_second_uusd : 0;
+  const watts = threads * 5 + (card ? 150 : 0); // hostinfo/energy.go, for one second
+  const energy = watts / 3.6e6 * PRICE_LIST.kwh_uusd;
+  return +((vcpu + ram + gpu + energy) / tokensPerSec).toFixed(4);
+}
+
+// ── ONE MODEL, ONE ROW ───────────────────────────────────────────────────────
+//
+// The catalog files every packager's repo as a "community" member, so
+// hugging-quants' Llama-3.2-1B-Instruct-Q4_K_M-GGUF -- the same weights in
+// another file -- was a model of its own beside Llama 3.2 1B. A repackaging
+// is a BUILD of its base; only changed weights (abliterated, uncensored, a
+// fine-tune) are a VARIANT, and a variant sits under its base.
+
+const FORMAT = /(^|-)(gguf|ggml|mlx|onnx|exl2|bf16|f16|fp16|f32|fp32|fp8|fp4|int4|int8|\d+-?bits?|q\d(-k)?(-[msl])?|q\d-\d|iq\d[\w]*|i1|k-m|awq|gptq|bnb[\w-]*|nvfp4|mxfp4|mtp|mtplx|optiq[\w]*|oq\d\w*|dq\d?|w\d+a\d+|instruct|it|hf|quantized|imatrix|static|fast|speed|optimized|dense-modules|with)(?=-|$)/g;
+
+function weightsKey(s) {
+  let k = String(s || '').toLowerCase().replace(/^.*\//, '').replace(/[_ .]+/g, '-');
+  for (let i = 0; i < 4; i++) k = k.replace(FORMAT, '$1').replace(/--+/g, '-').replace(/^-|-$/g, '');
+  return k;
+}
+
+/** True when a community member is its base's weights in another file. */
+export function isRepackage(derivName, baseNames) {
+  const d = weightsKey(derivName);
+  if (!d) return true;
+  return baseNames.map(weightsKey).some((b) => b && (d === b || d.replace(/-/g, '') === b.replace(/-/g, '')));
+}
+
+const NS = 1e6;
+const toISO = (ns) => (ns > 0 ? new Date(ns / NS).toISOString() : null);
+const hubURL = (repo) => (repo && /^[\w.-]+\/[\w.-]+$/.test(repo) ? `https://huggingface.co/${repo}` : null);
+
+/**
+ * modelView — one plain-language entry per model, from the per-build rows
+ * buildValueTable made and the signed evidence (data/models.json) behind them.
+ */
+export function modelView(rows, { families = [], largestMachineGB = null, evidence = null, market = null } = {}) {
   const fam = new Map((families || []).map((f) => [f.id, f]));
+  const avatars = market?.avatars || {};
+  const logo = (org) => (org && avatars[org]?.url) || null;
+  const endpoints = market?.endpoints || {};
+  // The signed results behind each ref: every gram that measured it, with the machine.
+  const byRef = new Map();
+  for (const e of evidence || []) {
+    const list = byRef.get(e.name) || [];
+    list.push(e);
+    byRef.set(e.name, list);
+  }
+
+  // Which member a row belongs to: a repackaging folds into its base.
+  const baseOf = (r) => {
+    const f = fam.get(r.family);
+    const mem = f?.members?.find((m) => m.id === r.member);
+    if (!mem?.derivative || !mem.base) return { key: `${r.family}/${r.member}`, variantOf: null };
+    const base = f.members.find((m) => m.id === mem.base);
+    const names = [base?.display_name, base?.id, ...(base?.artifacts || []).flatMap((a) => [a.base, refRepo(a.ref)])].filter(Boolean);
+    if (base && isRepackage(mem.display_name || mem.id, names)) return { key: `${r.family}/${mem.base}`, variantOf: null };
+    return { key: `${r.family}/${r.member}`, variantOf: base ? `${r.family}/${mem.base}` : null };
+  };
+
   const groups = new Map();
   for (const r of rows) {
     if (/^claude-/.test(r.ref)) continue; // a hosted seat, not a network build
-    // A build today's catalog does not file: grouped with its other quants by
-    // the weights its repo packages, under the packager's name.
-    const key = r.family && r.member ? `${r.family}/${r.member}` : `${refRepo(r.ref)?.split('/')[0] || ''}/${weightsName(r.ref) || r.ref}`;
-    const g = groups.get(key) || { key, rows: [] };
+    const filed = r.family && r.member ? baseOf(r) : null;
+    const key = filed?.key || `${refRepo(r.ref)?.split('/')[0] || ''}/${weightsName(r.ref) || r.ref}`;
+    const g = groups.get(key) || { key, rows: [], variantOf: filed?.variantOf || null };
     g.rows.push(r);
     groups.set(key, g);
   }
 
   const out = [];
   for (const g of groups.values()) {
-    const r0 = g.rows[0];
-    const f = fam.get(r0.family);
-    const mem = f?.members?.find((m) => m.id === r0.member);
+    const [famID, memID] = g.key.split('/');
+    const f = fam.get(famID);
+    const mem = f?.members?.find((m) => m.id === memID);
+    const r0 = g.rows.find((r) => r.member === memID) || g.rows[0];
     const caps = new Set();
-    const measured = [];
     const seasons = new Set();
+    const runs = new Map(); // ref + machine -> the best signed run on it
     for (const r of g.rows) {
       for (const s of r.seasons) seasons.add(s);
       const real = !(r.disk_mib > 0 && r.disk_mib < MIN_REAL_BUILD_MIB);
-      for (const [klass, c] of Object.entries(r.classes)) {
-        for (const k of c.caps || []) caps.add(k);
-        if (!c.proved || !real) continue;
-        measured.push({
-          machine: machineName(klass),
-          machine_class: klass,
-          machines: c.grams,
-          tokens_per_sec: c.tokens_per_sec_best || null,
-          context_tokens: c.effective_ctx_best || null,
-          build: [precisionName(r.quant), r.publisher ? `by ${r.publisher}` : null].filter(Boolean).join(' ') || null,
-          ref: r.ref,
-          cost_usd_per_million: c.usd_per_m_out ?? c.est_usd_per_m_out ?? null,
-          cost_is_estimate: c.usd_per_m_out == null && c.est_usd_per_m_out != null,
-          weeks: c.seasons,
-        });
+      for (const c of Object.values(r.classes)) for (const k of c.caps || []) caps.add(k);
+      if (!real) continue;
+      const build = [precisionName(r.quant), r.publisher ? `by ${r.publisher}` : null].filter(Boolean).join(' ') || null;
+      const signed = byRef.get(r.ref) || [];
+      for (const e of signed) {
+        const page = e.family && e.member && e.build ? `/inferences/${e.family}/${e.member}/${e.build}` : null;
+        for (const n of e.nodes || []) {
+          const mc = machineOf(n.hardware);
+          const tps = n.tokens_per_sec > 0 ? n.tokens_per_sec : null;
+          const key = `${r.ref}|${mc?.key || 'unreported'}`;
+          const prev = runs.get(key);
+          const dids = new Set([...(prev?._dids || []), n.node_did]);
+          if (prev && (prev.tokens_per_sec || 0) >= (tps || 0)) { prev._dids = dids; prev.machines = dids.size; continue; }
+          runs.set(key, {
+            machine: mc?.name || 'machine not reported',
+            machine_detail: mc,
+            machine_class: mc?.key || 'unknown',
+            machines: dids.size,
+            _dids: dids,
+            tokens_per_sec: tps ? +tps.toFixed(2) : null,
+            context_tokens: (typeof n.effective_ctx === 'number' ? n.effective_ctx : n.effective_ctx?.value) || e.effective_ctx?.value || null,
+            build,
+            ref: r.ref,
+            engine: n.runtime || e.engine || r.engine || null,
+            cost_usd_per_million: meteredUsdPerM(n.hardware, r.disk_mib, tps),
+            cost_is_estimate: false,
+            cost_basis: 'the network\'s metered rates on this machine',
+            measured_at: toISO(n.measured_at || n.probed_at),
+            signed: Boolean(n.throughput_signature || n.probe_signature),
+            build_page: page,
+            hub_url: hubURL(refRepo(r.ref)),
+            weeks: r.seasons,
+          });
+        }
+      }
+      // A season proved it, the matrix no longer carries the gram: the class
+      // figure stays, marked as the class it is.
+      if (!signed.length) {
+        for (const [klass, c] of Object.entries(r.classes)) {
+          if (!c.proved) continue;
+          runs.set(`${r.ref}|${klass}`, {
+            machine: machineName(klass), machine_detail: null, machine_class: klass, machines: c.grams,
+            tokens_per_sec: c.tokens_per_sec_best || null, context_tokens: c.effective_ctx_best || null,
+            build, ref: r.ref, engine: r.engine,
+            cost_usd_per_million: c.usd_per_m_out ?? c.est_usd_per_m_out ?? null,
+            cost_is_estimate: c.usd_per_m_out == null && c.est_usd_per_m_out != null,
+            cost_basis: c.usd_per_m_out != null ? 'the network\'s metered rates' : 'the network\'s metered rates, machine size assumed',
+            measured_at: c.last_at || null, signed: true, build_page: null, hub_url: hubURL(refRepo(r.ref)), weeks: c.seasons,
+          });
+        }
       }
     }
-    const known = measured.filter((x) => x.machine_class !== 'unknown');
+    const measured = [...runs.values()].map(({ _dids, ...x }) => x);
+    const known = measured.filter((x) => x.machine_detail || x.machine_class !== 'unknown');
     const pool = known.length ? known : measured;
     const fastest = pool.filter((x) => x.tokens_per_sec > 0).sort((a, b) => b.tokens_per_sec - a.tokens_per_sec)[0] || pool[0] || null;
     const cheapest = pool.filter((x) => x.cost_usd_per_million > 0).sort((a, b) => a.cost_usd_per_million - b.cost_usd_per_million)[0] || null;
@@ -289,27 +433,34 @@ export function modelView(rows, { families = [], largestMachineGB = null } = {})
     // The build a buyer would download: the standard rung, else the smallest real one.
     const sized = g.rows.filter((r) => r.disk_mib >= MIN_REAL_BUILD_MIB);
     const smallest = (list) => [...list].sort((a, b) => a.disk_mib - b.disk_mib)[0];
-    const lead = smallest(sized.filter((r) => r.rung === 0)) || smallest(sized) || r0;
-    const apiRow = g.rows.find((r) => r.api)?.api || null;
+    const lead = smallest(sized.filter((r) => r.rung === 0 && r.member === memID)) || smallest(sized.filter((r) => r.rung === 0)) || smallest(sized) || r0;
+    const apiRow = g.rows.find((r) => r.api && r.member === memID)?.api || g.rows.find((r) => r.api)?.api || null;
     const licRow = g.rows.find((r) => r.licence?.id)?.licence || r0.licence;
     let modality = g.rows.find((r) => r.modality !== 'other')?.modality || r0.modality;
     if (modality === 'other' && ([...caps].some((c) => TEXT_SKILLS.test(c)) || /gguf/i.test(r0.ref))) modality = 'text';
     const downloadGB = lead.disk_mib ? +(lead.disk_mib / 1024).toFixed(1) : null;
     const { skills, languages } = skillsOf(caps);
     const repoName = refRepo(r0.ref) ? String(r0.ref).replace(/^hf\.co\//i, '').split(':')[0].split('/')[1].replace(/[-_.]gguf$/i, '') : r0.ref;
-    const name = tidyName(mem?.display_name || (r0.member && f ? `${f.display_name || f.id} ${r0.member}` : repoName));
+    const name = tidyName(mem?.display_name || (memID && f ? `${f.display_name || f.id} ${memID}` : repoName));
+    const baseRepo = lead.base || r0.base || lead.hub_repo || null;
+    const makerOrg = (mem?.derivative ? (mem.author || refRepo(r0.ref)?.split('/')[0]) : baseRepo?.split('/')[0]) || refRepo(r0.ref)?.split('/')[0] || null;
+    const providers = apiRow ? endpoints[apiRow.openrouter_id]?.providers || null : null;
+    const licRepo = String(licRow?.source || '').replace(/^https:\/\/huggingface\.co\/api\/models\//, '');
 
     const m = {
       model: name,
       // A community build is its packager's, of the vendor's weights.
-      made_by: (r0.derivative ? r0.publisher : f?.vendor) || r0.publisher || refRepo(r0.ref)?.split('/')[0] || null,
-      based_on: r0.derivative ? (f?.display_name || null) : null,
-      in_catalog: Boolean(r0.family),
+      made_by: (mem?.derivative ? mem.author || r0.publisher : f?.vendor) || r0.publisher || refRepo(r0.ref)?.split('/')[0] || null,
+      maker_logo: logo(makerOrg) || logo(baseRepo?.split('/')[0]),
+      based_on: mem?.derivative ? (f?.members?.find((x) => x.id === mem.base)?.display_name || f?.display_name || null) : null,
+      variant_of: g.variantOf ? `/inferences/${g.variantOf}` : null,
+      in_catalog: Boolean(f),
       kind: kindOf(modality, caps),
-      community_build: Boolean(r0.derivative),
-      page: r0.family && r0.member ? `/inferences/${r0.family}/${r0.member}` : null,
+      community_build: Boolean(mem?.derivative),
+      page: f && memID ? `/inferences/${famID}/${memID}` : null,
+      hub_url: hubURL(baseRepo) || hubURL(refRepo(lead.ref)),
       download_gb: downloadGB,
-      ...paramsOf({ declared: mem?.params, member: r0.member, name, ref: lead.ref, diskMib: lead.disk_mib, quant: lead.quant }),
+      ...paramsOf({ declared: mem?.params, member: memID, name, ref: lead.ref, diskMib: lead.disk_mib, quant: lead.quant }),
       longest_prompt_tokens: pool.reduce((n, x) => Math.max(n, x.context_tokens || 0), 0) || null,
       too_big_for_the_network: Boolean(!fastest && largestMachineGB && downloadGB && downloadGB > largestMachineGB),
       largest_machine_gb: largestMachineGB,
@@ -325,22 +476,35 @@ export function modelView(rows, { families = [], largestMachineGB = null } = {})
       hosted_api: apiRow ? {
         seller: 'OpenRouter',
         model_id: apiRow.openrouter_id,
+        url: `https://openrouter.ai/${apiRow.openrouter_id}`,
         input_usd_per_million: apiRow.usd_per_m_in,
         output_usd_per_million: apiRow.usd_per_m_out,
         free_tier: apiRow.free_variant,
         context_tokens: apiRow.context_length,
         checked_at: apiRow.fetched_at,
+        providers,
+        provider_count: providers?.length || null,
       } : null,
       licence: {
         name: licenceName(licRow),
         you_may_serve: MAY_SERVE[licRow?.class || 'unknown'],
         class: licRow?.class || 'unknown',
-        source: licRow?.source || null,
+        source: licRow?.link || hubURL(licRepo) || null,
       },
-      builds: g.rows.length,
+      builds: new Set(g.rows.map((r) => r.ref)).size,
+      variants: [],
     };
     m.bottom_line = bottomLine(m);
     out.push(m);
+  }
+
+  // Variants under their base: the base lists them, and each names its base.
+  const byPage = new Map(out.map((m) => [m.page, m]));
+  for (const m of out) {
+    const base = m.variant_of && byPage.get(m.variant_of);
+    if (!base) continue;
+    m.based_on = base.model;
+    base.variants.push({ model: m.model, made_by: m.made_by, page: m.page, status: m.status, tokens_per_sec: m.fastest?.tokens_per_sec ?? null });
   }
 
   // Measured first: the most it proved it can do, then how fast. Then what an
