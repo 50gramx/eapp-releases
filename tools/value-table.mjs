@@ -26,6 +26,8 @@
 // docs/CATALOG_VALUE_TABLE_PLAN_2026-10-27.md (epn-daemon), increment 5.
 
 import { licenceClass, serveScopes, hubRepoOf } from './market.mjs';
+import { catalogIndex, placementOf, refRepo } from './model-filing.mjs';
+import { modelView, machineMemoryGB } from './value-models.mjs';
 
 export const TABLE_PATH = 'data/catalog/seasons/table.json';
 
@@ -69,6 +71,27 @@ export function perSecond(prices, diskMiB) {
   const watts = prices.threads * 5 + (prices.gpu_backed ? 150 : 0);
   const energy = watts / 3.6e6 * (prices.kwh_uusd || 0);
   return { total: vcpu + ram + gpu + energy, energy };
+}
+
+// The network's metered unit prices (epn-daemon config.DefaultPriceFloors), for a
+// class no gram of which has reported its own pricing basis yet. The thread count
+// is the one assumption, and the row says it is one.
+export const ASSUMED_THREADS = 4;
+export function assumedBasis(klass) {
+  const gpu = String(klass || '').split('/')[2];
+  return {
+    threads: ASSUMED_THREADS, vcpu_second_uusd: 10, gib_hour_uusd: 3000, gpu_second_uusd: 100, kwh_uusd: 100000,
+    gpu_backed: ['nvidia', 'amd', 'apple'].includes(gpu), tariff_basis: 'bootstrap', assumed: true,
+  };
+}
+
+/** The weights a repo packages: "hf.co/bartowski/google_gemma-4-E2B-it-GGUF:Q4_0" -> "gemma-4-e2b-it". */
+export function weightsName(ref) {
+  const repo = refRepo(ref);
+  if (!repo) return null;
+  return repo.split('/')[1]
+    .replace(/^(google|microsoft|meta-llama|qwen|mistralai|deepseek-ai|ibm-granite|moonshotai|nvidia|liquidai)_/, '')
+    .replace(/([-_.](gguf|mlx|awq|gptq|gguf-.*|i?q\d.*|\d+bit|fp8.*|bnb.*))+$/, '') || null;
 }
 
 const r4 = (v) => (v > 0 ? +v.toFixed(4) : null);
@@ -134,6 +157,42 @@ export function buildValueTable({ seasons, families, current, market, generatedA
       }
     }
   }
+  const index = catalogIndex(families);
+  // A ref the catalog spells differently (case, quant suffix, a repo it files
+  // by name) is filed the way the model pages file it: tools/model-filing.mjs.
+  // A quantizer the catalog never filed (bartowski/google_gemma-4-E2B-it-GGUF)
+  // packages weights a member already names (unsloth/gemma-4-E2B-it-GGUF): the
+  // same repo name less its packager's prefix and format suffix. Only a name
+  // exactly one member answers to is used.
+  const byWeights = new Map();
+  for (const f of families || []) for (const m of f.members || []) for (const art of m.artifacts || []) {
+    for (const k of [weightsName(art.ref), weightsName(art.base)]) {
+      if (!k) continue;
+      const list = byWeights.get(k) || new Set();
+      list.add(`${f.id}|${m.id}`);
+      byWeights.set(k, list);
+    }
+  }
+  const filed = (ref) => {
+    if (catalog.has(ref)) return catalog.get(ref);
+    let p = placementOf({ name: ref }, index);
+    let w = [...(byWeights.get(weightsName(ref)) || [])];
+    // Two members on the same weights: the original, not a derivative of it.
+    if (w.length > 1) {
+      w = w.filter((k) => {
+        const [fid, mid] = k.split('|');
+        return !(families || []).find((x) => x.id === fid)?.members?.find((x) => x.id === mid)?.derivative;
+      });
+    }
+    if (!p && w.length === 1) {
+      const [family, member] = w[0].split('|');
+      p = { family, member, artifact: { ref, quant: String(ref).includes(':') ? String(ref).split(':').pop().toUpperCase() : null, by: refRepo(ref)?.split('/')[0] }, by: 'weights_name' };
+    }
+    if (!p) return null;
+    const f = (families || []).find((x) => x.id === p.family);
+    const m = f?.members?.find((x) => x.id === p.member);
+    return { ...(p.artifact || {}), ref, family: p.family, member: p.member, family_name: f?.display_name || p.family, derivative: Boolean(m?.derivative) };
+  };
   const api = apiIndex(market?.openrouter);
   const cost = current?.cost || {};
 
@@ -156,6 +215,7 @@ export function buildValueTable({ seasons, families, current, market, generatedA
         prev.joules_per_token_best = minPos(prev.joules_per_token_best, c.joules_per_token_best);
         prev.first_at = [prev.first_at, c.first_at].filter(Boolean).sort()[0] || null;
         prev.last_at = [prev.last_at, c.last_at].filter(Boolean).sort().pop() || null;
+        prev.caps = new Set([...(prev.caps || []), ...Object.keys(c.caps || {})]);
         row.classes.set(klass, prev);
       }
       proved.set(a.ref, row);
@@ -169,8 +229,12 @@ export function buildValueTable({ seasons, families, current, market, generatedA
 
   const rows = [];
   for (const ref of [...refs].sort()) {
-    const a = { ...(catalog.get(ref) || {}), ...(proved.get(ref)?.art || {}) };
-    const engine = a.engine || null;
+    const cat = filed(ref) || {};
+    const signed = proved.get(ref)?.art || {};
+    // Today's catalog files the build; the season keeps what was measured.
+    const a = { ...signed, ...cat, ...Object.fromEntries(Object.entries(signed).filter(([k, v]) => v != null && !['family', 'member'].includes(k))) };
+    if (cat.family) { a.family = cat.family; a.member = cat.member; }
+    const engine = a.engine || cat.engine || null;
     const modality = MODALITY[engine] || 'other';
     const share = activeShare(a.member, ref);
     const disk = Number(a.disk_mib) || null;
@@ -196,7 +260,7 @@ export function buildValueTable({ seasons, families, current, market, generatedA
     if (TEXT_ENGINES.has(engine)) for (const [k, c] of Object.entries(cost)) if (c?.engines?.[engine]?.eff_bytes_per_sec > 0) klasses.add(k);
     for (const klass of [...klasses].sort()) {
       const c = p?.classes?.get(klass) || null;
-      const basis = cost[klass]?.token_prices || null;
+      const basis = cost[klass]?.token_prices || (klass !== 'unknown' && TEXT_ENGINES.has(engine) ? assumedBasis(klass) : null);
       const ps = perSecond(basis, disk);
       const row = {
         proved: Boolean(c),
@@ -206,8 +270,13 @@ export function buildValueTable({ seasons, families, current, market, generatedA
         effective_ctx_best: c?.effective_ctx_best || null,
         joules_per_token_best: c?.joules_per_token_best || null,
         first_at: c?.first_at || null, last_at: c?.last_at || null,
+        caps: c?.caps ? [...c.caps].sort() : [],
       };
-      if (ps && row.tokens_per_sec_best > 0 && TEXT_ENGINES.has(engine)) {
+      if (ps && row.tokens_per_sec_best > 0 && TEXT_ENGINES.has(engine) && basis.assumed) {
+        // Measured speed, assumed machine size: an estimate, and said so.
+        row.est_usd_per_m_out = r4(ps.total / row.tokens_per_sec_best);
+        row.est_price_basis = `the network's metered rates for a ${ASSUMED_THREADS}-thread machine of this class`;
+      } else if (ps && row.tokens_per_sec_best > 0 && TEXT_ENGINES.has(engine)) {
         row.usd_per_m_out = r4(ps.total / row.tokens_per_sec_best);
         row.usd_per_m_energy = r4(ps.energy / row.tokens_per_sec_best);
         // Measured energy, where the gram read it, replaces the model's.
@@ -247,6 +316,8 @@ export function buildValueTable({ seasons, families, current, market, generatedA
   }
 
   const count = (pred) => rows.filter(pred).length;
+  const memories = rows.flatMap((r) => Object.keys(r.classes).map(machineMemoryGB)).filter((v) => v > 0);
+  const models = modelView(rows, { families, largestMachineGB: memories.length ? Math.max(...memories) : null });
   return {
     generated_at: generatedAt,
     seasons: ids,
@@ -260,6 +331,15 @@ export function buildValueTable({ seasons, families, current, market, generatedA
       cheaper_than_api_somewhere: count((r) => Object.values(r.classes).some((c) => c.verdict === 'cheaper than the API')),
       licence_known: count((r) => r.licence.id),
     },
+    model_counts: {
+      models: models.length,
+      measured: models.filter((m) => m.status === 'measured').length,
+      sold_by_an_api: models.filter((m) => m.hosted_api).length,
+      measured_and_no_api_sells_it: models.filter((m) => m.status === 'measured' && !m.hosted_api).length,
+      cheaper_here_than_the_api: models.filter((m) => m.cheapest && m.hosted_api?.output_usd_per_million > 0 && m.cheapest.cost_usd_per_million <= m.hosted_api.output_usd_per_million).length,
+      too_big_for_every_machine: models.filter((m) => m.too_big_for_the_network).length,
+    },
+    models,
     rows,
   };
 }

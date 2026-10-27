@@ -114,3 +114,60 @@ console.log('ok - value table');
   assert.deepEqual(r.licence.serve_scopes, ['own', 'gramx']);
   console.log('ok - a quantizer inherits the original\'s licence');
 }
+
+{
+  // ── the same table in words a buyer reads (tools/value-models.mjs) ─────────
+  const { machineName, precisionName, licenceName } = await import('./value-models.mjs');
+  assert.equal(machineName('linux/amd64/nvidia/32g'), 'Linux PC with an NVIDIA GPU, 32 GB');
+  assert.equal(machineName('darwin/arm64/apple/16g'), 'Mac with Apple silicon, 16 GB');
+  assert.equal(machineName('windows/amd64/none/8g'), 'Windows PC with no GPU, 8 GB');
+  assert.equal(machineName('unknown'), 'machine not reported');
+  assert.equal(precisionName('Q4_K_M'), '4-bit');
+  assert.equal(precisionName('IQ1_S'), '1-bit');
+  assert.equal(precisionName('BF16'), '16-bit (full precision)');
+  assert.equal(precisionName('FP8'), '8-bit');
+  assert.equal(precisionName('4bit'), '4-bit');
+  assert.equal(licenceName({ id: 'other', name: 'qwen-community-1.0' }), 'Qwen Community 1.0 licence');
+  assert.equal(licenceName({ id: 'apache-2.0' }), 'Apache 2.0');
+
+  const m = t.models.find((x) => x.page === '/inferences/gemma-4/e2b');
+  assert.ok(m, 'one entry per model, not per build per class');
+  assert.equal(m.fastest.machine, 'Linux PC with no GPU, 32 GB');
+  assert.equal(m.fastest.tokens_per_sec, 12);
+  assert.equal(m.fastest.build, '4-bit by unsloth');
+  assert.deepEqual(m.weeks_measured, ['2026-W43', '2026-W44']);
+  assert.equal(m.hosted_api.output_usd_per_million, 0.04);
+  assert.equal(m.licence.you_may_serve, "Only your own machines and your company's");
+  assert.match(m.bottom_line, /^12 tokens a second on a Linux PC with no GPU, 32 GB\. About \$\d+\.\d\d per million tokens here, against OpenRouter's \$0\.04: the API is \d+× cheaper/);
+  const speech = t.models.find((x) => x.page === '/inferences/mms-tts/hi');
+  assert.equal(speech.kind, 'Text to speech');
+  assert.match(speech.bottom_line, /no hosted API sells it/);
+  const unmeasured = t.models.find((x) => x.page === '/inferences/qwen-3-6/27b');
+  assert.equal(unmeasured.status, 'not measured yet');
+  assert.equal(unmeasured.download_gb, 15.7, 'the smallest standard build, not the largest');
+  assert.ok(t.models.indexOf(m) < t.models.indexOf(unmeasured), 'measured models first');
+  console.log('ok - the table in plain words');
+}
+
+{
+  // A class no gram has priced yet: measured speed, the network's rates, an
+  // assumed machine size -- an estimate, said so.
+  const fam = [{ id: 'llama-3-2', members: [{ id: '1b', artifacts: [{ ref: 'llama3.2:1b', engine: 'ollama', quant: 'Q4_K_M', disk_mib: 1300, rung: 0 }] }] }];
+  const ss = new Map([['2026-W44', { artifacts: [{ ref: 'llama3.2:1b', engine: 'ollama', disk_mib: 1300, by_class: { 'darwin/arm64/apple/8g': { grams: 1, tokens_per_sec_best: 26 } } }] }]]);
+  const tt = buildValueTable({ seasons: ss, families: fam, current: {}, market: {} });
+  const c = tt.rows[0].classes['darwin/arm64/apple/8g'];
+  assert.equal(c.usd_per_m_out, undefined, 'never a measured price');
+  assert.ok(c.est_usd_per_m_out > 0 && /4-thread/.test(c.est_price_basis));
+  assert.equal(tt.models[0].cheapest.cost_is_estimate, true);
+
+  // A quantizer's repo the catalog never filed joins the member with the same weights.
+  const fam2 = [{ id: 'gemma-4', display_name: 'Gemma 4', vendor: 'Google', members: [{ id: 'e2b', display_name: 'Gemma 4 E2B', artifacts: [{ ref: 'hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M', engine: 'ollama', disk_mib: 3000, rung: 0 }] }] }];
+  const ss2 = new Map([['2026-W40', { artifacts: [{ ref: 'hf.co/bartowski/google_gemma-4-E2B-it-GGUF:Q4_0', by_class: { 'linux/amd64/nvidia/32g': { grams: 1, tokens_per_sec_best: 82 } } }] }]]);
+  const t2 = buildValueTable({ seasons: ss2, families: fam2, current: {}, market: {} });
+  const bart = t2.rows.find((r) => r.ref.includes('bartowski'));
+  assert.equal(bart.member, 'e2b');
+  assert.equal(t2.models.length, 1);
+  assert.equal(t2.models[0].model, 'Gemma 4 E2B');
+  assert.equal(t2.models[0].fastest.tokens_per_sec, 82);
+  console.log('ok - estimated prices are labelled; quantizers file by their weights');
+}
