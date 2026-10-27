@@ -1,0 +1,30 @@
+name: Kaggle grams
+
+# Keeps every Kaggle gram notebook running back to back: when a session ends
+# (Kaggle stops CPU sessions at 12 h), the next version is started from the
+# notebook's own saved code. Accounts and their API tokens: the KAGGLE_ACCOUNTS
+# secret, a JSON list of {"username": ..., "key": ...}. Notebooks:
+# data/kaggle/grams.json. See scripts/kaggle_keepalive.py.
+on:
+  schedule:
+    - cron: '11,41 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: kaggle-grams
+  cancel-in-progress: false
+
+jobs:
+  keepalive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install --quiet kaggle
+      - name: Start every notebook whose last run has ended
+        env:
+          KAGGLE_ACCOUNTS: ${{ secrets.KAGGLE_ACCOUNTS }}
+        run: python scripts/kaggle_keepalive.py

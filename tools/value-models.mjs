@@ -148,6 +148,64 @@ function tidyName(s) {
   return String(s || '').replace(/\b([A-Z][A-Z0-9]*[A-Z]{3,})\b/g, (w) => (/^(GGUF|MLX|FP8|BF16|AWQ|GPTQ|TTS|MMS|GLM|LFM|NVFP4|MXFP4|API|VL)$/.test(w) ? w : w[0] + w.slice(1).toLowerCase()));
 }
 
+// ── HOW BIG IS IT: PARAMETERS, IN BILLIONS ───────────────────────────────────
+//
+// The first thing a buyer filters by, and only 84 of 1,258 catalog members
+// state it. Most say it in their name ("27b", "0.8b", "26b-a4b", "600M"), and
+// a mixture of experts says how much of itself each token uses ("-a4b"). Where
+// the name is silent the download says it: bytes × 8 ÷ bits per weight, and
+// the answer is labelled an estimate.
+
+const SIZE = /(?:^|[^a-z0-9.])(e)?(\d+(?:\.\d+)?)\s*([bm])(?:-a(\d+(?:\.\d+)?)([bm]))?(?![a-z0-9])/i;
+
+function namedSize(s) {
+  const m = SIZE.exec(String(s || ''));
+  if (!m) return null;
+  const scale = (n, u) => (u.toLowerCase() === 'm' ? n / 1000 : n);
+  const n = scale(Number(m[2]), m[3]);
+  if (!(n > 0) || n > 5000) return null;
+  // "E2B" (Gemma) is the EFFECTIVE size: 2B used per token of a larger model.
+  if (m[1]) return { total: null, active: n };
+  return { total: n, active: m[4] ? scale(Number(m[4]), m[5]) : null };
+}
+
+/** Bits per stored weight for a build's precision, for reading size off a download. */
+function bitsPerWeight(quant) {
+  const p = precisionName(quant) || '';
+  if (/^32/.test(p)) return 32;
+  if (/^16/.test(p)) return 16;
+  if (/ternary/.test(p)) return 1.7;
+  const n = /^(\d+)-bit/.exec(p);
+  if (!n) return null;
+  return Number(n[1]) === 8 ? 8.5 : Number(n[1]) + 0.85; // K-quants carry scales: Q4_K_M is ~4.85
+}
+
+const roundB = (b) => (b >= 10 ? Math.round(b) : b >= 1 ? +b.toFixed(1) : +b.toFixed(2));
+
+export function paramsOf({ declared, member, name, ref, diskMib, quant }) {
+  let total = null;
+  let active = null;
+  for (const s of [declared, member, name, refRepo(ref)?.split('/')[1]]) {
+    const n = namedSize(s);
+    if (n?.total && total == null) total = n.total;
+    if (n?.active && active == null) active = n.active;
+  }
+  let basis = total != null ? 'named' : null;
+  if (total == null) {
+    const bpw = bitsPerWeight(quant);
+    if (diskMib >= MIN_REAL_BUILD_MIB && bpw) {
+      total = (diskMib * 1048576 * 8) / bpw / 1e9;
+      basis = 'estimated from download size';
+    } else if (active != null) {
+      total = active;
+      basis = 'named';
+    }
+  }
+  if (total == null) return { params_b: null, active_params_b: null, params_basis: null };
+  const moe = active != null && active < total * 0.9;
+  return { params_b: roundB(total), active_params_b: moe ? roundB(active) : null, params_basis: basis };
+}
+
 const usd = (v) => (v >= 10 ? `$${Math.round(v)}` : v >= 0.01 ? `$${v.toFixed(2)}` : `$${v.toFixed(4)}`);
 const rate = (v) => (v >= 10 ? String(Math.round(v)) : v.toFixed(1));
 const cap = (s) => s[0].toUpperCase() + s.slice(1);
@@ -251,6 +309,8 @@ export function modelView(rows, { families = [], largestMachineGB = null } = {})
       community_build: Boolean(r0.derivative),
       page: r0.family && r0.member ? `/inferences/${r0.family}/${r0.member}` : null,
       download_gb: downloadGB,
+      ...paramsOf({ declared: mem?.params, member: r0.member, name, ref: lead.ref, diskMib: lead.disk_mib, quant: lead.quant }),
+      longest_prompt_tokens: pool.reduce((n, x) => Math.max(n, x.context_tokens || 0), 0) || null,
       too_big_for_the_network: Boolean(!fastest && largestMachineGB && downloadGB && downloadGB > largestMachineGB),
       largest_machine_gb: largestMachineGB,
       skills_passed: skills,

@@ -130,6 +130,16 @@ console.log('ok - value table');
   assert.equal(licenceName({ id: 'other', name: 'qwen-community-1.0' }), 'Qwen Community 1.0 licence');
   assert.equal(licenceName({ id: 'apache-2.0' }), 'Apache 2.0');
 
+  const { paramsOf } = await import('./value-models.mjs');
+  assert.deepEqual(paramsOf({ member: '26b-a4b' }), { params_b: 26, active_params_b: 4, params_basis: 'named' }, 'a mixture of experts names both sizes');
+  assert.deepEqual(paramsOf({ declared: '5.1B', member: 'e2b' }), { params_b: 5.1, active_params_b: 2, params_basis: 'named' }, '"E2B" is the effective size of a larger model');
+  assert.equal(paramsOf({ name: 'NLLB-200 distilled 600M' }).params_b, 0.6);
+  assert.equal(paramsOf({ name: 'Llama 3.2 1B' }).params_b, 1, 'the version number is not a size');
+  assert.equal(paramsOf({ name: 'Granite 4bit' }).params_b, null, '"4bit" is a precision, not 4 billion');
+  const est = paramsOf({ name: 'GLM-4.7 Flash', diskMib: 16 * 1024, quant: 'Q4_K_M' });
+  assert.equal(est.params_basis, 'estimated from download size');
+  assert.ok(est.params_b > 26 && est.params_b < 30, `16 GiB at ~4.85 bits is ~28B, got ${est.params_b}`);
+
   const m = t.models.find((x) => x.page === '/inferences/gemma-4/e2b');
   assert.ok(m, 'one entry per model, not per build per class');
   assert.equal(m.fastest.machine, 'Linux PC with no GPU, 32 GB');
