@@ -223,7 +223,7 @@ function bottomLine(m) {
     if (m.kind === 'Text & chat') return `Ran on ${where} here, but its speed was not recorded.${sells}`;
     return api ? `Runs on ${where} here. OpenRouter also sells it.` : `Runs on ${where} here, and no hosted API sells it — this network is where to get it.`;
   }
-  const speed = cap(`${rate(f.tokens_per_sec)} tokens a second on a ${f.machine}`);
+  const speed = cap(`${rate(f.tokens_per_sec)} tokens a second on ${f.machine_detail ? f.machine : `a ${f.machine}`}`);
   const c = m.cheapest;
   if (!api) return `${speed}. No hosted API sells it, so this network is the place to run it.`;
   if (api.output_usd_per_million === 0) return `${speed}. OpenRouter has it free, so run it here only for privacy.`;
