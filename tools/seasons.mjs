@@ -269,7 +269,9 @@ export function costTable(nodes, prior = null) {
     }
     for (const m of p?.models || []) {
       if (m.state !== 'measured' || !(Number(m.probe_ms) > 0)) continue;
-      const eng = m.engine || 'unknown';
+      // The catalog engine is what the planner prices by; the runtime name
+      // (ollama-host, generation) is a fallback for reports that predate it.
+      const eng = m.artifact_engine || m.engine || 'unknown';
       if (!probe.has(klass)) probe.set(klass, new Map());
       const byEng = probe.get(klass);
       if (!byEng.has(eng)) byEng.set(eng, []);
