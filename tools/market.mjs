@@ -81,22 +81,33 @@ const OPEN = new Set(['apache-2.0', 'mit', 'bsd', 'bsd-2-clause', 'bsd-3-clause'
   'cc0-1.0', 'unlicense', 'openrail', 'openrail++', 'creativeml-openrail-m', 'bigscience-openrail-m', 'mpl-2.0',
   'artistic-2.0', 'isc', 'zlib', 'odc-by', 'pddl', 'cdla-permissive-2.0', 'ecl-2.0', 'afl-3.0', 'lgpl-3.0', 'gpl-3.0', 'agpl-3.0']);
 
+// Open-weights licences whose terms permit serving the model to others (with
+// an acceptable-use policy, a user-count ceiling, attribution): Meta's Llama
+// community licences, Gemma's terms, DeepSeek's and the like. Serving is
+// allowed; the terms travel with the weights.
+const OPEN_WEIGHTS = /^(llama\d(\.\d)?|llama-?\d.*|gemma|deepseek|deepseek-license|tongyi-qianwen|qwen|apple-ascl|bigcode-openrail-m|openrail.*|nvidia-open-model-license|ai2-impact-license-low-risk|falcon.*|yi-license|baichuan.*|internlm.*)$/;
+
 /**
  * licenceClass sorts a licence id into what it lets this network do:
- *   open            serve anyone, including the open mesh
- *   restricted      open weights with use limits (community / custom
- *                   licences): own grams and a company's gramx, not the
- *                   open mesh, until the terms are read
- *   non-commercial  research / personal only
- *   unknown         nothing declared: treated as restricted
+ *   open            permissive: serve anyone, including the open mesh
+ *   open-weights    published with terms that still permit serving others
+ *                   (Llama, Gemma, DeepSeek): the open mesh, under the terms
+ *   restricted      terms that forbid serving others through an API without
+ *                   a separate licence -- Qwen 3.8 Flash Next's Qwen Community
+ *                   Licence 1.0 -- or a custom licence nobody has read: own
+ *                   grams and a company's gramx, never the open mesh
+ *   non-commercial  research / personal only: own grams
+ *   unknown         the hub declares nothing
  */
 export function licenceClass(id) {
   const l = String(id || '').toLowerCase().trim();
   if (!l) return 'unknown';
-  if (/(^|-)nc(-|$)|non-?commercial|research|cc-by-nc/.test(l)) return 'non-commercial';
+  if (/(^|-)nc(-|$)|non-?commercial|research|cc-by-nc|^mrl$|mistral-research/.test(l)) return 'non-commercial';
   if (OPEN.has(l)) return 'open';
-  // llama2/llama3.x, gemma, qwen, deepseek, "other", "custom": weights are
-  // published, use is bounded by terms only a person can accept.
+  if (/community/.test(l) && /qwen/.test(l)) return 'restricted';
+  if (OPEN_WEIGHTS.test(l)) return 'open-weights';
+  // "other", "custom", anything unrecognised: published weights whose terms
+  // only a person can read. Never assumed to allow serving strangers.
   return 'restricted';
 }
 
@@ -104,9 +115,12 @@ export function licenceClass(id) {
 export function serveScopes(cls) {
   switch (cls) {
     case 'open': return ['own', 'gramx', 'open-mesh'];
+    case 'open-weights': return ['own', 'gramx', 'open-mesh'];
     case 'restricted': return ['own', 'gramx'];
     case 'non-commercial': return ['own'];
-    default: return ['own', 'gramx'];
+    // Nothing declared: the table says so, and it is not yet a reason to stop
+    // a gram serving what it already serves (the daemon gates on known terms).
+    default: return ['own', 'gramx', 'open-mesh'];
   }
 }
 

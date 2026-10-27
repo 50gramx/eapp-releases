@@ -10,13 +10,17 @@ assert.equal(perM(undefined), null);
 assert.equal(licenceClass('apache-2.0'), 'open');
 assert.equal(licenceClass('mit'), 'open');
 assert.equal(licenceClass('cc-by-nc-4.0'), 'non-commercial');
-assert.equal(licenceClass('llama3.2'), 'restricted', 'a community licence bounds use');
-assert.equal(licenceClass('qwen-community-1.0'), 'restricted');
+assert.equal(licenceClass('llama3.2'), 'open-weights', "Llama's terms permit serving others");
+assert.equal(licenceClass('gemma'), 'open-weights');
+assert.equal(licenceClass('qwen-community-1.0'), 'restricted', 'Flash Next: no API serving without a licence');
+assert.equal(licenceClass('other'), 'restricted', 'unread terms never assumed to allow strangers');
+assert.equal(licenceClass('mrl'), 'non-commercial');
 assert.equal(licenceClass(''), 'unknown');
 assert.deepEqual(serveScopes('open'), ['own', 'gramx', 'open-mesh']);
 assert.deepEqual(serveScopes('restricted'), ['own', 'gramx'], 'internal use, never the open mesh');
 assert.deepEqual(serveScopes('non-commercial'), ['own']);
-assert.deepEqual(serveScopes('unknown'), ['own', 'gramx'], 'unknown is treated as restricted');
+assert.deepEqual(serveScopes('unknown'), ['own', 'gramx', 'open-mesh'], 'nothing declared is shown as such, not yet a stop');
+assert.deepEqual(serveScopes('open-weights'), ['own', 'gramx', 'open-mesh']);
 assert.equal(licenceFromHub({ tags: ['gguf', 'license:apache-2.0'] }).class, 'open');
 assert.equal(licenceFromHub({ cardData: { license: 'other', license_name: 'qwen-community-1.0' } }).class, 'restricted');
 assert.equal(licenceFromHub({ gated: 'manual', tags: [] }).gated, true);
@@ -59,7 +63,7 @@ const market = {
     { id: 'google/gemma-4-e2b-it', hugging_face_id: 'google/gemma-4-E2B-it', usd_per_m_in: 0.02, usd_per_m_out: 0.04, context_length: 131072 },
     { id: 'qwen/qwen3.6-27b', hugging_face_id: 'Qwen/Qwen3.6-27B', usd_per_m_in: 0.32, usd_per_m_out: 3.2, context_length: 262144 },
   ] },
-  licences: { 'google/gemma-4-E2B-it': { id: 'gemma', class: 'restricted', source: 'hub', fetched_at: 'x' } },
+  licences: { 'google/gemma-4-E2B-it': { id: 'qwen-community-1.0', class: 'restricted', source: 'hub', fetched_at: 'x' } },
 };
 const t = buildValueTable({ seasons, families, current, market, generatedAt: '2026-10-27T12:00:00Z' });
 const row = (ref) => t.rows.find((r) => r.ref === ref);
