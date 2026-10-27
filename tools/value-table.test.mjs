@@ -99,3 +99,18 @@ const idx = apiIndex({ models: [{ id: 'a/b:nitro', variant: 'nitro', hugging_fac
 assert.equal(idx({ base: 'a/b' }), null);
 
 console.log('ok - value table');
+
+{
+  // A quantizer's repo with no licence takes the original's, via the hosted API's repo.
+  const fam = [{ id: 'qwen-3-8', members: [{ id: 'flash-next', artifacts: [{ ref: 'hf.co/someone/Qwen3.8-Flash-Next-GGUF:Q4_K_M', engine: 'llamacpp', quant: 'Q4_K_M', disk_mib: 70000, rung: 0 }] }] }];
+  const mk = {
+    openrouter: { models: [{ id: 'qwen/qwen3.8-flash', hugging_face_id: 'Qwen/Qwen3.8-Flash-Next', usd_per_m_in: 0.15, usd_per_m_out: 0.47 }] },
+    licences: { 'Qwen/Qwen3.8-Flash-Next': { id: 'other', name: 'qwen-community-1.0', class: 'restricted' } },
+  };
+  const tt = buildValueTable({ seasons: new Map(), families: fam, current: {}, market: mk });
+  const r = tt.rows[0];
+  assert.equal(r.api.openrouter_id, 'qwen/qwen3.8-flash');
+  assert.equal(r.licence.class, 'restricted', 'Flash Next: the original\'s community licence');
+  assert.deepEqual(r.licence.serve_scopes, ['own', 'gramx']);
+  console.log('ok - a quantizer inherits the original\'s licence');
+}

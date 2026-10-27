@@ -175,9 +175,13 @@ export function buildValueTable({ seasons, families, current, market, generatedA
     const share = activeShare(a.member, ref);
     const disk = Number(a.disk_mib) || null;
     const repo = hubRepoOf(a);
-    const lic = repo ? market?.licences?.[repo] : null;
-    const licClass = lic?.class || licenceClass(lic?.id);
     const apiRow = api(a);
+    // A quantizer's repo often declares nothing; the weights are the
+    // original's, and the hosted API names the original.
+    let lic = repo ? market?.licences?.[repo] : null;
+    const original = apiRow?.best?.hugging_face_id;
+    if ((!lic || !lic.id) && original && market?.licences?.[original]?.id) lic = market.licences[original];
+    const licClass = lic?.class || licenceClass(lic?.id);
     const apiCols = apiRow?.best ? {
       openrouter_id: apiRow.best.id, ids: apiRow.ids,
       usd_per_m_in: apiRow.best.usd_per_m_in, usd_per_m_out: apiRow.best.usd_per_m_out,

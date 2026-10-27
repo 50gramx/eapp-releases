@@ -196,8 +196,12 @@ export async function refresh(now = Date.now()) {
     }
   }
 
+  // The hosted API's own repo too: a quantizer's repo often declares no
+  // licence, and the weights it packages are the original's.
+  const repos = new Set(catalogRepos(models));
+  for (const m of market.openrouter?.models || []) if (m.hugging_face_id) repos.add(m.hugging_face_id);
   // Oldest first: a repo never looked up, then the stalest.
-  const due = catalogRepos(models)
+  const due = [...repos]
     .map((repo) => ({ repo, at: Date.parse(market.licences[repo]?.fetched_at || '') || 0 }))
     .filter((x) => now - x.at > LICENCE_TTL_MS)
     .sort((a, b) => a.at - b.at)
