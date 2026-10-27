@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-10-27T10:34:14.781Z",
+  "generated_at": "2026-10-27T10:49:01.899Z",
   "trust_model": "aggregate = sum of verified signed node results; unsigned or invalid results are excluded",
   "node_count": 2,
   "activity": {
@@ -19,19 +19,51 @@
       "aggregate": {
         "strategy": "sum_of_verified_signed_results",
         "metric": "tunnel.throughput",
-        "value": 557.54479,
+        "value": 962.41737,
         "unit": "MB/s",
-        "sample_count": 1,
+        "sample_count": 2,
         "label": "sum of verified signed node results"
       },
-      "sample_count": 1
+      "sample_count": 2
     },
     "inference": {
       "resource_type": "inference",
-      "status": "configured_not_yet_benchmarked",
-      "label": "configured, not-yet-benchmarked",
-      "aggregate": null,
-      "sample_count": 0
+      "status": "signed",
+      "aggregate_by_model": {
+        "hf.co/North-ML1/Forge-1-Mini-GGUF:Q2_K": {
+          "strategy": "sum_of_verified_signed_results",
+          "metric": "inference.tokens_per_sec",
+          "value": 1074.917255,
+          "unit": "tokens/s",
+          "sample_count": 1,
+          "label": "sum of verified signed node results for this model"
+        },
+        "hf.co/meta-models/Muse-Glimmer-30B-GGUF:Q4_K_M": {
+          "strategy": "sum_of_verified_signed_results",
+          "metric": "inference.tokens_per_sec",
+          "value": 1.246901,
+          "unit": "tokens/s",
+          "sample_count": 1,
+          "label": "sum of verified signed node results for this model"
+        },
+        "hf.co/unsloth/Qwen3.6-27B-GGUF:Q4_K_M": {
+          "strategy": "sum_of_verified_signed_results",
+          "metric": "inference.tokens_per_sec",
+          "value": 0.780448,
+          "unit": "tokens/s",
+          "sample_count": 1,
+          "label": "sum of verified signed node results for this model"
+        },
+        "llama3.2:1b": {
+          "strategy": "sum_of_verified_signed_results",
+          "metric": "inference.tokens_per_sec",
+          "value": 11.449589,
+          "unit": "tokens/s",
+          "sample_count": 1,
+          "label": "sum of verified signed node results for this model"
+        }
+      },
+      "sample_count": 4
     },
     "cpu": {
       "resource_type": "cpu",
@@ -39,12 +71,12 @@
       "aggregate": {
         "strategy": "sum_of_verified_signed_results",
         "metric": "cpu.throughput",
-        "value": 330.161531,
+        "value": 611.726208,
         "unit": "hashes/s",
-        "sample_count": 1,
+        "sample_count": 2,
         "label": "sum of verified signed node results"
       },
-      "sample_count": 1
+      "sample_count": 2
     },
     "mem": {
       "resource_type": "mem",
@@ -52,12 +84,12 @@
       "aggregate": {
         "strategy": "sum_of_verified_signed_results",
         "metric": "mem.bandwidth",
-        "value": 2349.305372,
+        "value": 5086.973477,
         "unit": "MB/s",
-        "sample_count": 1,
+        "sample_count": 2,
         "label": "sum of verified signed node results"
       },
-      "sample_count": 1
+      "sample_count": 2
     },
     "storage": {
       "resource_type": "storage",
@@ -65,12 +97,12 @@
       "aggregate": {
         "strategy": "sum_of_verified_signed_results",
         "metric": "storage.throughput",
-        "value": 497.799489,
+        "value": 589.980056,
         "unit": "MB/s",
-        "sample_count": 1,
+        "sample_count": 2,
         "label": "sum of verified signed node results"
       },
-      "sample_count": 1
+      "sample_count": 2
     },
     "gpu": {
       "resource_type": "gpu",
@@ -81,10 +113,16 @@
     },
     "energy": {
       "resource_type": "energy",
-      "status": "configured_not_yet_benchmarked",
-      "label": "configured, not-yet-benchmarked",
-      "aggregate": null,
-      "sample_count": 0
+      "status": "signed",
+      "aggregate": {
+        "strategy": "median_of_verified_signed_results",
+        "metric": "energy.joules_per_token",
+        "value": 0.028,
+        "unit": "joules/token",
+        "sample_count": 1,
+        "label": "median of verified signed node results (a ratio is never summed)"
+      },
+      "sample_count": 1
     }
   },
   "rejected_results": []
