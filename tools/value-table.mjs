@@ -25,7 +25,7 @@
 //
 // docs/CATALOG_VALUE_TABLE_PLAN_2026-10-27.md (epn-daemon), increment 5.
 
-import { licenceClass, serveScopes, hubRepoOf, HARDWARE_ORGS } from './market.mjs';
+import { licenceClass, serveScopes, hubRepoOf } from './market.mjs';
 import { catalogIndex, placementOf, refRepo } from './model-filing.mjs';
 import { modelView, machineMemoryGB } from './value-models.mjs';
 
@@ -340,10 +340,10 @@ export function buildValueTable({ seasons, families, current, market, evidence =
       cheaper_here_than_the_api: models.filter((m) => m.cheapest && m.hosted_api?.output_usd_per_million > 0 && m.cheapest.cost_usd_per_million <= m.hosted_api.output_usd_per_million).length,
       too_big_for_every_machine: models.filter((m) => m.too_big_for_the_network).length,
     },
-    // Logos for the hardware and hosts a machine names: each company's own
+    // Logos for every model maker, publisher, card maker and host: each one's own
     // Hugging Face avatar (market.json).
     logos: Object.fromEntries(Object.entries(market?.avatars || {})
-      .filter(([org, v]) => v?.url && HARDWARE_ORGS.includes(org)).map(([org, v]) => [org, v.url])),
+      .filter(([, v]) => v?.url).map(([org, v]) => [org, v.url])),
     price_list: {
       usd_per_cpu_hour: 0.036, usd_per_gb_ram_hour: 0.003, usd_per_gpu_hour: 0.36, usd_per_kwh: 0.1,
       source: 'epn-daemon config.DefaultPriceFloors: what metering charges every gram',
