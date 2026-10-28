@@ -15,6 +15,7 @@
 // field named and valued in plain words. The per-build rows stay in the file for
 // a page that wants the detail; nothing here is new evidence, only a reading.
 
+import { sheetFor } from './machines.mjs';
 import { refRepo } from './model-filing.mjs';
 
 /** Mirrors value-table weightsName (kept here so this file imports nothing circular). */
@@ -284,15 +285,60 @@ export const PRICE_LIST = { vcpu_second_uusd: 10, gib_hour_uusd: 3000, gpu_secon
  * the card when it has one. µUSD per second ÷ tokens per second.
  */
 export function meteredUsdPerM(hw, diskMiB, tokensPerSec) {
+  return meteredBreakdown(hw, diskMiB, tokensPerSec)?.usd_per_million ?? null;
+}
+
+/**
+ * The same sum, line by line: what each metered resource costs per second of
+ * decoding on this machine, and its share of a million tokens. Every quantity
+ * is the machine's own signed size or the build's own size; every rate is the
+ * price list; nothing is guessed except the energy model, which says so.
+ */
+export function meteredBreakdown(hw, diskMiB, tokensPerSec) {
   if (!hw?.cpus || !(tokensPerSec > 0)) return null;
   const threads = Math.max(1, hw.cpus - 1);
   const card = ['nvidia', 'amd', 'apple', 'tpu'].includes(hw.gpu);
-  const vcpu = threads * PRICE_LIST.vcpu_second_uusd;
-  const ram = (diskMiB || 0) / 1024 * PRICE_LIST.gib_hour_uusd / 3600;
-  const gpu = card ? PRICE_LIST.gpu_second_uusd : 0;
+  const gib = (diskMiB || 0) / 1024;
   const watts = threads * 5 + (card ? 150 : 0); // hostinfo/energy.go, for one second
-  const energy = watts / 3.6e6 * PRICE_LIST.kwh_uusd;
-  return +((vcpu + ram + gpu + energy) / tokensPerSec).toFixed(4);
+  const perM = (uusdPerSec) => +(uusdPerSec / tokensPerSec).toFixed(4); // µUSD/s ÷ tok/s = USD per 1M tokens
+  const lines = [
+    {
+      resource: 'CPU', quantity: `${threads} of ${hw.cpus} threads (the engine drives every thread but one)`,
+      rate: `$${(PRICE_LIST.vcpu_second_uusd * 3600 / 1e6).toFixed(3)} per thread-hour`,
+      uusd_per_second: threads * PRICE_LIST.vcpu_second_uusd,
+    },
+    {
+      resource: 'Memory', quantity: `${gib.toFixed(1)} GB of weights held resident`,
+      rate: `$${(PRICE_LIST.gib_hour_uusd / 1e6).toFixed(3)} per GB-hour`,
+      uusd_per_second: gib * PRICE_LIST.gib_hour_uusd / 3600,
+    },
+  ];
+  if (card) {
+    lines.push({
+      resource: 'GPU', quantity: `${hw.gpu_count > 1 ? `${hw.gpu_count} cards, billed as one` : 'one card'}`,
+      rate: `$${(PRICE_LIST.gpu_second_uusd * 3600 / 1e6).toFixed(2)} per GPU-hour`,
+      uusd_per_second: PRICE_LIST.gpu_second_uusd,
+    });
+  }
+  lines.push({
+    resource: 'Energy', quantity: `${watts} W modelled (${threads} threads × 5 W${card ? ' + 150 W card' : ''})`,
+    rate: `$${(PRICE_LIST.kwh_uusd / 1e6).toFixed(2)} per kWh`,
+    uusd_per_second: watts / 3.6e6 * PRICE_LIST.kwh_uusd,
+  });
+  let total = 0;
+  for (const l of lines) {
+    l.uusd_per_second = +l.uusd_per_second.toFixed(3);
+    l.usd_per_million = perM(l.uusd_per_second);
+    total += l.uusd_per_second;
+  }
+  return {
+    tokens_per_sec: +tokensPerSec.toFixed(2),
+    usd_per_hour: +(total * 3600 / 1e6).toFixed(4),
+    usd_per_million: perM(total),
+    lines,
+    formula: 'USD per million tokens = metered µUSD per second ÷ tokens per second',
+    source: 'epn-daemon config.DefaultPriceFloors and internal/cmd/token_price.go',
+  };
 }
 
 // ── ONE MODEL, ONE ROW ───────────────────────────────────────────────────────
@@ -326,7 +372,7 @@ const hubURL = (repo) => (repo && /^[\w.-]+\/[\w.-]+$/.test(repo) ? `https://hug
  * modelView — one plain-language entry per model, from the per-build rows
  * buildValueTable made and the signed evidence (data/models.json) behind them.
  */
-export function modelView(rows, { families = [], largestMachineGB = null, evidence = null, market = null } = {}) {
+export function modelView(rows, { families = [], largestMachineGB = null, evidence = null, market = null, machines = null } = {}) {
   const fam = new Map((families || []).map((f) => [f.id, f]));
   const avatars = market?.avatars || {};
   const logo = (org) => (org && avatars[org]?.url) || null;
@@ -397,6 +443,8 @@ export function modelView(rows, { families = [], largestMachineGB = null, eviden
             ref: r.ref,
             engine: n.runtime || e.engine || r.engine || null,
             cost_usd_per_million: meteredUsdPerM(n.hardware, r.disk_mib, tps),
+            cost_breakdown: meteredBreakdown(n.hardware, r.disk_mib, tps),
+            machine_sheet: sheetFor(machines, n.node_did, n.hardware),
             cost_is_estimate: false,
             cost_basis: 'the network\'s metered rates on this machine',
             measured_at: toISO(n.measured_at || n.probed_at),

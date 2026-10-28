@@ -196,3 +196,30 @@ console.log('ok - value table');
   assert.equal(t2.models[0].fastest.tokens_per_sec, 82);
   console.log('ok - estimated prices are labelled; quantizers file by their weights');
 }
+
+// ── machines.mjs + the metered breakdown ────────────────────────────────────
+{
+  const { cpuName, buildMachines, sheetFor } = await import('./machines.mjs');
+  const { meteredBreakdown, meteredUsdPerM } = await import('./value-models.mjs');
+  assert.deepEqual(cpuName('Intel(R) Xeon(R) CPU @ 2.20GHz'), { name: 'Intel Xeon', clock_ghz: 2.2 });
+  assert.deepEqual(cpuName('AMD Ryzen 7 5800H with Radeon Graphics'), { name: 'AMD Ryzen 7 5800H with Radeon Graphics', clock_ghz: null });
+  const did = 'did:epn:x';
+  const res = (rt, value, extra, ts) => ({ resource_type: rt, signed_result: { result: { node_did: did, metric: rt, value, unit: '', ts, extra } } });
+  const m = buildMachines([
+    res('cpu', 300, { cores_logical: 4, cores_physical: 2, cpu_model: 'Intel(R) Xeon(R) CPU @ 2.00GHz' }, 2e18),
+    res('mem', 2650, { total_mb: 32098 }, 2e18),
+    res('gpu', 23, { name: 'Tesla T4', mem_total_mb: 14912 }, 2e18),
+  ]);
+  const cpuOnly = sheetFor(m, did, { cpus: 4, ram_gib: 31.3, gpu: 'none' });
+  assert.equal(cpuOnly.cpu.clock_ghz, 2);
+  assert.equal(cpuOnly.memory.total_gb, 31.3);
+  assert.equal(cpuOnly.gpu, undefined, 'a CPU run is never given the card');
+  const onCard = sheetFor(m, did, { cpus: 4, ram_gib: 31.3, gpu: 'nvidia', vram_gib: 15, gpu_model: 'Tesla T4' });
+  assert.equal(onCard.gpu.name, 'Tesla T4');
+  assert.equal(sheetFor(m, did, { cpus: 8, ram_gib: 16, gpu: 'none' }), null, 'another machine of the same gram gets nothing');
+  const b = meteredBreakdown({ cpus: 4, gpu: 'nvidia' }, 1024, 100);
+  assert.equal(b.usd_per_million, meteredUsdPerM({ cpus: 4, gpu: 'nvidia' }, 1024, 100));
+  assert.deepEqual(b.lines.map((l) => l.resource), ['CPU', 'Memory', 'GPU', 'Energy']);
+  assert.ok(Math.abs(b.lines.reduce((s, l) => s + l.usd_per_million, 0) - b.usd_per_million) < 1e-3, 'the lines add up to the total');
+  console.log('machines + breakdown ok');
+}

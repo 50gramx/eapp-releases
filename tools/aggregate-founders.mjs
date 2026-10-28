@@ -10,6 +10,7 @@
 // counters as network totals. All three are fixed below. Every number this
 // script emits is still a SELF-REPORT from the node's own daemon — there is
 // no independent verification — and every card on the page must say so.
+import { buildMachines, MACHINES_PATH, readMachines } from './machines.mjs';
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons, readSeasons, readCurrent } from './seasons.mjs';
@@ -3601,9 +3602,15 @@ function main() {
   // million tokens cost on each class, what is only estimated, and what the
   // hosted API and the licence say -- cited from data/catalog/market.json,
   // which `node tools/market.mjs refresh` keeps in CI.
+  // THE MACHINE BEHIND EACH NUMBER (tools/machines.mjs): every gram's newest
+  // verified CPU, memory, card and disk benchmark, kept across runs.
+  const machineResults = [...collectSignedResults(nodes), ...collectMeshSignedResults(meshViews)]
+    .filter((v) => verifySignedResult(v.signed_result, v.payload_b64).ok);
+  const machines = buildMachines(machineResults, readMachines(), out.generated_at);
+  writeFileSync(MACHINES_PATH, JSON.stringify(machines, null, 2) + '\n');
   const valueTable = buildValueTable({
     seasons: readSeasons(), families: models.families, current: readCurrent(),
-    market: readMarket(), evidence: models.models, generatedAt: out.generated_at,
+    market: readMarket(), evidence: models.models, machines, generatedAt: out.generated_at,
   });
   writeFileSync(TABLE_PATH, JSON.stringify(valueTable, null, 2) + '\n');
   console.log('[value table]', JSON.stringify(valueTable.counts));

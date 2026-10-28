@@ -148,7 +148,7 @@ function verdict(cls, api, modality) {
  * plus every catalog build a hosted API also sells (the market's leaders,
  * proved or not), with per-class proved, priced, estimated and cited columns.
  */
-export function buildValueTable({ seasons, families, current, market, evidence = null, generatedAt = new Date().toISOString() }) {
+export function buildValueTable({ seasons, families, current, market, evidence = null, machines = null, generatedAt = new Date().toISOString() }) {
   const catalog = new Map();
   for (const f of families || []) {
     for (const m of f.members || []) {
@@ -318,7 +318,7 @@ export function buildValueTable({ seasons, families, current, market, evidence =
 
   const count = (pred) => rows.filter(pred).length;
   const memories = rows.flatMap((r) => Object.keys(r.classes).map(machineMemoryGB)).filter((v) => v > 0);
-  const models = modelView(rows, { families, largestMachineGB: memories.length ? Math.max(...memories) : null, evidence, market });
+  const models = modelView(rows, { families, largestMachineGB: memories.length ? Math.max(...memories) : null, evidence, market, machines });
   return {
     generated_at: generatedAt,
     seasons: ids,
