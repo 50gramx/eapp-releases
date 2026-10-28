@@ -4,7 +4,7 @@
   "starts_at": "2026-10-26T00:00:00.000Z",
   "ends_at": "2026-11-02T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-10-28T08:17:35.885Z",
+  "published_at": "2026-10-28T08:32:21.778Z",
   "contributors": {
     "grams": 3,
     "classes": [
@@ -14,13 +14,13 @@
     ]
   },
   "counts": {
-    "artifacts": 68,
+    "artifacts": 69,
     "publishers": 27,
     "by_cohort": {
       "0": 18,
       "1": 11,
       "2": 24,
-      "3": 13
+      "3": 14
     }
   },
   "artifacts": [
@@ -1088,10 +1088,6 @@
           "held_probes": 1,
           "tokens_per_sec_best": 27.36,
           "effective_ctx_best": 8192,
-          "effective_ctx_stop": "recall-lost",
-          "effective_ctx_ladder": "4096,8192,16384",
-          "ctx_trained": 32768,
-          "ctx_affordable": null,
           "caps": {
             "code.write": 1,
             "faithful_tool_result": 1,
@@ -1105,13 +1101,17 @@
             "tools.loop_ends": 1,
             "tools_loop_terminated": 1
           },
+          "first_at": "2026-10-27T19:16:54.521Z",
+          "last_at": "2026-10-27T19:16:54.521Z",
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192,16384",
+          "ctx_affordable": null,
+          "ctx_trained": 32768,
           "engine_backends": [
             "pod"
           ],
           "joules_per_token_best": 4.205,
-          "energy_tier": "modelled",
-          "first_at": "2026-10-27T19:16:54.521Z",
-          "last_at": "2026-10-27T19:16:54.521Z"
+          "energy_tier": "modelled"
         }
       }
     },
@@ -1158,6 +1158,36 @@
           ],
           "joules_per_token_best": 1.658,
           "energy_tier": "modelled"
+        },
+        "windows/amd64/intel/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 27.36,
+          "effective_ctx_best": 8192,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192,16384",
+          "ctx_trained": 32768,
+          "ctx_affordable": null,
+          "caps": {
+            "code.write": 1,
+            "faithful_tool_result": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "output.schema": 1,
+            "structured_output": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.faithful": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 4.205,
+          "energy_tier": "modelled",
+          "first_at": "2026-10-27T19:16:54.521Z",
+          "last_at": "2026-10-27T19:16:54.521Z"
         }
       }
     },
@@ -1552,6 +1582,67 @@
           "energy_tier": "modelled",
           "first_at": "2026-10-28T06:08:09.160Z",
           "last_at": "2026-10-28T06:08:09.160Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_S",
+      "family": "qwen-3-8",
+      "member": "27b~huihui-ai-abliterated",
+      "engine": "ollama",
+      "quant": "Q4_K_S",
+      "publisher": "huihui-ai",
+      "attribution": "derivative",
+      "base": "Qwen/Qwen3.8-27B",
+      "derivative": true,
+      "cohort": 3,
+      "rung": 3,
+      "disk_mib": 14900,
+      "by_class": {
+        "linux/amd64/nvidia/32g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 11.84,
+          "effective_ctx_best": 131072,
+          "effective_ctx_stop": "too-slow-here",
+          "effective_ctx_ladder": "4096,8192,16384,32768,65536,131072",
+          "ctx_trained": 262144,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.bn": 1,
+            "lang.en": 1,
+            "lang.gu": 1,
+            "lang.hi": 1,
+            "lang.kn": 1,
+            "lang.ml": 1,
+            "lang.mr": 1,
+            "lang.pa": 1,
+            "lang.ta": 1,
+            "lang.te": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "reason.channel": 1,
+            "research.synthesize": 1,
+            "structured_output": 1,
+            "thinking": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "vision": 1,
+            "vision.count": 1,
+            "vision.multi_image": 1,
+            "vision.read": 1,
+            "vision.spatial": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 24.323,
+          "energy_tier": "sensor",
+          "first_at": "2026-10-28T08:17:18.415Z",
+          "last_at": "2026-10-28T08:17:18.415Z"
         }
       }
     },
@@ -3159,6 +3250,14 @@
       }
     },
     {
+      "publisher": "huihui-ai",
+      "held": 2,
+      "grams": 2,
+      "engines": {
+        "ollama": 2
+      }
+    },
+    {
       "publisher": "kokoro",
       "held": 2,
       "grams": 2,
@@ -3193,14 +3292,6 @@
     },
     {
       "publisher": "DavidAU",
-      "held": 1,
-      "grams": 1,
-      "engines": {
-        "ollama": 1
-      }
-    },
-    {
-      "publisher": "huihui-ai",
       "held": 1,
       "grams": 1,
       "engines": {
@@ -3344,12 +3435,6 @@
       "windows/amd64/none/16g": 1
     },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:q4_k_m": {
-      "linux/amd64/nvidia/32g": 1,
-      "windows/amd64/nvidia/16g": 1,
-      "windows/amd64/intel/16g": 2,
-      "windows/amd64/nvidia/8g": 1
-    },
-    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": 1,
       "windows/amd64/nvidia/16g": 1,
       "windows/amd64/intel/16g": 2,
@@ -3774,6 +3859,9 @@
     "hf.co/huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated-MTP-GGUF:Q6_K": {
       "linux/amd64/none/32g": 1
     },
+    "hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_S": {
+      "linux/amd64/nvidia/32g": 1
+    },
     "hf.co/lm-kit/embeddinggemma-300m-gguf:F16": {
       "linux/amd64/none/32g": 1
     },
@@ -4161,6 +4249,12 @@
       "linux/amd64/nvidia/32g": 1
     },
     "zai-org/CogVideoX-5b": {
+      "linux/amd64/nvidia/32g": 1
+    },
+    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": 2,
+      "windows/amd64/nvidia/16g": 1,
+      "windows/amd64/nvidia/8g": 1,
       "linux/amd64/nvidia/32g": 1
     },
     "hf.co/MaziyarPanahi/gemma-3-1b-it-GGUF:Q2_K": {
@@ -4671,7 +4765,9 @@
         "lang.ru": 1
       },
       "windows/amd64/intel/16g": {
+        "code.write": 2,
         "faithful_tool_result": 2,
+        "instruct.follow": 2,
         "lang.en": 2,
         "output.schema": 2,
         "structured_output": 2,
@@ -4680,61 +4776,10 @@
         "tools.faithful": 2,
         "tools.loop_ends": 2,
         "tools_loop_terminated": 2,
-        "code.write": 2,
-        "instruct.follow": 2,
         "output.long": 1,
         "lang.nl": 1,
         "lang.ru": 1,
         "lang.si": 1
-      },
-      "windows/amd64/nvidia/8g": {
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1
-      }
-    },
-    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/32g": {
-        "code.write": 1,
-        "faithful_tool_result": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
-      },
-      "windows/amd64/nvidia/16g": {
-        "code.write": 1,
-        "faithful_tool_result": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.long": 1,
-        "output.schema": 1,
-        "structured_output": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
-      },
-      "windows/amd64/intel/16g": {
-        "code.write": 2,
-        "faithful_tool_result": 2,
-        "instruct.follow": 2,
-        "lang.en": 2,
-        "output.schema": 2,
-        "structured_output": 2,
-        "tools": 2,
-        "tools.call": 2,
-        "tools.faithful": 2,
-        "tools.loop_ends": 2,
-        "tools_loop_terminated": 2,
-        "lang.kn": 1,
-        "output.long": 1
       },
       "windows/amd64/nvidia/8g": {
         "lang.en": 1,
@@ -6894,6 +6939,36 @@
         "vision.spatial": 1
       }
     },
+    "hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_S": {
+      "linux/amd64/nvidia/32g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "instruct.follow": 1,
+        "lang.bn": 1,
+        "lang.en": 1,
+        "lang.gu": 1,
+        "lang.hi": 1,
+        "lang.kn": 1,
+        "lang.ml": 1,
+        "lang.mr": 1,
+        "lang.pa": 1,
+        "lang.ta": 1,
+        "lang.te": 1,
+        "output.long": 1,
+        "output.schema": 1,
+        "reason.channel": 1,
+        "research.synthesize": 1,
+        "structured_output": 1,
+        "thinking": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "vision": 1,
+        "vision.count": 1,
+        "vision.multi_image": 1,
+        "vision.read": 1,
+        "vision.spatial": 1
+      }
+    },
     "hf.co/lm-kit/embeddinggemma-300m-gguf:F16": {
       "linux/amd64/none/32g": {
         "embed.vector": 1
@@ -8653,6 +8728,55 @@
     "zai-org/CogVideoX-5b": {
       "linux/amd64/nvidia/32g": {}
     },
+    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": {
+        "code.write": 2,
+        "faithful_tool_result": 2,
+        "instruct.follow": 2,
+        "lang.en": 2,
+        "output.schema": 2,
+        "structured_output": 2,
+        "tools": 2,
+        "tools.call": 2,
+        "tools.faithful": 2,
+        "tools.loop_ends": 2,
+        "tools_loop_terminated": 2,
+        "lang.kn": 1,
+        "output.long": 1
+      },
+      "windows/amd64/nvidia/16g": {
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.long": 1,
+        "output.schema": 1,
+        "structured_output": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      },
+      "windows/amd64/nvidia/8g": {
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      },
+      "linux/amd64/nvidia/32g": {
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      }
+    },
     "hf.co/MaziyarPanahi/gemma-3-1b-it-GGUF:Q2_K": {
       "linux/amd64/none/32g": {
         "code.write": 1,
@@ -8784,12 +8908,12 @@
   "proving": [
     {
       "gram": "e61d3b",
-      "ref": "hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_S",
+      "ref": "hf.co/peculiar-ragdoll/Dirk-Qwen3.8-27B-GGUF:Q4_K_M",
       "family": "qwen-3-8",
-      "member": "27b~huihui-ai-abliterated",
+      "member": "27b~peculiar-ragdoll-dirk",
       "class": "linux/amd64/nvidia/32g",
       "region": null,
-      "until": "2026-10-28T09:02:19.770728948Z"
+      "until": "2026-10-28T10:18:13.04085532Z"
     },
     {
       "gram": "e3654f",
@@ -8816,9 +8940,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 4342,
+      "offline_minutes": 4357,
       "last_seen": "2026-10-25T07:55:25.960825361Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -8858,9 +8982,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 5130,
+      "offline_minutes": 5145,
       "last_seen": "2026-10-24T18:46:48.273497951Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -8901,12 +9025,12 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-10-28T08:16:54.934158515Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "last_seen": "2026-10-28T08:31:55.532270337Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
-      "awake_seconds": 19052,
+      "awake_seconds": 19952,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -8943,9 +9067,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/16g",
       "state": "offline",
-      "offline_minutes": 17196,
+      "offline_minutes": 17211,
       "last_seen": "2026-10-16T09:41:09.337393806Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -8983,10 +9107,10 @@
       "gram": "9e3c79",
       "os": "windows",
       "class": "windows/amd64/intel/16g",
-      "state": "online",
-      "offline_minutes": 0,
+      "state": "quiet",
+      "offline_minutes": 16,
       "last_seen": "2026-10-28T08:15:54.895276755Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -9027,12 +9151,12 @@
       "class": "linux/amd64/nvidia/32g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-10-28T08:16:46.661136456Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "last_seen": "2026-10-28T08:31:59.31176011Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
-      "awake_seconds": 13132,
+      "awake_seconds": 14045,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -9049,9 +9173,9 @@
         "9"
       ],
       "artifacts": 3745,
-      "measured": 5,
+      "measured": 6,
       "failed": 0,
-      "queued": 1756,
+      "queued": 1755,
       "unreachable": 10,
       "unreachable_by_engine": {
         "mlx": 3,
@@ -9059,9 +9183,9 @@
         "mlx-speech": 2,
         "speech-host": 4
       },
-      "expected_hours": 1800.0166666666667,
+      "expected_hours": 1561.9166666666667,
       "expected_basis": "machines of this class",
-      "eta_hours": 8429,
+      "eta_hours": 7020,
       "blocked": "fetch"
     },
     {
@@ -9069,9 +9193,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/8g",
       "state": "offline",
-      "offline_minutes": 28604,
+      "offline_minutes": 28619,
       "last_seen": "2026-10-08T11:32:43.123137899Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "battery",
@@ -9110,9 +9234,9 @@
       "os": "darwin",
       "class": "darwin/amd64/apple/8g",
       "state": "offline",
-      "offline_minutes": 199,
+      "offline_minutes": 214,
       "last_seen": "2026-10-28T04:58:18.337232937Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -9152,9 +9276,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 12762,
+      "offline_minutes": 12777,
       "last_seen": "2026-10-19T11:34:49.856273646Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -9193,9 +9317,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/8g",
       "state": "offline",
-      "offline_minutes": 9443,
+      "offline_minutes": 9458,
       "last_seen": "2026-10-21T18:54:26.305874913Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "ac",
@@ -9232,9 +9356,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/8g",
       "state": "offline",
-      "offline_minutes": 2729,
+      "offline_minutes": 2744,
       "last_seen": "2026-10-26T10:47:42.14649699Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -9271,9 +9395,9 @@
       "os": "windows",
       "class": "windows/amd64/intel/16g",
       "state": "offline",
-      "offline_minutes": 6778,
+      "offline_minutes": 6793,
       "last_seen": "2026-10-23T15:18:38.96547469Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -9312,9 +9436,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/16g",
       "state": "offline",
-      "offline_minutes": 89,
+      "offline_minutes": 104,
       "last_seen": "2026-10-28T06:48:04.984538452Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "unknown",
@@ -9353,9 +9477,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/16g",
       "state": "offline",
-      "offline_minutes": 130,
+      "offline_minutes": 145,
       "last_seen": "2026-10-28T06:06:48.280909301Z",
-      "as_of": "2026-10-28T08:16:59Z",
+      "as_of": "2026-10-28T08:32:00Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
@@ -9395,41 +9519,41 @@
   "modalities": [
     {
       "engine": "ollama",
-      "proved_artifacts": 33,
-      "measured": 39,
+      "proved_artifacts": 34,
+      "measured": 41,
       "unreachable": 0,
       "capabilities": {
-        "code.reason": 18,
-        "code.write": 30,
-        "faithful_tool_result": 14,
-        "instruct.follow": 28,
-        "lang.bn": 18,
-        "lang.en": 31,
-        "lang.gu": 11,
-        "lang.hi": 18,
-        "lang.kn": 14,
-        "lang.ml": 17,
-        "lang.mr": 15,
-        "lang.pa": 16,
-        "lang.ta": 18,
-        "lang.te": 21,
-        "output.long": 24,
-        "output.schema": 32,
-        "reason.channel": 15,
-        "research.synthesize": 13,
-        "structured_output": 32,
-        "thinking": 15,
-        "tools": 26,
-        "tools.call": 26,
-        "tools.faithful": 14,
-        "tools.loop_ends": 19,
+        "code.reason": 19,
+        "code.write": 32,
+        "faithful_tool_result": 15,
+        "instruct.follow": 30,
+        "lang.bn": 19,
+        "lang.en": 33,
+        "lang.gu": 12,
+        "lang.hi": 19,
+        "lang.kn": 15,
+        "lang.ml": 18,
+        "lang.mr": 16,
+        "lang.pa": 17,
+        "lang.ta": 19,
+        "lang.te": 22,
+        "output.long": 25,
+        "output.schema": 34,
+        "reason.channel": 16,
+        "research.synthesize": 14,
+        "structured_output": 34,
+        "thinking": 16,
+        "tools": 28,
+        "tools.call": 28,
+        "tools.faithful": 15,
+        "tools.loop_ends": 20,
         "tools.multi_hop": 8,
-        "tools_loop_terminated": 19,
-        "vision": 9,
-        "vision.count": 9,
-        "vision.multi_image": 7,
-        "vision.read": 9,
-        "vision.spatial": 9,
+        "tools_loop_terminated": 20,
+        "vision": 10,
+        "vision.count": 10,
+        "vision.multi_image": 8,
+        "vision.read": 10,
+        "vision.spatial": 10,
         "embed.vector": 2,
         "lang.nl": 3,
         "lang.ru": 3,
@@ -9589,13 +9713,6 @@
   "proving_note": "proving is a LEASE, not a fact: what each gram said it was working on when it last reported. It expires on its own, confers nothing and is never coverage. It is here so the network can be watched working.",
   "refusals": {
     "myshell-ai/OpenVoiceV2": {
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 2,
-        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
-        "first_at": "2026-10-24T21:40:35.789040385Z",
-        "last_at": "2026-10-25T21:58:06.895626681Z"
-      },
       "linux/amd64/nvidia/32g": {
         "cause": "unloadable",
         "grams": 2,
@@ -9603,129 +9720,19 @@
         "first_at": "2026-10-24T18:38:58.919621781Z",
         "last_at": "2026-10-25T19:40:45.57359624Z"
       },
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 2,
+        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
+        "first_at": "2026-10-24T21:40:35.789040385Z",
+        "last_at": "2026-10-25T21:58:06.895626681Z"
+      },
       "windows/amd64/intel/16g": {
         "cause": "unloadable",
         "grams": 1,
         "version": "9078fa81f465d30de2b689575fcfc318369c95a3",
         "first_at": "2026-10-25T00:49:09.300423Z",
         "last_at": "2026-10-25T00:49:09.300423Z"
-      }
-    },
-    "Xiejiehang/ERNIE-Image-Turbo-MLX-Q4": {
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-27T05:02:59.868145578Z",
-        "last_at": "2026-10-27T05:02:59.868145578Z"
-      }
-    },
-    "QuantFunc/LTX-2.5-QuantFunc-4bit": {
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-27T05:05:05.853789067Z",
-        "last_at": "2026-10-27T05:05:05.853789067Z"
-      }
-    },
-    "OzzyGT/ERNIE_Image_Turbo_sdnq_dynamic_int4": {
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-27T05:07:15.031831742Z",
-        "last_at": "2026-10-27T05:07:15.031831742Z"
-      }
-    },
-    "QuantFunc/Minimax-H3-Quantfunc-4bit": {
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-27T05:12:05.099048229Z",
-        "last_at": "2026-10-27T05:12:05.099048229Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:02:56.787561887Z",
-        "last_at": "2026-10-28T03:02:56.787561887Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_S": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:07:40.434314881Z",
-        "last_at": "2026-10-28T03:07:40.434314881Z"
-      }
-    },
-    "hf.co/huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated-MTP-GGUF:Q3_K": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:09:24.490374487Z",
-        "last_at": "2026-10-28T03:09:24.490374487Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q4_K_S": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:12:35.052988974Z",
-        "last_at": "2026-10-28T03:12:35.052988974Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q4_K_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:17:32.497618148Z",
-        "last_at": "2026-10-28T03:17:32.497618148Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:IQ1_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:26:22.284014143Z",
-        "last_at": "2026-10-28T03:26:22.284014143Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:IQ2_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:26:47.762753836Z",
-        "last_at": "2026-10-28T03:26:47.762753836Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ1_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:27:12.067821535Z",
-        "last_at": "2026-10-28T03:27:12.067821535Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ2_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
-        "first_at": "2026-10-28T03:27:37.396227559Z",
-        "last_at": "2026-10-28T03:27:37.396227559Z"
       }
     },
     "ai4bharat/indicconformer_stt_hi_hybrid_ctc_rnnt_large": {
@@ -9850,6 +9857,123 @@
         "version": "5b113b6bfa6ff59afb8230d35a8161f8f1cafe75",
         "first_at": "2026-10-28T05:18:12.248099143Z",
         "last_at": "2026-10-28T05:18:12.248099143Z"
+      }
+    },
+    "Xiejiehang/ERNIE-Image-Turbo-MLX-Q4": {
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-27T05:02:59.868145578Z",
+        "last_at": "2026-10-27T05:02:59.868145578Z"
+      }
+    },
+    "QuantFunc/LTX-2.5-QuantFunc-4bit": {
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-27T05:05:05.853789067Z",
+        "last_at": "2026-10-27T05:05:05.853789067Z"
+      }
+    },
+    "OzzyGT/ERNIE_Image_Turbo_sdnq_dynamic_int4": {
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-27T05:07:15.031831742Z",
+        "last_at": "2026-10-27T05:07:15.031831742Z"
+      }
+    },
+    "QuantFunc/Minimax-H3-Quantfunc-4bit": {
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-27T05:12:05.099048229Z",
+        "last_at": "2026-10-27T05:12:05.099048229Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:02:56.787561887Z",
+        "last_at": "2026-10-28T03:02:56.787561887Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:Q4_K_S": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:07:40.434314881Z",
+        "last_at": "2026-10-28T03:07:40.434314881Z"
+      }
+    },
+    "hf.co/huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated-MTP-GGUF:Q3_K": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:09:24.490374487Z",
+        "last_at": "2026-10-28T03:09:24.490374487Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q4_K_S": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:12:35.052988974Z",
+        "last_at": "2026-10-28T03:12:35.052988974Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:Q4_K_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:17:32.497618148Z",
+        "last_at": "2026-10-28T03:17:32.497618148Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:IQ1_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:26:22.284014143Z",
+        "last_at": "2026-10-28T03:26:22.284014143Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:IQ2_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:26:47.762753836Z",
+        "last_at": "2026-10-28T03:26:47.762753836Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ1_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:27:12.067821535Z",
+        "last_at": "2026-10-28T03:27:12.067821535Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ2_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "e9f1c133b5fecbeea2303ae65686bbc3811b598d",
+        "first_at": "2026-10-28T03:27:37.396227559Z",
+        "last_at": "2026-10-28T03:27:37.396227559Z"
       }
     },
     "bharatgenai/sooktam2": {
@@ -10273,13 +10397,13 @@
         "ollama": {
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-10-28T08:17:35.885Z"
+          "at": "2026-10-28T08:32:21.778Z"
         }
       },
       "download_mib_per_sec_median": 6.4,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "token_prices": {
         "threads": 7,
         "vcpu_second_uusd": 10,
@@ -10310,7 +10434,7 @@
       "download_mib_per_sec_median": 10.9,
       "download_samples": 2,
       "carried_from": null,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "token_prices": {
         "threads": 15,
         "gpu_backed": true,
@@ -10327,7 +10451,7 @@
       "download_mib_per_sec_median": 3.5,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "token_prices": {
         "threads": 3,
         "vcpu_second_uusd": 10,
@@ -10365,14 +10489,14 @@
       },
       "download_mib_per_sec_median": 11.4,
       "download_samples": 1,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "carried_from": null
     },
     "windows/amd64/nvidia/8g": {
       "engines": {},
       "download_mib_per_sec_median": 7.3,
       "download_samples": 1,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "carried_from": null
     },
     "windows/amd64/none/8g": {
@@ -10405,12 +10529,12 @@
         "ollama-host": {
           "probe_ms_median": 1736545,
           "samples": 2,
-          "at": "2026-10-28T08:17:35.885Z"
+          "at": "2026-10-28T08:32:21.778Z"
         }
       },
       "download_mib_per_sec_median": 9,
       "download_samples": 1,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/32g": {
@@ -10435,7 +10559,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-10-28T08:17:35.885Z"
+          "at": "2026-10-28T08:32:21.778Z"
         },
         "vllm": {
           "probe_ms_median": 0,
@@ -10443,9 +10567,9 @@
           "at": "2026-10-28T04:31:00.275Z"
         }
       },
-      "download_mib_per_sec_median": 113,
+      "download_mib_per_sec_median": 113.1,
       "download_samples": 2,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -10473,12 +10597,12 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-10-28T08:17:35.885Z"
+          "at": "2026-10-28T08:32:21.778Z"
         }
       },
       "download_mib_per_sec_median": 130.8,
       "download_samples": 2,
-      "at": "2026-10-28T08:17:35.885Z",
+      "at": "2026-10-28T08:32:21.778Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -10499,15 +10623,15 @@
       "proposed": "hold",
       "history": [
         {
-          "at": "2026-10-28T08:02:23.240Z",
-          "proposal": "hold"
-        },
-        {
           "at": "2026-10-28T08:17:21.482Z",
           "proposal": "hold"
         },
         {
           "at": "2026-10-28T08:17:35.885Z",
+          "proposal": "hold"
+        },
+        {
+          "at": "2026-10-28T08:32:21.778Z",
           "proposal": "hold"
         }
       ],
@@ -10549,15 +10673,9 @@
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:q4_k_m": {
       "linux/amd64/nvidia/32g": 12429,
       "windows/amd64/nvidia/16g": 4253,
-      "windows/amd64/intel/16g": 61004,
+      "windows/amd64/intel/16g": 102091,
       "windows/amd64/nvidia/8g": 50,
       "linux/amd64/none/32g": 11716
-    },
-    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/32g": 12429,
-      "windows/amd64/nvidia/16g": 4253,
-      "windows/amd64/intel/16g": 102091,
-      "windows/amd64/nvidia/8g": 50
     },
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ3_XXS": {
       "windows/amd64/nvidia/16g": 5345,
@@ -10783,6 +10901,9 @@
     },
     "hf.co/huihui-ai/Huihui-Qwen3.6-35B-A3B-abliterated-MTP-GGUF:Q6_K": {
       "linux/amd64/none/32g": 14644
+    },
+    "hf.co/huihui-ai/Huihui-Qwen3.8-27B-abliterated-GGUF:Q4_K_S": {
+      "linux/amd64/nvidia/32g": 3777
     },
     "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q8_0": {
       "darwin/arm64/apple/16g": 37524
@@ -11026,6 +11147,12 @@
     },
     "qwen2.5:0.5b": {
       "unknown": 358
+    },
+    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
+      "linux/amd64/nvidia/32g": 12429,
+      "windows/amd64/nvidia/16g": 4253,
+      "windows/amd64/intel/16g": 102091,
+      "windows/amd64/nvidia/8g": 50
     },
     "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:IQ3_M": {
       "linux/amd64/none/32g": 3547
