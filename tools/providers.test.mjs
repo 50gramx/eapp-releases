@@ -53,3 +53,27 @@ test('a Mac reporting its CPU as the gpu model shows no card', () => {
 test('providerId is the last six of the DID, lower case', () => {
   assert.equal(providerId('did:epn:00ABCDEF84BF54'), '84bf54');
 });
+
+test('activity by day and family, the builds it opened first, awards and rooms', () => {
+  const d1 = did('aaa111');
+  const d2 = did('bbb222');
+  const evidence = [
+    { name: 'x', family: 'qwen-3', nodes: [{ node_did: d1, measured_at: '2026-10-20T10:00:00Z' }, { node_did: d2, measured_at: '2026-10-21T10:00:00Z' }] },
+    { name: 'y', family: 'gemma-4', nodes: [{ node_did: d2, measured_at: '2026-10-19T10:00:00Z' }, { node_did: d1, measured_at: '2026-10-20T11:00:00Z' }] },
+  ];
+  const rooms = [{ gramx_id: 'IN_400070', contributors: [d1] }];
+  const runs = [{ ref: 'x', providers: ['aaa111'], tokens_per_sec: 36, cost_breakdown: { usd_per_hour: 0.36 }, model: 'X' }];
+  const all = buildProviders({ evidence, rooms, runs, generatedAt: '2026-10-28T00:00:00Z' });
+  const a = all.find((p) => p.id === 'aaa111');
+  const b = all.find((p) => p.id === 'bbb222');
+  assert.equal(a.id, 'aaa111');
+  assert.deepEqual(a.runs_by_day, [{ date: '2026-10-20', runs: 2 }]);
+  assert.deepEqual(a.runs_by_family, [{ family: 'qwen-3', runs: 1 }, { family: 'gemma-4', runs: 1 }].sort((p, q) => q.runs - p.runs));
+  assert.deepEqual(a.opened.map((o) => o.ref), ['x']);
+  assert.deepEqual(b.opened.map((o) => o.ref), ['y']);
+  assert.deepEqual(a.rooms, ['IN_400070']);
+  assert.equal(a.best_value.tokens_per_usd_hour, 100);
+  assert.ok(a.awards.some((w) => w.id === 'opener'));
+  assert.ok(a.awards.some((w) => w.id === 'runs-1'));
+  assert.equal(a.of, 2);
+});

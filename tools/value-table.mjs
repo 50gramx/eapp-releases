@@ -149,7 +149,7 @@ function verdict(cls, api, modality) {
  * plus every catalog build a hosted API also sells (the market's leaders,
  * proved or not), with per-class proved, priced, estimated and cited columns.
  */
-export function buildValueTable({ seasons, families, current, market, evidence = null, machines = null, fleet = null, region = () => null, generatedAt = new Date().toISOString() }) {
+export function buildValueTable({ seasons, families, current, market, evidence = null, machines = null, fleet = null, region = () => null, rooms = [], generatedAt = new Date().toISOString() }) {
   const catalog = new Map();
   for (const f of families || []) {
     for (const m of f.members || []) {
@@ -343,7 +343,7 @@ export function buildValueTable({ seasons, families, current, market, evidence =
     },
     // The grams behind every signed number (tools/providers.mjs).
     providers: buildProviders({
-      evidence, machines, fleet: fleet || [], region, generatedAt,
+      evidence, machines, fleet: fleet || [], region, rooms, generatedAt,
       runs: models.flatMap((m) => (m.measured_on || []).map((r) => ({ ...r, model: m.model, page: m.page }))),
     }),
     // Logos for every model maker, publisher, card maker and host: each one's own

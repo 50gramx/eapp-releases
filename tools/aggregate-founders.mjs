@@ -3612,6 +3612,8 @@ function main() {
     seasons: readSeasons(), families: models.families, current: readCurrent(),
     market: readMarket(), evidence: models.models, machines, generatedAt: out.generated_at,
     fleet: readFleetNodes(), region: (code) => labelFor({ id: code }, loadDirectory()),
+    // The rooms each gram works in, from the last published gramx.json (built just below; one run behind).
+    rooms: (() => { try { return JSON.parse(readFileSync('data/gramx.json', 'utf8')).rooms || []; } catch { return []; } })(),
   });
   writeFileSync(TABLE_PATH, JSON.stringify(valueTable, null, 2) + '\n');
   console.log('[value table]', JSON.stringify(valueTable.counts));

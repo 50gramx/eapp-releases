@@ -80,30 +80,52 @@ function hardwareLine(fleet, hw, sheet) {
  * machines  data/machines.json
  * region    (code) => {city, state} | null, from the pincode directory
  */
-export function buildProviders({ evidence = [], runs = [], fleet = [], machines = null, region = () => null, generatedAt = new Date().toISOString() } = {}) {
+const AWARD_RUNS = [1000, 100, 10, 1];
+const DAYS_KEPT = 120;
+
+export function buildProviders({ evidence = [], runs = [], fleet = [], machines = null, region = () => null, rooms = [], generatedAt = new Date().toISOString() } = {}) {
   const now = Date.parse(generatedAt) || Date.now();
   const byDID = new Map();
   const row = (did) => {
     let r = byDID.get(did);
     if (!r) {
-      r = { did, runs: 0, refs: new Set(), recent: 0, first: null, last: null, hw: null };
+      r = { did, runs: 0, refs: new Set(), recent: 0, first: null, last: null, hw: null, days: {}, families: {}, opened: [] };
       byDID.set(did, r);
     }
     return r;
   };
   for (const e of evidence || []) {
+    // The gram whose signed result is the network's earliest for this build
+    // opened it: the first machine anywhere to prove it runs.
+    let opener = null;
     for (const n of e.nodes || []) {
       if (!n?.node_did) continue;
       const r = row(n.node_did);
       r.runs++;
       r.refs.add(e.name);
+      const fam = e.family || 'other';
+      r.families[fam] = (r.families[fam] || 0) + 1;
       const t = toMs(n.measured_at);
       if (t) {
         if (!r.first || t < r.first) r.first = t;
         if (!r.last || t > r.last) r.last = t;
         if (now - t <= RECENT_DAYS * 864e5) r.recent++;
+        if (now - t <= DAYS_KEPT * 864e5) {
+          const day = new Date(t).toISOString().slice(0, 10);
+          r.days[day] = (r.days[day] || 0) + 1;
+        }
+        if (!opener || t < opener.t) opener = { t, did: n.node_did };
       }
       if (n.hardware && !r.hw) r.hw = n.hardware;
+    }
+    if (opener) row(opener.did).opened.push({ ref: e.name, family: e.family || null, member: e.member || null, at: iso(opener.t) });
+  }
+  const roomsOf = new Map();
+  for (const rm of rooms || []) {
+    for (const d of rm.contributors || []) {
+      const list = roomsOf.get(d) || [];
+      list.push(rm.gramx_id);
+      roomsOf.set(d, list);
     }
   }
   const fleetBy = new Map((fleet || []).filter((n) => n?.node_did).map((n) => [n.node_did, n]));
@@ -139,8 +161,17 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
         model: x.model, page: x.page || null, build: x.build || null, build_page: x.build_page || null,
         ref: x.ref, engine: x.engine || null, tokens_per_sec: x.tokens_per_sec,
         cost_usd_per_million: x.cost_usd_per_million ?? null, measured_at: x.measured_at || null,
+        context_tokens: x.context_tokens || null,
+        // Vast's DLPerf-per-dollar, for tokens: what an hour of this machine buys.
+        tokens_per_usd_hour: x.cost_breakdown?.usd_per_hour > 0 ? Math.round(x.tokens_per_sec / x.cost_breakdown.usd_per_hour) : null,
       }));
     const cheapest = builds.filter((b) => b.cost_usd_per_million > 0).sort((a, b) => a.cost_usd_per_million - b.cost_usd_per_million)[0] || null;
+    const awards = [];
+    const runAward = AWARD_RUNS.find((n) => r.runs >= n);
+    if (runAward) awards.push({ id: `runs-${runAward}`, label: runAward === 1 ? 'First signed result' : `${runAward}+ signed runs` });
+    if (r.opened.length) awards.push({ id: 'opener', label: `First to measure ${r.opened.length} build${r.opened.length === 1 ? '' : 's'}` });
+    if (builds.length >= 10) awards.push({ id: 'best-10', label: `Best result on ${builds.length} builds` });
+    if (sheet?.cpu && sheet?.memory) awards.push({ id: 'sheet', label: 'Machine benchmarked and signed' });
     out.push({
       id,
       did: r.did,
@@ -160,12 +191,19 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
       last_signed_at: iso(r.last),
       awake_pct: awake + slept > 0 ? Math.round((awake / (awake + slept)) * 1000) / 10 : null,
       queue: f?.probes ? { measured: f.probes.measured ?? null, failed: f.probes.failed ?? null, queued: f.probes.queued ?? null } : null,
+      download_mib_per_sec: Number(f?.probes?.download_mib_per_sec) || null,
+      best_value: builds.filter((b) => b.tokens_per_usd_hour > 0).sort((a, b) => b.tokens_per_usd_hour - a.tokens_per_usd_hour)[0] || null,
+      opened: r.opened.sort((a, b) => String(a.at).localeCompare(String(b.at))),
+      runs_by_day: Object.entries(r.days).sort(([a], [b]) => a.localeCompare(b)).map(([date, runs]) => ({ date, runs })),
+      runs_by_family: Object.entries(r.families).sort((a, b) => b[1] - a[1]).map(([family, runs]) => ({ family, runs })),
+      rooms: roomsOf.get(r.did) || [],
+      awards,
       fastest: builds[0] || null,
       cheapest,
       builds,
     });
   }
   out.sort((a, b) => b.signed_runs - a.signed_runs || String(b.last_signed_at || '').localeCompare(String(a.last_signed_at || '')));
-  out.forEach((p, i) => { p.rank = i + 1; });
+  out.forEach((p, i) => { p.rank = i + 1; p.of = out.length; });
   return out;
 }
