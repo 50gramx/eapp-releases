@@ -223,3 +223,17 @@ console.log('ok - value table');
   assert.ok(Math.abs(b.lines.reduce((s, l) => s + l.usd_per_million, 0) - b.usd_per_million) < 1e-3, 'the lines add up to the total');
   console.log('machines + breakdown ok');
 }
+
+// ── a multi-card machine pays for the cards the build holds ─────────────────
+{
+  const { meteredBreakdown, cardsHolding } = await import('./value-models.mjs');
+  assert.equal(cardsHolding(2, 15, 2), 1);
+  assert.equal(cardsHolding(16, 15, 2), 2);
+  const hw = { cpus: 4, gpu: 'nvidia', gpu_count: 2, vram_gib: 15 };
+  const small = meteredBreakdown(hw, 2 * 1024, 100).lines.find((l) => l.resource === 'GPU');
+  const big = meteredBreakdown(hw, 16 * 1024, 100).lines.find((l) => l.resource === 'GPU');
+  assert.equal(small.uusd_per_second, 100);
+  assert.equal(big.uusd_per_second, 200);
+  assert.match(big.quantity, /2 of 2 cards/);
+  console.log('multi-card pricing ok');
+}

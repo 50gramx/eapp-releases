@@ -294,12 +294,21 @@ export function meteredUsdPerM(hw, diskMiB, tokensPerSec) {
  * is the machine's own signed size or the build's own size; every rate is the
  * price list; nothing is guessed except the energy model, which says so.
  */
+/** How many of count cards of perCardGiB a build of gib occupies (agent.CardsHolding). */
+export function cardsHolding(gib, perCardGiB, count) {
+  if (!(count > 1) || !(perCardGiB > 0) || !(gib > 0)) return 1;
+  return Math.min(count, Math.max(1, Math.ceil((gib * 1.2) / perCardGiB)));
+}
+
 export function meteredBreakdown(hw, diskMiB, tokensPerSec) {
   if (!hw?.cpus || !(tokensPerSec > 0)) return null;
   const threads = Math.max(1, hw.cpus - 1);
   const card = ['nvidia', 'amd', 'apple', 'tpu'].includes(hw.gpu);
   const gib = (diskMiB || 0) / 1024;
-  const watts = threads * 5 + (card ? 150 : 0); // hostinfo/energy.go, for one second
+  // The cards the build holds (epn-daemon agent/gpu_cards.go): its size plus a
+  // fifth over one card's memory, rounded up, never more than the machine has.
+  const cards = card ? cardsHolding(gib, hw.vram_gib, hw.gpu_count) : 0;
+  const watts = threads * 5 + cards * 150; // hostinfo/energy.go, for one second
   const perM = (uusdPerSec) => +(uusdPerSec / tokensPerSec).toFixed(4); // µUSD/s ÷ tok/s = USD per 1M tokens
   const lines = [
     {
@@ -315,13 +324,16 @@ export function meteredBreakdown(hw, diskMiB, tokensPerSec) {
   ];
   if (card) {
     lines.push({
-      resource: 'GPU', quantity: `${hw.gpu_count > 1 ? `${hw.gpu_count} cards, billed as one` : 'one card'}`,
+      resource: 'GPU',
+      quantity: hw.gpu_count > 1
+        ? `${cards} of ${hw.gpu_count} cards (the ${cards === 1 ? 'one this build fits on' : 'cards this build is split across'})`
+        : 'one card',
       rate: `$${(PRICE_LIST.gpu_second_uusd * 3600 / 1e6).toFixed(2)} per GPU-hour`,
-      uusd_per_second: PRICE_LIST.gpu_second_uusd,
+      uusd_per_second: cards * PRICE_LIST.gpu_second_uusd,
     });
   }
   lines.push({
-    resource: 'Energy', quantity: `${watts} W modelled (${threads} threads × 5 W${card ? ' + 150 W card' : ''})`,
+    resource: 'Energy', quantity: `${watts} W modelled (${threads} threads × 5 W${cards ? ` + ${cards} × 150 W card${cards > 1 ? 's' : ''}` : ''})`,
     rate: `$${(PRICE_LIST.kwh_uusd / 1e6).toFixed(2)} per kWh`,
     uusd_per_second: watts / 3.6e6 * PRICE_LIST.kwh_uusd,
   });
