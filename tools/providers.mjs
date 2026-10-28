@@ -138,6 +138,8 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
         if (!opener || t < opener.t) opener = { t, did: n.node_did };
       }
       if (n.hardware && !r.hw) r.hw = n.hardware;
+      // A Kaggle T4x2 signs gpu_count 2; keep the most cards any run signed.
+      if (n.hardware?.gpu_count > (r.gpuCount || 0)) r.gpuCount = n.hardware.gpu_count;
     }
     if (opener) row(opener.did).opened.push({ ref: e.name, family: e.family || null, member: e.member || null, at: iso(opener.t) });
   }
@@ -217,7 +219,7 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
       last_seen: iso(seen),
       version: f?.version ? String(f.version).slice(0, 7) : null,
       region: place ? { code, city: place.city || null, state: place.state || null } : code ? { code, city: null, state: null } : null,
-      hardware: hardwareLine(f, r.hw, sheet),
+      hardware: { ...hardwareLine(f, r.hw, sheet), gpu_count: r.gpuCount || (r.hw?.gpu && r.hw.gpu !== 'none' ? 1 : 0) },
       sheet,
       signed_runs: r.runs,
       signed_runs_30d: r.recent,
