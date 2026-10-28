@@ -77,3 +77,15 @@ test('activity by day and family, the builds it opened first, awards and rooms',
   assert.ok(a.awards.some((w) => w.id === 'runs-1'));
   assert.equal(a.of, 2);
 });
+
+test('nanosecond, microsecond and second stamps all land on the right day', () => {
+  const evidence = [{ name: 'r', nodes: [
+    { node_did: did('ddd444'), measured_at: 1793200000000000000 },
+    { node_did: did('ddd444'), measured_at: 1793200000000000 },
+    { node_did: did('ddd444'), measured_at: 1793200000 },
+  ] }];
+  const [p] = buildProviders({ evidence, generatedAt: '2026-10-28T12:00:00Z' });
+  assert.equal(p.first_signed_at.slice(0, 10), '2026-10-28');
+  assert.equal(p.last_signed_at.slice(0, 10), '2026-10-28');
+  assert.deepEqual(p.runs_by_day, [{ date: '2026-10-28', runs: 3 }]);
+});

@@ -26,10 +26,11 @@ export const providerId = (did) => String(did || '').slice(-6).toLowerCase();
 const ONLINE_WINDOW_MS = 30 * 60 * 1000;
 const RECENT_DAYS = 30;
 
-// models.json measured_at is unix microseconds; telemetry is ISO.
+// models.json measured_at is unix nano- or microseconds; telemetry is ISO.
 const toMs = (v) => {
   if (v == null || v === '') return null;
-  if (typeof v === 'number') return v > 1e14 ? Math.round(v / 1000) : v > 1e11 ? v : v * 1000;
+  // Signed results carry nanoseconds, microseconds or seconds depending on the field and the build.
+  if (typeof v === 'number') return v > 1e17 ? Math.round(v / 1e6) : v > 1e14 ? Math.round(v / 1e3) : v > 1e11 ? v : v * 1000;
   const t = Date.parse(v);
   return Number.isFinite(t) ? t : null;
 };
