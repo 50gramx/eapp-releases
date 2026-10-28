@@ -82,6 +82,7 @@ function hardwareLine(fleet, hw, sheet) {
  * region    (code) => {city, state} | null, from the pincode directory
  */
 const AWARD_RUNS = [1000, 100, 10, 1];
+const bits = (m) => { let n = 0; for (let v = Number(m) >>> 0; v; v &= v - 1) n++; return n; };
 const DAYS_KEPT = 120;
 
 /** The org whose logo stands for a part: nvidia, amd, intel, apple, google, qualcomm. */
@@ -227,6 +228,14 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
       awake_pct: awake + slept > 0 ? Math.round((awake / (awake + slept)) * 1000) / 10 : null,
       queue: f?.probes ? { measured: f.probes.measured ?? null, failed: f.probes.failed ?? null, queued: f.probes.queued ?? null } : null,
       download_mib_per_sec: Number(f?.probes?.download_mib_per_sec) || null,
+      // Hours the collector heard from it, per day (epn-daemon telemetry
+      // NodeStatus.HoursSeen, a 24-bit mask): the uptime strip.
+      uptime_days: Object.entries(f?.hours_seen || {}).sort(([x], [y]) => x.localeCompare(y))
+        .map(([date, mask]) => ({ date, hours: bits(mask) })),
+      uptime_pct: (() => {
+        const days = Object.values(f?.hours_seen || {});
+        return days.length ? Math.round((days.reduce((n, m) => n + bits(m), 0) / (days.length * 24)) * 1000) / 10 : null;
+      })(),
       best_value: builds.filter((b) => b.tokens_per_usd_hour > 0).sort((a, b) => b.tokens_per_usd_hour - a.tokens_per_usd_hour)[0] || null,
       opened: r.opened.sort((a, b) => String(a.at).localeCompare(String(b.at))),
       runs_by_day: Object.entries(r.hist || r.days).sort(([a], [b]) => a.localeCompare(b)).map(([date, runs]) => ({ date, runs })),

@@ -108,3 +108,11 @@ test('part logos, standing among machines, and history from the archive', async 
   assert.equal(pa.first_signed_at.slice(0, 10), '2026-10-01');
   assert.deepEqual(pa.runs_by_day, [{ date: '2026-10-01', runs: 1 }, { date: '2026-10-27', runs: 1 }]);
 });
+
+test('uptime by day from the hours the collector heard the gram', () => {
+  const d = did('eee555');
+  const fleet = [{ node_did: d, hours_seen: { '2026-10-27': (1 << 24) - 1, '2026-10-28': 0b111 } }];
+  const [p] = buildProviders({ evidence: [{ name: 'r', nodes: [{ node_did: d }] }], fleet });
+  assert.deepEqual(p.uptime_days, [{ date: '2026-10-27', hours: 24 }, { date: '2026-10-28', hours: 3 }]);
+  assert.equal(p.uptime_pct, 56.3);
+});
