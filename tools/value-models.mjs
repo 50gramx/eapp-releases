@@ -449,6 +449,11 @@ export function modelView(rows, { families = [], largestMachineGB = null, eviden
             cost_basis: 'the network\'s metered rates on this machine',
             measured_at: toISO(n.measured_at || n.probed_at),
             signed: Boolean(n.throughput_signature || n.probe_signature),
+            // The exact bytes the gram signed and its signature, so a reader's
+            // browser can check this number itself (site lib/verify.ts).
+            proof: n.throughput_signature && n.throughput_signing_payload_b64
+              ? { node_did: n.node_did, signature: n.throughput_signature, signing_payload_b64: n.throughput_signing_payload_b64, payload_sha256: n.throughput_payload_sha256 || null }
+              : null,
             build_page: page,
             hub_url: hubURL(refRepo(r.ref)),
             weeks: r.seasons,

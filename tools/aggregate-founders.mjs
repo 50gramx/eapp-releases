@@ -15,6 +15,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from '
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons, readSeasons, readCurrent } from './seasons.mjs';
 import { buildValueTable, TABLE_PATH } from './value-table.mjs';
+import { mergeRunArchive, readRunArchive, RUN_ARCHIVE_PATH } from './run-archive.mjs';
 import { readMarket } from './market.mjs';
 import { fileModelsByCatalog } from './model-filing.mjs';
 import { labelFor, loadDirectory } from './region-labels.mjs';
@@ -3608,10 +3609,14 @@ function main() {
     .filter((v) => verifySignedResult(v.signed_result, v.payload_b64).ok);
   const machines = buildMachines(machineResults, readMachines(), out.generated_at);
   writeFileSync(MACHINES_PATH, JSON.stringify(machines, null, 2) + '\n');
+  // Every signed run, kept: the history behind each provider's activity.
+  const runArchive = mergeRunArchive(readRunArchive(), models.models);
+  writeFileSync(RUN_ARCHIVE_PATH, runArchive.map((r) => JSON.stringify(r)).join('\n') + (runArchive.length ? '\n' : ''));
   const valueTable = buildValueTable({
     seasons: readSeasons(), families: models.families, current: readCurrent(),
     market: readMarket(), evidence: models.models, machines, generatedAt: out.generated_at,
     fleet: readFleetNodes(), region: (code) => labelFor({ id: code }, loadDirectory()),
+    history: runArchive,
     // The rooms each gram works in, from the last published gramx.json (built just below; one run behind).
     rooms: (() => { try { return JSON.parse(readFileSync('data/gramx.json', 'utf8')).rooms || []; } catch { return []; } })(),
   });

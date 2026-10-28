@@ -84,7 +84,26 @@ function hardwareLine(fleet, hw, sheet) {
 const AWARD_RUNS = [1000, 100, 10, 1];
 const DAYS_KEPT = 120;
 
-export function buildProviders({ evidence = [], runs = [], fleet = [], machines = null, region = () => null, rooms = [], generatedAt = new Date().toISOString() } = {}) {
+/** The org whose logo stands for a part: nvidia, amd, intel, apple, google, qualcomm. */
+export function partOrg(name) {
+  const s = String(name || '').toLowerCase();
+  if (/nvidia|geforce|tesla|quadro|rtx|gtx/.test(s)) return 'nvidia';
+  if (/\bamd\b|radeon|ryzen|epyc|authenticamd|amd64 family/.test(s)) return 'amd';
+  if (/intel|xeon|core\(tm\)|genuineintel|iris|uhd graphics/.test(s)) return 'intel';
+  if (/apple|\bm[1-9]\b/.test(s)) return 'apple';
+  if (/qualcomm|snapdragon|adreno/.test(s)) return 'qualcomm';
+  if (/\btpu\b|google/.test(s)) return 'google';
+  return null;
+}
+
+// Where a machine stands among every machine that signed the same part: the
+// share of them it beats (0-100).
+function percentileOf(value, all) {
+  if (!(value > 0) || all.length < 2) return null;
+  return Math.round((all.filter((v) => v < value).length / (all.length - 1)) * 100);
+}
+
+export function buildProviders({ evidence = [], runs = [], fleet = [], machines = null, region = () => null, rooms = [], history = [], generatedAt = new Date().toISOString() } = {}) {
   const now = Date.parse(generatedAt) || Date.now();
   const byDID = new Map();
   const row = (did) => {
@@ -129,6 +148,20 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
       roomsOf.set(d, list);
     }
   }
+  // THE ARCHIVE, when there is one: every signed run ever seen, not only the
+  // latest per build, so activity by day is history and not just this week.
+  for (const h of history || []) {
+    if (!h?.node_did || !byDID.has(h.node_did)) continue;
+    const r = byDID.get(h.node_did);
+    const t = toMs(h.measured_at);
+    if (!t) continue;
+    if (!r.first || t < r.first) r.first = t;
+    if (now - t <= DAYS_KEPT * 864e5) {
+      const day = new Date(t).toISOString().slice(0, 10);
+      r.hist = r.hist || {};
+      r.hist[day] = (r.hist[day] || 0) + 1;
+    }
+  }
   const fleetBy = new Map((fleet || []).filter((n) => n?.node_did).map((n) => [n.node_did, n]));
   for (const did of fleetBy.keys()) if (!byDID.has(did) && (fleetBy.get(did).probes?.measured || 0) > 0) row(did);
 
@@ -163,6 +196,7 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
         ref: x.ref, engine: x.engine || null, tokens_per_sec: x.tokens_per_sec,
         cost_usd_per_million: x.cost_usd_per_million ?? null, measured_at: x.measured_at || null,
         context_tokens: x.context_tokens || null,
+        proof: x.proof || null,
         // Vast's DLPerf-per-dollar, for tokens: what an hour of this machine buys.
         tokens_per_usd_hour: x.cost_breakdown?.usd_per_hour > 0 ? Math.round(x.tokens_per_sec / x.cost_breakdown.usd_per_hour) : null,
       }));
@@ -195,7 +229,7 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
       download_mib_per_sec: Number(f?.probes?.download_mib_per_sec) || null,
       best_value: builds.filter((b) => b.tokens_per_usd_hour > 0).sort((a, b) => b.tokens_per_usd_hour - a.tokens_per_usd_hour)[0] || null,
       opened: r.opened.sort((a, b) => String(a.at).localeCompare(String(b.at))),
-      runs_by_day: Object.entries(r.days).sort(([a], [b]) => a.localeCompare(b)).map(([date, runs]) => ({ date, runs })),
+      runs_by_day: Object.entries(r.hist || r.days).sort(([a], [b]) => a.localeCompare(b)).map(([date, runs]) => ({ date, runs })),
       runs_by_family: Object.entries(r.families).sort((a, b) => b[1] - a[1]).map(([family, runs]) => ({ family, runs })),
       rooms: roomsOf.get(r.did) || [],
       awards,
@@ -206,5 +240,28 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
   }
   out.sort((a, b) => b.signed_runs - a.signed_runs || String(b.last_signed_at || '').localeCompare(String(a.last_signed_at || '')));
   out.forEach((p, i) => { p.rank = i + 1; p.of = out.length; });
+  // Each machine's parts against every machine that signed the same part.
+  const parts = {
+    gpu_tflops: (p) => p.sheet?.gpu?.fp16_tflops,
+    memory_bandwidth: (p) => p.sheet?.memory?.bandwidth_gb_s,
+    cpu_all_cores: (p) => p.sheet?.cpu?.multi_core_hashes_per_sec,
+    cpu_one_core: (p) => p.sheet?.cpu?.single_core_hashes_per_sec,
+    disk_read: (p) => p.sheet?.storage?.read_mb_s,
+    download: (p) => p.download_mib_per_sec,
+  };
+  for (const [k, get] of Object.entries(parts)) {
+    const all = out.map(get).filter((v) => v > 0);
+    const median = all.length ? [...all].sort((a, b) => a - b)[Math.floor(all.length / 2)] : null;
+    for (const p of out) {
+      p.percentiles = p.percentiles || {};
+      p.percentiles[k] = percentileOf(get(p), all);
+      p.medians = p.medians || {};
+      p.medians[k] = median;
+    }
+  }
+  for (const p of out) {
+    p.hardware.gpu_org = partOrg(p.hardware.gpu);
+    p.hardware.cpu_org = partOrg(p.sheet?.cpu?.model_raw || p.hardware.cpu_model);
+  }
   return out;
 }

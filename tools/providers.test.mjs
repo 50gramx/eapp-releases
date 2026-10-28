@@ -89,3 +89,22 @@ test('nanosecond, microsecond and second stamps all land on the right day', () =
   assert.equal(p.last_signed_at.slice(0, 10), '2026-10-28');
   assert.deepEqual(p.runs_by_day, [{ date: '2026-10-28', runs: 3 }]);
 });
+
+test('part logos, standing among machines, and history from the archive', async () => {
+  const { partOrg } = await import('./providers.mjs');
+  assert.equal(partOrg('NVIDIA GeForce RTX 3080 Ti'), 'nvidia');
+  assert.equal(partOrg('AMD64 Family 25 Model 33 Stepping 0, AuthenticAMD'), 'amd');
+  assert.equal(partOrg('Intel Xeon'), 'intel');
+  assert.equal(partOrg('Apple M4'), 'apple');
+  const a = did('aaa111');
+  const b = did('bbb222');
+  const evidence = [{ name: 'x', nodes: [{ node_did: a, measured_at: '2026-10-27T10:00:00Z' }, { node_did: b, measured_at: '2026-10-27T10:00:00Z' }] }];
+  const machines = { grams: { [a]: { 'gpu:0': { fp16_tflops: 60 } }, [b]: { 'gpu:0': { fp16_tflops: 20 } } } };
+  const history = [{ ref: 'x', node_did: a, measured_at: '2026-10-01T10:00:00Z' }, { ref: 'x', node_did: a, measured_at: '2026-10-27T10:00:00Z' }];
+  const out = buildProviders({ evidence, machines, history, generatedAt: '2026-10-28T00:00:00Z' });
+  const pa = out.find((p) => p.id === 'aaa111');
+  assert.equal(pa.percentiles.gpu_tflops, 100);
+  assert.equal(out.find((p) => p.id === 'bbb222').percentiles.gpu_tflops, 0);
+  assert.equal(pa.first_signed_at.slice(0, 10), '2026-10-01');
+  assert.deepEqual(pa.runs_by_day, [{ date: '2026-10-01', runs: 1 }, { date: '2026-10-27', runs: 1 }]);
+});
