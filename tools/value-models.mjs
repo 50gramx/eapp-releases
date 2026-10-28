@@ -472,7 +472,7 @@ export function modelView(rows, { families = [], largestMachineGB = null, eviden
         }
       }
     }
-    const measured = [...runs.values()].map(({ _dids, ...x }) => x);
+    const measured = [...runs.values()].map(({ _dids, ...x }) => (_dids ? { ...x, providers: [..._dids].filter(Boolean).map((d) => String(d).slice(-6).toLowerCase()) } : x));
     const known = measured.filter((x) => x.machine_detail || x.machine_class !== 'unknown');
     const pool = known.length ? known : measured;
     const fastest = pool.filter((x) => x.tokens_per_sec > 0).sort((a, b) => b.tokens_per_sec - a.tokens_per_sec)[0] || pool[0] || null;

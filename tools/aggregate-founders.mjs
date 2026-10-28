@@ -3611,6 +3611,7 @@ function main() {
   const valueTable = buildValueTable({
     seasons: readSeasons(), families: models.families, current: readCurrent(),
     market: readMarket(), evidence: models.models, machines, generatedAt: out.generated_at,
+    fleet: readFleetNodes(), region: (code) => labelFor({ id: code }, loadDirectory()),
   });
   writeFileSync(TABLE_PATH, JSON.stringify(valueTable, null, 2) + '\n');
   console.log('[value table]', JSON.stringify(valueTable.counts));

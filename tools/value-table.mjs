@@ -25,6 +25,7 @@
 //
 // docs/CATALOG_VALUE_TABLE_PLAN_2026-10-27.md (epn-daemon), increment 5.
 
+import { buildProviders } from './providers.mjs';
 import { licenceClass, serveScopes, hubRepoOf } from './market.mjs';
 import { catalogIndex, placementOf, refRepo } from './model-filing.mjs';
 import { modelView, machineMemoryGB } from './value-models.mjs';
@@ -148,7 +149,7 @@ function verdict(cls, api, modality) {
  * plus every catalog build a hosted API also sells (the market's leaders,
  * proved or not), with per-class proved, priced, estimated and cited columns.
  */
-export function buildValueTable({ seasons, families, current, market, evidence = null, machines = null, generatedAt = new Date().toISOString() }) {
+export function buildValueTable({ seasons, families, current, market, evidence = null, machines = null, fleet = null, region = () => null, generatedAt = new Date().toISOString() }) {
   const catalog = new Map();
   for (const f of families || []) {
     for (const m of f.members || []) {
@@ -340,6 +341,11 @@ export function buildValueTable({ seasons, families, current, market, evidence =
       cheaper_here_than_the_api: models.filter((m) => m.cheapest && m.hosted_api?.output_usd_per_million > 0 && m.cheapest.cost_usd_per_million <= m.hosted_api.output_usd_per_million).length,
       too_big_for_every_machine: models.filter((m) => m.too_big_for_the_network).length,
     },
+    // The grams behind every signed number (tools/providers.mjs).
+    providers: buildProviders({
+      evidence, machines, fleet: fleet || [], region, generatedAt,
+      runs: models.flatMap((m) => (m.measured_on || []).map((r) => ({ ...r, model: m.model, page: m.page }))),
+    }),
     // Logos for every model maker, publisher, card maker and host: each one's own
     // Hugging Face avatar (market.json).
     logos: Object.fromEntries(Object.entries(market?.avatars || {})
