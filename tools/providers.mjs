@@ -166,7 +166,17 @@ export function buildProviders({ evidence = [], runs = [], fleet = [], machines 
     }
   }
   const fleetBy = new Map((fleet || []).filter((n) => n?.node_did).map((n) => [n.node_did, n]));
-  for (const did of fleetBy.keys()) if (!byDID.has(did) && (fleetBy.get(did).probes?.measured || 0) > 0) row(did);
+  // A GRAM THAT IS ONLINE IS ON THE BOARD, whatever it has signed. Only grams
+  // with a measured build were listed, so a gram doing other work -- a
+  // practice cohort, serving its person -- was online in the fleet and absent
+  // from the standings: four grams awake, two shown.
+  for (const did of fleetBy.keys()) {
+    if (byDID.has(did)) continue;
+    const f = fleetBy.get(did);
+    const seen = toMs(f?.last_seen);
+    const awake = seen && (toMs(f?.snapshot_at) || now) - seen <= ONLINE_WINDOW_MS;
+    if ((f.probes?.measured || 0) > 0 || awake) row(did);
+  }
 
   // The builds each gram holds the network's best result for.
   const held = new Map();

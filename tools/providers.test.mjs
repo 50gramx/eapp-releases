@@ -116,3 +116,12 @@ test('uptime by day from the hours the collector heard the gram', () => {
   assert.deepEqual(p.uptime_days, [{ date: '2026-10-27', hours: 24 }, { date: '2026-10-28', hours: 3 }]);
   assert.equal(p.uptime_pct, 56.3);
 });
+
+test('a gram online in the fleet is on the board even with nothing signed', () => {
+  const fleet = [
+    { node_did: did('ccc333'), last_seen: '2026-10-28T15:55:00Z', snapshot_at: '2026-10-28T16:00:00Z', probes: { measured: 0 } },
+    { node_did: did('ddd444'), last_seen: '2026-10-20T10:00:00Z', snapshot_at: '2026-10-28T16:00:00Z', probes: { measured: 0 } },
+  ];
+  const out = buildProviders({ fleet, generatedAt: '2026-10-28T16:00:00Z' });
+  assert.deepEqual(out.map((p) => [p.id, p.online]), [['ccc333', true]]);
+});
