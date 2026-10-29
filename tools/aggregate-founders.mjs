@@ -1453,15 +1453,37 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
   const agents = new Map();
   const seen = new Set();
   const grams = new Set();
+  // PRACTICE IS COUNTED APART. A statement whose every turn was asked by a
+  // simulated person (`simulated`, turn_digest.go) never adds to an agent's
+  // real work or the network totals; it is rolled by the room it was asked in
+  // -- `industry:<slug>` -- so each industry shows its own held rate.
+  const practice = new Map();
 
   for (const statement of statements || []) {
     const fromDID = statement.node_did;
     const persona = statement.persona_id || 'unnamed';
     const room = statement.gramx_id || '';
-    const dedupe = [fromDID, persona, room, statement.epoch_start].join('|');
+    const simulated = statement.simulated === true;
+    const dedupe = [fromDID, persona, room, statement.epoch_start, simulated ? 'sim' : ''].join('|');
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
     grams.add(fromDID);
+    if (simulated) {
+      const key = room || 'industry:unnamed';
+      let pr = practice.get(key);
+      if (!pr) {
+        pr = { gramx_id: key, turns: 0, held: 0, failed: 0, corrected: 0, output_tokens: 0,
+          grams: new Set(), first_epoch: null, last_epoch: null };
+        practice.set(key, pr);
+      }
+      for (const k of ['turns', 'held', 'failed', 'corrected', 'output_tokens']) {
+        pr[k] += Number(statement[k]) || 0;
+      }
+      pr.grams.add(fromDID);
+      if (pr.first_epoch === null || statement.epoch_start < pr.first_epoch) pr.first_epoch = statement.epoch_start;
+      if (pr.last_epoch === null || statement.epoch_end > pr.last_epoch) pr.last_epoch = statement.epoch_end;
+      continue;
+    }
 
     // Keyed by (gram, agent). NOT by agent name alone: two grams may each run a
     // concierge called "evo", and merging them would invent one agent out of two and
@@ -1472,7 +1494,7 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
     if (!a) {
       a = {
         node_did: fromDID, persona_id: persona, kind: statement.kind || '',
-        turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0,
+        turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0, corrected: 0,
         prompt_tokens: 0, output_tokens: 0,
         // CACHE READS ARE THE INPUT, not a footnote on it. Measured on
         // 9e3c79: 1,226,610,340 cache-read tokens against 66,510 of true
@@ -1506,7 +1528,7 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
       };
       agents.set(key, a);
     }
-    for (const k of ['turns', 'tool_calls', 'held', 'failed', 'gated',
+    for (const k of ['turns', 'tool_calls', 'held', 'failed', 'gated', 'corrected',
       'prompt_tokens', 'output_tokens', 'cache_read_tokens', 'cache_write_tokens',
       'external_cost_uusd',
       'vcpu_seconds', 'gpu_seconds', 'energy_kwh', 'carbon_grams']) {
@@ -1552,15 +1574,18 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
     // receipt written before the outcome field existed has none, and dividing by every
     // turn would report a settled agent as failing.
     const decided = a.held + a.failed + a.gated;
+    // A turn signed held and later overturned (a re-ask, a checker's miss) is
+    // counted in `held` AND in `corrected`; it did not hold.
+    const stood = Math.max(0, a.held - a.corrected);
     out.push({
       node_did: a.node_did,
       persona_id: a.persona_id,
       kind: a.kind,
       turns: a.turns,
       tool_calls: a.tool_calls,
-      held: a.held, failed: a.failed, gated: a.gated,
+      held: a.held, failed: a.failed, gated: a.gated, corrected: a.corrected,
       decided,
-      held_pct: decided > 0 ? +((a.held / decided) * 100).toFixed(1) : null,
+      held_pct: decided > 0 ? +((stood / decided) * 100).toFixed(1) : null,
       prompt_tokens: a.prompt_tokens,
       output_tokens: a.output_tokens,
       cache_read_tokens: a.cache_read_tokens,
@@ -1589,14 +1614,14 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
 
   const totals = out.reduce((t, a) => {
     t.turns += a.turns; t.tool_calls += a.tool_calls;
-    t.held += a.held; t.failed += a.failed; t.gated += a.gated;
+    t.held += a.held; t.failed += a.failed; t.gated += a.gated; t.corrected += a.corrected;
     t.prompt_tokens += a.prompt_tokens; t.output_tokens += a.output_tokens;
     t.cache_read_tokens += a.cache_read_tokens;
     t.cache_write_tokens += a.cache_write_tokens;
     t.external_cost_uusd += a.external_cost_uusd;
     return t;
   }, {
-    turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0,
+    turns: 0, tool_calls: 0, held: 0, failed: 0, gated: 0, corrected: 0,
     prompt_tokens: 0, output_tokens: 0,
     cache_read_tokens: 0, cache_write_tokens: 0, external_cost_uusd: 0,
   });
@@ -1610,8 +1635,18 @@ export function rollAgentTurns(statements, generatedAt, rejected = 0) {
     totals: {
       ...totals,
       decided,
-      held_pct: decided > 0 ? +((totals.held / decided) * 100).toFixed(1) : null,
+      held_pct: decided > 0 ? +((Math.max(0, totals.held - totals.corrected) / decided) * 100).toFixed(1) : null,
     },
+    practice: [...practice.values()].map((pr) => {
+      const decidedP = pr.held + pr.failed;
+      return {
+        gramx_id: pr.gramx_id, turns: pr.turns, held: pr.held, failed: pr.failed,
+        corrected: pr.corrected,
+        held_pct: decidedP > 0 ? +((Math.max(0, pr.held - pr.corrected) / decidedP) * 100).toFixed(1) : null,
+        output_tokens: pr.output_tokens, grams: pr.grams.size,
+        first_epoch: pr.first_epoch, last_epoch: pr.last_epoch,
+      };
+    }).sort((x, y) => y.turns - x.turns || x.gramx_id.localeCompare(y.gramx_id)),
     // Said in the data, not in a footnote a reader can drop.
     coverage_note: 'turn counts are summed from every digest the listed grams have signed about their own agents, including epochs their daemons have since aged out of the seven-day window they publish; a gram that has never published is invisible, so these are a verified floor, not a complete account. The resource figures attribute cost already accounted in data/gramx.json and must not be added to it.',
     agents: out,
