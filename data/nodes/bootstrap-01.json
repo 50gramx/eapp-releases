@@ -6,7 +6,7 @@
   "peer_count": 4,
   "peers_online": 4,
   "peers_distinct_total": 1299,
-  "uptime_seconds": 4536,
+  "uptime_seconds": 5440,
   "epnd_version": "dc8df19e3aa9d856307e0d89c2740ca556bf881c",
   "addrs": [
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/tcp/53590/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -28,7 +28,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-10-30T01:17:49Z",
+    "generated_at": "2026-10-30T01:32:53Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -2619,8 +2619,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/TeichAI/Qwen3-8B-DeepSeek-v3.2-Speciale-Distill-GGUF:BF16",
-                "quant": "BF16",
+                "ref": "hf.co/TeichAI/Qwen3-8B-DeepSeek-v3.2-Speciale-Distill-GGUF:F16",
+                "quant": "F16",
                 "disk_mib": 15628,
                 "attribution": "derivative",
                 "by": "TeichAI",
@@ -2803,26 +2803,6 @@
             "derivative": true,
             "base": "base",
             "author": "baa-ai"
-          },
-          {
-            "id": "base~cerebras-reap",
-            "display_name": "DeepSeek-V3.2-REAP-345B-A37B",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "cerebras/DeepSeek-V3.2-REAP-345B-A37B",
-                "quant": "FP8",
-                "disk_mib": 330785,
-                "attribution": "derivative",
-                "by": "cerebras",
-                "base": "deepseek-ai/DeepSeek-V3.2",
-                "cohort": 3,
-                "rung": 0
-              }
-            ],
-            "derivative": true,
-            "base": "base",
-            "author": "cerebras"
           },
           {
             "id": "base~exolabs",
@@ -3101,6 +3081,26 @@
             "derivative": true,
             "base": "exp-base",
             "author": "Eric33142"
+          },
+          {
+            "id": "exp-base~unsloth",
+            "display_name": "DeepSeek-V3.2",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "unsloth/DeepSeek-V3.2",
+                "quant": "FP8",
+                "disk_mib": 657542,
+                "attribution": "derivative",
+                "by": "unsloth",
+                "base": "deepseek-ai/DeepSeek-V3.2-Exp-Base",
+                "cohort": 3,
+                "rung": 0
+              }
+            ],
+            "derivative": true,
+            "base": "exp-base",
+            "author": "unsloth"
           },
           {
             "id": "speciale",
@@ -3482,25 +3482,24 @@
             ]
           },
           {
-            "id": "flash-0731~ddalcu-serve-mixed-2-3",
-            "display_name": "DeepSeek-V4-Flash-0731-MLX-Serve-mixed-2-3-8bit",
+            "id": "flash-0731-oq2e-mtp~jundot",
+            "display_name": "DeepSeek-V4-Flash-0731-oQ2e-mtp",
             "artifacts": [
               {
                 "engine": "mlx",
                 "platform": "darwin/arm64",
-                "ref": "ddalcu/DeepSeek-V4-Flash-0731-MLX-Serve-mixed-2-3-8bit",
-                "quant": "BF16",
-                "disk_mib": 110000,
+                "ref": "Jundot/DeepSeek-V4-Flash-0731-oQ2e-mtp",
+                "quant": "2BIT",
+                "disk_mib": 100354,
                 "attribution": "derivative",
-                "by": "ddalcu",
-                "base": "deepseek-ai/DeepSeek-V4-Flash-0731",
+                "by": "Jundot",
                 "cohort": 3,
-                "rung": 2
+                "rung": 9
               }
             ],
             "derivative": true,
-            "base": "flash-0731",
-            "author": "ddalcu"
+            "base": "flash-0731-oq2e-mtp",
+            "author": "Jundot"
           },
           {
             "id": "flash-0731~dealignai-jang-crack",
@@ -3656,6 +3655,50 @@
                 "base": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
                 "cohort": 2,
                 "rung": 0
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/DeepSeek-V4-Flash-Vision-Exp-GGUF:IQ3_XXS",
+                "quant": "IQ3_XXS",
+                "disk_mib": 98228,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+                "cohort": 2,
+                "rung": 2
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/DeepSeek-V4-Flash-Vision-Exp-GGUF:Q4_K_XL",
+                "quant": "Q4_K_XL",
+                "disk_mib": 147910,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+                "cohort": 2,
+                "rung": 3
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/DeepSeek-V4-Flash-Vision-Exp-GGUF:IQ1_S",
+                "quant": "IQ1_S",
+                "disk_mib": 78619,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+                "cohort": 2,
+                "rung": 5
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/DeepSeek-V4-Flash-Vision-Exp-GGUF:IQ2_XXS",
+                "quant": "IQ2_XXS",
+                "disk_mib": 86491,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "deepseek-ai/DeepSeek-V4-Flash-Vision-Exp",
+                "cohort": 2,
+                "rung": 9
               }
             ]
           },
@@ -3689,26 +3732,6 @@
             "derivative": true,
             "base": "flash-vision-exp",
             "author": "huihui-ai"
-          },
-          {
-            "id": "flash-vision-uncensored~orcarouter",
-            "display_name": "DeepSeek-V4-Flash-Vision-Uncensored",
-            "artifacts": [
-              {
-                "engine": "llamacpp",
-                "ref": "orcarouter/DeepSeek-V4-Flash-Vision-Uncensored-GGUF:MXFP4",
-                "quant": "MXFP4",
-                "disk_mib": 149134,
-                "attribution": "derivative",
-                "by": "orcarouter",
-                "base": "orcarouter/DeepSeek-V4-Flash-Vision-Uncensored",
-                "cohort": 3,
-                "rung": 9
-              }
-            ],
-            "derivative": true,
-            "base": "flash-vision-uncensored",
-            "author": "orcarouter"
           },
           {
             "id": "flash~huihui-ai-abliterated-ds4",
@@ -4708,23 +4731,23 @@
                 "rung": 1
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/ggml-org/Devstral-2-123B-Instruct-2512-GGUF:Q8_0",
-                "quant": "Q8_0",
-                "disk_mib": 126700,
-                "attribution": "quantizer",
-                "by": "ggml-org",
-                "base": "mistralai/Devstral-2-123B-Instruct-2512",
-                "cohort": 1,
-                "rung": 1
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "unsloth/Devstral-2-123B-Instruct-2512-GGUF:Q8_0",
                 "quant": "Q8_0",
                 "disk_mib": 126700,
                 "attribution": "quantizer",
                 "by": "unsloth",
+                "base": "mistralai/Devstral-2-123B-Instruct-2512",
+                "cohort": 1,
+                "rung": 1
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/ggml-org/Devstral-2-123B-Instruct-2512-GGUF:Q8_0",
+                "quant": "Q8_0",
+                "disk_mib": 126700,
+                "attribution": "quantizer",
+                "by": "ggml-org",
                 "base": "mistralai/Devstral-2-123B-Instruct-2512",
                 "cohort": 1,
                 "rung": 1
@@ -7267,7 +7290,7 @@
           },
           {
             "id": "base~jayyun98-text",
-            "display_name": "embeddinggemma-2-text-270m",
+            "display_name": "embeddinggemma-2-text-270m-bf16",
             "artifacts": [
               {
                 "engine": "mlx",
@@ -7283,7 +7306,7 @@
               },
               {
                 "engine": "vllm",
-                "ref": "jayyun98/embeddinggemma-2-text-270m",
+                "ref": "jayyun98/embeddinggemma-2-text-270m-bf16",
                 "quant": "BF16",
                 "disk_mib": 516,
                 "attribution": "derivative",
@@ -7399,25 +7422,6 @@
             "derivative": true,
             "base": "base",
             "author": "nativ-community"
-          },
-          {
-            "id": "base~osgo",
-            "display_name": "embeddinggemma-2",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "OsGo/embeddinggemma-2",
-                "quant": "BF16",
-                "disk_mib": 1419,
-                "attribution": "derivative",
-                "by": "OsGo",
-                "cohort": 3,
-                "rung": 3
-              }
-            ],
-            "derivative": true,
-            "base": "base",
-            "author": "OsGo"
           },
           {
             "id": "base~redhatai",
@@ -7648,8 +7652,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/bartowski/baidu_ERNIE-4.5-0.3B-PT-GGUF:Q4_K_S",
-                "quant": "Q4_K_S",
+                "ref": "hf.co/bartowski/baidu_ERNIE-4.5-0.3B-PT-GGUF:Q4_0",
+                "quant": "Q4_0",
                 "disk_mib": 222,
                 "attribution": "quantizer",
                 "by": "bartowski",
@@ -8485,15 +8489,6 @@
             "artifacts": [
               {
                 "engine": "diffusers",
-                "ref": "Xiejiehang/ERNIE-Image-Turbo-MLX-Q4",
-                "disk_mib": 8084,
-                "attribution": "derivative",
-                "by": "Xiejiehang",
-                "cohort": 3,
-                "rung": 9
-              },
-              {
-                "engine": "diffusers",
                 "ref": "Abiray/ERNIE-Image-Turbo-FP8-NVFP4",
                 "quant": "FP8",
                 "disk_mib": 26435,
@@ -8593,15 +8588,6 @@
             "id": "dev",
             "display_name": "dev",
             "artifacts": [
-              {
-                "engine": "diffusers",
-                "ref": "CaaretAI/FLUX.1-dev-FP8",
-                "disk_mib": 17383,
-                "attribution": "derivative",
-                "by": "CaaretAI",
-                "cohort": 3,
-                "rung": 9
-              },
               {
                 "engine": "diffusers",
                 "ref": "black-forest-labs/FLUX.1-dev",
@@ -53817,5 +53803,5 @@
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS"
   ],
   "catalog": [],
-  "checked_at": "2026-10-30T01:17:49Z"
+  "checked_at": "2026-10-30T01:32:53Z"
 }
