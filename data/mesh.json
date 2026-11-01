@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T21:24:06.047Z",
+  "generated_at": "2026-11-01T21:38:56.125Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
   "node_count": 4,
@@ -14,12 +14,12 @@
     "egress_gbps": 3
   },
   "activity": {
-    "inferences_served": 291,
-    "tokens_served": 73148,
+    "inferences_served": 314,
+    "tokens_served": 75063,
     "receipts_verified": 0,
     "proofs_issued": 0,
     "disputes_resolved": 0,
-    "displaced_cloud_usd": 0.73,
+    "displaced_cloud_usd": 0.75,
     "label": "sum of signed per-node proof-snapshot counters across the DHT-known network"
   },
   "capacity": {
@@ -45,6 +45,22 @@
     "disclaimer": "TOP500 figures are from the published November 2024 list (© top500.org). This project is not affiliated with, sponsored by, or endorsed by TOP500. The network figure is an independent order-of-magnitude estimate from advertised capacity — not a LINPACK measurement."
   },
   "models": [
+    {
+      "name": "hf.co/mradermacher/Airavata-GGUF:Q4_K_M",
+      "providers": 1,
+      "provider_count": 1,
+      "total_free_slots": 0,
+      "best_effective_ctx": 0,
+      "best_declared_ctx": 4096,
+      "max_vram_gib": 4.3,
+      "quants": [
+        "Q4_K_M"
+      ],
+      "caps": {},
+      "verified": false,
+      "best_tokens_per_sec": 6.77,
+      "median_tokens_per_sec": 6.77
+    },
     {
       "name": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
       "providers": 1,
@@ -1462,7 +1478,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-11-01T21:21:42Z",
+        "generated_at": "2026-11-01T21:36:42Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -58678,7 +58694,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112208bedb76b4021960d095907e369b1fc64d3a408d9a95f69870e6691c746c52689",
-        "generated_at": "2026-11-01T21:19:46Z",
+        "generated_at": "2026-11-01T21:34:46Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -65868,8 +65884,8 @@
                   },
                   {
                     "engine": "ollama",
-                    "ref": "hf.co/unsloth/embeddinggemma-2-GGUF:BF16",
-                    "quant": "BF16",
+                    "ref": "hf.co/unsloth/embeddinggemma-2-GGUF:F16",
+                    "quant": "F16",
                     "disk_mib": 532,
                     "attribution": "quantizer",
                     "by": "unsloth",
@@ -67093,18 +67109,24 @@
                 ]
               },
               {
-                "id": "turbo",
-                "display_name": "turbo",
+                "id": "nf4",
+                "display_name": "nf4",
                 "artifacts": [
                   {
                     "engine": "diffusers",
-                    "ref": "Xiejiehang/ERNIE-Image-Turbo-MLX-Q4",
-                    "disk_mib": 8084,
+                    "ref": "ovedrive/ERNIE-Image-nf4",
+                    "disk_mib": 9710,
                     "attribution": "derivative",
-                    "by": "Xiejiehang",
+                    "by": "ovedrive",
                     "cohort": 3,
                     "rung": 9
-                  },
+                  }
+                ]
+              },
+              {
+                "id": "turbo",
+                "display_name": "turbo",
+                "artifacts": [
                   {
                     "engine": "diffusers",
                     "ref": "Abiray/ERNIE-Image-Turbo-FP8-NVFP4",
@@ -68315,18 +68337,6 @@
                 "display_name": "Gemma 3 270M",
                 "artifacts": [
                   {
-                    "engine": "mlx",
-                    "platform": "darwin/arm64",
-                    "ref": "lmstudio-community/gemma-3-270m-it-qat-MLX-4bit",
-                    "quant": "4BIT",
-                    "disk_mib": 233,
-                    "attribution": "quantizer",
-                    "by": "lmstudio-community",
-                    "base": "google/gemma-3-270m-it-qat-q4_0-unquantized",
-                    "cohort": 0,
-                    "rung": 0
-                  },
-                  {
                     "engine": "ollama",
                     "ref": "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M",
                     "quant": "Q4_K_M",
@@ -68453,6 +68463,27 @@
                 "derivative": true,
                 "base": "27b",
                 "author": "ISTA-DASLab"
+              },
+              {
+                "id": "27b~stephenwalker",
+                "display_name": "gemma-3-27b-it-mlx",
+                "artifacts": [
+                  {
+                    "engine": "mlx",
+                    "platform": "darwin/arm64",
+                    "ref": "stephenwalker/gemma-3-27b-it-mlx",
+                    "quant": "BF16",
+                    "disk_mib": 15667,
+                    "attribution": "derivative",
+                    "by": "stephenwalker",
+                    "base": "google/gemma-3-27b-pt",
+                    "cohort": 3,
+                    "rung": 2
+                  }
+                ],
+                "derivative": true,
+                "base": "27b",
+                "author": "stephenwalker"
               },
               {
                 "id": "4b",
@@ -68861,23 +68892,23 @@
                     "rung": 3
                   },
                   {
-                    "engine": "ollama",
-                    "ref": "hf.co/ggml-org/gemma-4-26B-A4B-it-GGUF:BF16",
-                    "quant": "BF16",
-                    "disk_mib": 48165,
-                    "attribution": "quantizer",
-                    "by": "ggml-org",
-                    "base": "google/gemma-4-26B-A4B-it",
-                    "cohort": 2,
-                    "rung": 4
-                  },
-                  {
                     "engine": "llamacpp",
                     "ref": "unsloth/gemma-4-26B-A4B-it-GGUF:BF16",
                     "quant": "BF16",
                     "disk_mib": 48165,
                     "attribution": "quantizer",
                     "by": "unsloth",
+                    "base": "google/gemma-4-26B-A4B-it",
+                    "cohort": 2,
+                    "rung": 4
+                  },
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/ggml-org/gemma-4-26B-A4B-it-GGUF:BF16",
+                    "quant": "BF16",
+                    "disk_mib": 48165,
+                    "attribution": "quantizer",
+                    "by": "ggml-org",
                     "base": "google/gemma-4-26B-A4B-it",
                     "cohort": 2,
                     "rung": 4
@@ -69779,70 +69810,6 @@
                 "author": "zai-org"
               },
               {
-                "id": "air-derestricted-reap50-creative~koshkasa-arliai",
-                "display_name": "ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative",
-                "artifacts": [
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative-i1-GGUF:Q4_K_M",
-                    "quant": "Q4_K_M",
-                    "disk_mib": 35657,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "Koshkasa/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative",
-                    "cohort": 3,
-                    "rung": 0
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative-i1-GGUF:IQ3_XXS",
-                    "quant": "IQ3_XXS",
-                    "disk_mib": 23960,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "Koshkasa/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative",
-                    "cohort": 3,
-                    "rung": 2
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative-i1-GGUF:Q4_0",
-                    "quant": "Q4_0",
-                    "disk_mib": 30879,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "Koshkasa/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative",
-                    "cohort": 3,
-                    "rung": 3
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative-i1-GGUF:IQ1_S",
-                    "quant": "IQ1_S",
-                    "disk_mib": 17173,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "Koshkasa/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative",
-                    "cohort": 3,
-                    "rung": 5
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative-i1-GGUF:IQ2_XXS",
-                    "quant": "IQ2_XXS",
-                    "disk_mib": 19339,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "Koshkasa/ArliAI_GLM-4.5-Air-Derestricted_REAP50_Creative",
-                    "cohort": 3,
-                    "rung": 9
-                  }
-                ],
-                "derivative": true,
-                "base": "air-derestricted-reap50-creative",
-                "author": "Koshkasa"
-              },
-              {
                 "id": "air-derestricted~arliai",
                 "display_name": "GLM-4.5-Air-Derestricted",
                 "artifacts": [
@@ -70118,6 +70085,75 @@
                     "rung": 9
                   }
                 ]
+              },
+              {
+                "id": "huihui-v-abliterated~mradermacher",
+                "display_name": "Huihui-GLM-4.5V-abliterated-GGUF",
+                "artifacts": [
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/mradermacher/Huihui-GLM-4.5V-abliterated-GGUF:Q4_K_M",
+                    "quant": "Q4_K_M",
+                    "disk_mib": 67184,
+                    "attribution": "derivative",
+                    "by": "mradermacher",
+                    "cohort": 3,
+                    "rung": 0
+                  },
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/mradermacher/Huihui-GLM-4.5V-abliterated-GGUF:Q8_0",
+                    "quant": "Q8_0",
+                    "disk_mib": 108349,
+                    "attribution": "derivative",
+                    "by": "mradermacher",
+                    "cohort": 3,
+                    "rung": 1
+                  },
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/mradermacher/Huihui-GLM-4.5V-abliterated-GGUF:Q3_K_S",
+                    "quant": "Q3_K_S",
+                    "disk_mib": 48356,
+                    "attribution": "derivative",
+                    "by": "mradermacher",
+                    "cohort": 3,
+                    "rung": 2
+                  },
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/mradermacher/Huihui-GLM-4.5V-abliterated-GGUF:Q4_K_S",
+                    "quant": "Q4_K_S",
+                    "disk_mib": 61740,
+                    "attribution": "derivative",
+                    "by": "mradermacher",
+                    "cohort": 3,
+                    "rung": 3
+                  },
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/mradermacher/Huihui-GLM-4.5V-abliterated-GGUF:Q2_K",
+                    "quant": "Q2_K",
+                    "disk_mib": 41583,
+                    "attribution": "derivative",
+                    "by": "mradermacher",
+                    "cohort": 3,
+                    "rung": 5
+                  },
+                  {
+                    "engine": "ollama",
+                    "ref": "hf.co/mradermacher/Huihui-GLM-4.5V-abliterated-GGUF:Q3_K_L",
+                    "quant": "Q3_K_L",
+                    "disk_mib": 54967,
+                    "attribution": "derivative",
+                    "by": "mradermacher",
+                    "cohort": 3,
+                    "rung": 9
+                  }
+                ],
+                "derivative": true,
+                "base": "huihui-v-abliterated",
+                "author": "mradermacher"
               },
               {
                 "id": "pretrained",
@@ -72215,92 +72251,6 @@
             ],
             "members": [
               {
-                "id": "0.6b~condense-ai-qwen3",
-                "display_name": "GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                "artifacts": [
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:Q4_K_M",
-                    "quant": "Q4_K_M",
-                    "disk_mib": 461,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 0
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:Q8_0",
-                    "quant": "Q8_0",
-                    "disk_mib": 767,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 1
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:Q3_K_S",
-                    "quant": "Q3_K_S",
-                    "disk_mib": 371,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 2
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:Q4_K_S",
-                    "quant": "Q4_K_S",
-                    "disk_mib": 448,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 3
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:F16",
-                    "quant": "F16",
-                    "disk_mib": 1439,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 4
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:Q2_K",
-                    "quant": "Q2_K",
-                    "disk_mib": 331,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 5
-                  },
-                  {
-                    "engine": "ollama",
-                    "ref": "hf.co/mradermacher/GLM-5.1-Qwen3-0.6B-CoNDeNse-GGUF:Q3_K_L",
-                    "quant": "Q3_K_L",
-                    "disk_mib": 415,
-                    "attribution": "derivative",
-                    "by": "mradermacher",
-                    "base": "CoNDeNse-AI/GLM-5.1-Qwen3-0.6B-CoNDeNse",
-                    "cohort": 3,
-                    "rung": 9
-                  }
-                ],
-                "derivative": true,
-                "base": "0.6b",
-                "author": "CoNDeNse-AI"
-              },
-              {
                 "id": "27b~prithivmlmods-6-da",
                 "display_name": "Q3.6-27B-GLM-5.1-DA",
                 "artifacts": [
@@ -72361,8 +72311,8 @@
                   },
                   {
                     "engine": "ollama",
-                    "ref": "hf.co/prithivMLmods/Q3.6-27B-GLM-5.1-DA-GGUF:BF16",
-                    "quant": "BF16",
+                    "ref": "hf.co/prithivMLmods/Q3.6-27B-GLM-5.1-DA-GGUF:F16",
+                    "quant": "F16",
                     "disk_mib": 51315,
                     "attribution": "derivative",
                     "by": "prithivMLmods",
@@ -114604,7 +114554,7 @@
       "energy_source": "unknown",
       "carbon_intensity": 475,
       "online": false,
-      "last_seen": "2026-11-01T21:08:43.129155529Z",
+      "last_seen": "2026-11-01T21:33:34.479983438Z",
       "class": "community"
     },
     {
@@ -114619,11 +114569,6 @@
         "/ip4/13.206.170.222/udp/443/quic-v1/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
         "/ip4/13.206.170.222/udp/53590/quic-v1/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
         "/ip4/13.206.170.222/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
-        "/ip4/140.245.201.83/tcp/443/p2p/12D3KooWKEb5PToN6VcvnuaaeZCjktjxF7W7A1iiaKAzyHgf6QWt/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
-        "/ip4/140.245.201.83/tcp/53590/p2p/12D3KooWKEb5PToN6VcvnuaaeZCjktjxF7W7A1iiaKAzyHgf6QWt/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
-        "/ip4/140.245.201.83/tcp/53591/ws/p2p/12D3KooWKEb5PToN6VcvnuaaeZCjktjxF7W7A1iiaKAzyHgf6QWt/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
-        "/ip4/140.245.201.83/udp/443/quic-v1/p2p/12D3KooWKEb5PToN6VcvnuaaeZCjktjxF7W7A1iiaKAzyHgf6QWt/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
-        "/ip4/140.245.201.83/udp/53590/quic-v1/p2p/12D3KooWKEb5PToN6VcvnuaaeZCjktjxF7W7A1iiaKAzyHgf6QWt/p2p-circuit/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
         "/ip4/192.168.0.111/tcp/53590/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
         "/ip4/192.168.0.111/tcp/53591/ws/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
         "/ip4/192.168.0.111/udp/53591/webrtc-direct/certhash/uEiAAmDp16SmWjA6HF2bA9EGHRn7EC55KOnXTsAwXAF9RIA/p2p/12D3KooWBT6k4sALBq1J9zW6Qmorh6i9vRHcZRoRM2PJrFxeFrwi",
@@ -115123,8 +115068,7 @@
         "wallet.debit"
       ],
       "substrates": [
-        "host",
-        "pod"
+        "host"
       ],
       "family": "did:epn:device:0024080112209ca1323cd3bea7d6967a547c87718ec0191e1dff3a6491cb4e0420dfea477b17",
       "family_att": {
@@ -115167,6 +115111,21 @@
       "carbon_intensity": 708,
       "online": true,
       "models": [
+        {
+          "name": "hf.co/mradermacher/Airavata-GGUF:Q4_K_M",
+          "quant": "Q4_K_M",
+          "ctx": 4096,
+          "vram_needed_gib": 4.3,
+          "pulled": true,
+          "declared_caps": {},
+          "measured_caps": {},
+          "caps_measured": {},
+          "family": "airavata",
+          "member": "7b",
+          "benched_at": "0001-01-01T00:00:00Z",
+          "tokens_per_sec": 6.770114295933144,
+          "warm": true
+        },
         {
           "name": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
           "quant": "Q4_K_M",
@@ -115224,7 +115183,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112201844bc3835f475fd8afa64d04ddcb9a1e0087bb40a31973d91b193e6c953b229",
-        "generated_at": "2026-11-01T21:19:47Z",
+        "generated_at": "2026-11-01T21:35:20Z",
         "metrics": {
           "agent_work": {
             "turns": 1025,
@@ -115244,12 +115203,17 @@
           "disputes_resolved": 0,
           "hardware_class": "windows/amd64/nvidia/16g",
           "inference_engine": "ollama-host",
-          "inferences_served": 291,
+          "inferences_served": 314,
           "models_bench_detail": {
             "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q3_K_L": {
               "sample_count": 1,
               "total_seconds": 61.446593,
               "total_tokens": 1528
+            },
+            "hf.co/mradermacher/Airavata-GGUF:Q4_K_M": {
+              "sample_count": 23,
+              "total_seconds": 282.86080799999996,
+              "total_tokens": 1915
             },
             "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": {
               "sample_count": 12,
@@ -115269,6 +115233,7 @@
           },
           "models_tokens_per_sec": {
             "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q3_K_L": 24.86712322683212,
+            "hf.co/mradermacher/Airavata-GGUF:Q4_K_M": 6.770114295933144,
             "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": 16.339029835818316,
             "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ3_XXS": 41.78836850611467,
             "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": 28.050035342113855
@@ -115276,7 +115241,7 @@
           "proofs_issued": 0,
           "receipts_verified": 0,
           "since": "2026-08-11T19:17:08Z",
-          "tokens_served": 73148
+          "tokens_served": 75063
         },
         "resources": {
           "cpu": {
@@ -115371,7 +115336,7 @@
                   "metric": "inference.tokens_per_sec",
                   "value": 24.86712322683212,
                   "unit": "tokens/s",
-                  "ts": 1793567987763047700,
+                  "ts": 1793568920666039800,
                   "node_did": "did:epn:0024080112201844bc3835f475fd8afa64d04ddcb9a1e0087bb40a31973d91b193e6c953b229",
                   "extra": {
                     "hardware_class": "windows/amd64/nvidia/16g",
@@ -115384,15 +115349,36 @@
                     "total_tokens": 1528
                   }
                 },
-                "signature": "mi9OrF/xQkyrpLiLzE/3OLATujrSBaXxssVyY7lNF3jsbKSfeMIU++wERuJRL7/9GmIi5v6cha84SSS9cFrvDw==",
-                "hash": "LbMjukgwvfcwHd0iUY6ecwu7j6awVU0O3WTVJMTi8Jg="
+                "signature": "5dToBYpHdpdTIfdk7LbqlK4HDMlDo05qoODxGxvyzMT12eYx9gP+tpZ4o09gAa4lgdkIWXZuYn152jeJR9BpCA==",
+                "hash": "lf5/CDOtx9xaUQ00ZhuLP7eg8i99+Ia4AdLSwmHFdcc="
+              },
+              "hf.co/mradermacher/Airavata-GGUF:Q4_K_M": {
+                "result": {
+                  "metric": "inference.tokens_per_sec",
+                  "value": 6.770114295933144,
+                  "unit": "tokens/s",
+                  "ts": 1793568920666039800,
+                  "node_did": "did:epn:0024080112201844bc3835f475fd8afa64d04ddcb9a1e0087bb40a31973d91b193e6c953b229",
+                  "extra": {
+                    "hardware_class": "windows/amd64/nvidia/16g",
+                    "model": "hf.co/mradermacher/Airavata-GGUF:Q4_K_M",
+                    "note": "signed rolling observation from real local inference metrics; CLI bench inference remains SA-BENCH-5",
+                    "runtime": "ollama-host",
+                    "sample_count": 23,
+                    "source": "metrics.models_tokens_per_sec",
+                    "total_seconds": 282.86080799999996,
+                    "total_tokens": 1915
+                  }
+                },
+                "signature": "LdwOuSzMSWBguxrUYWoI3QeNGHKWE88phWH6mB8f7zy61aMVDkcRqkKzWX8Dy6xQCLOwD3Q9Sj2tgcNSQJg7Cw==",
+                "hash": "3JynR3iu/3AQt6AdcVLxBpUbylaMaT+oL0NNI3rOjXQ="
               },
               "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 16.339029835818316,
                   "unit": "tokens/s",
-                  "ts": 1793567987763047700,
+                  "ts": 1793568920666039800,
                   "node_did": "did:epn:0024080112201844bc3835f475fd8afa64d04ddcb9a1e0087bb40a31973d91b193e6c953b229",
                   "extra": {
                     "hardware_class": "windows/amd64/nvidia/16g",
@@ -115405,15 +115391,15 @@
                     "total_tokens": 10641
                   }
                 },
-                "signature": "rbETgWshtioEol7yz167qg+vgCkoryxhIkEUJD8jKH49aFb/K4o5f4y6U7e3IESaTWDdQ1vALGGDzyE1nsjUCg==",
-                "hash": "NS3j8JaOBwzFAKjoFWj6/hlDWcTtVw3yvKu6QKPA4EI="
+                "signature": "zCysT6iezXgDmBvHiRfSiVeRLj0yHgn6apQPaWwFrUaEurTZUetY19HtFKp0ZjGPunf2THurbziRV19oS8H8BQ==",
+                "hash": "t8mOB8pC2oyq6NIBQ7aeeHLDY2QGQregUa2R22liNGY="
               },
               "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ3_XXS": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 41.78836850611467,
                   "unit": "tokens/s",
-                  "ts": 1793567987763047700,
+                  "ts": 1793568920666039800,
                   "node_did": "did:epn:0024080112201844bc3835f475fd8afa64d04ddcb9a1e0087bb40a31973d91b193e6c953b229",
                   "extra": {
                     "hardware_class": "windows/amd64/nvidia/16g",
@@ -115426,15 +115412,15 @@
                     "total_tokens": 1001
                   }
                 },
-                "signature": "+ErvGGz1OtppM1SD8lztVc16FeAZ0zQ7rcVM2EpruYIpL7835DBow2GdTE2HwP85eQysYAIZBCKMjihcUkNaDw==",
-                "hash": "1ADdv5Hrdn8sCViuvOr4zOzz8IF+lV7eX9nw2QSOoaE="
+                "signature": "gDRvtw7fPU4gl1dM/zjUVcGGX2ETeMmCXTafGYhS0gvdC+3fqBeilyANhBZ7ZHWl8xbPqPNSAW1iXDl/JmamBg==",
+                "hash": "WpmA3Ye/biYhvXQ85EuZ+5tdogk9mndQsW5Sm2HecZ4="
               },
               "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
                 "result": {
                   "metric": "inference.tokens_per_sec",
                   "value": 28.050035342113855,
                   "unit": "tokens/s",
-                  "ts": 1793567987763047700,
+                  "ts": 1793568920666039800,
                   "node_did": "did:epn:0024080112201844bc3835f475fd8afa64d04ddcb9a1e0087bb40a31973d91b193e6c953b229",
                   "extra": {
                     "hardware_class": "windows/amd64/nvidia/16g",
@@ -115447,15 +115433,16 @@
                     "total_tokens": 60639
                   }
                 },
-                "signature": "x0Fkwh2b+8mBZCQ3eVYG3+NO9V64Eu1YGotXWjzIDq8rZ3yDQfUW9eRBNW7pq76nm46Co6YPolkI+ZAGlaoKCQ==",
-                "hash": "ANYSTIWj+U0hCawSYfyn5lTnKArFgUP0JZAPOcyrgW4="
+                "signature": "Gpwv/X8hmzFtV/ZcQ2e7QmNchYVdBaKyv/X31LdiK/QVFcF7KUVK6fxUF5u6ZrXQbQjpb91fZtsGsTlBmIoFAw==",
+                "hash": "6A5NLcqkeGMVjP7JR875olLeAK09QSJT1ezPwpRxHi4="
               }
             },
             "model_signing_payloads": {
-              "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q3_K_L": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjQuODY3MTIzMjI2ODMyMTIsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzkzNTY3OTg3NzYzMDQ3NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsImV4dHJhIjp7ImhhcmR3YXJlX2NsYXNzIjoid2luZG93cy9hbWQ2NC9udmlkaWEvMTZnIiwibW9kZWwiOiJoZi5jby9sbXN0dWRpby1jb21tdW5pdHkvUGhpLTQtbWluaS1yZWFzb25pbmctR0dVRjpRM19LX0wiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo2MS40NDY1OTMsInRvdGFsX3Rva2VucyI6MTUyOH19",
-              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuMzM5MDI5ODM1ODE4MzE2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc5MzU2Nzk4Nzc2MzA0NzcwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDE4NDRiYzM4MzVmNDc1ZmQ4YWZhNjRkMDRkZGNiOWExZTAwODdiYjQwYTMxOTczZDkxYjE5M2U2Yzk1M2IyMjkiLCJleHRyYSI6eyJoYXJkd2FyZV9jbGFzcyI6IndpbmRvd3MvYW1kNjQvbnZpZGlhLzE2ZyIsIm1vZGVsIjoiaGYuY28vdW5zbG90aC9QaGktNC1taW5pLXJlYXNvbmluZy1HR1VGOklRMV9TIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hLWhvc3QiLCJzYW1wbGVfY291bnQiOjEyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjY1MS4yNjI2NTc5OTksInRvdGFsX3Rva2VucyI6MTA2NDF9fQ==",
-              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ3_XXS": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NDEuNzg4MzY4NTA2MTE0NjcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzkzNTY3OTg3NzYzMDQ3NzAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsImV4dHJhIjp7ImhhcmR3YXJlX2NsYXNzIjoid2luZG93cy9hbWQ2NC9udmlkaWEvMTZnIiwibW9kZWwiOiJoZi5jby91bnNsb3RoL1BoaS00LW1pbmktcmVhc29uaW5nLUdHVUY6SVEzX1hYUyIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjIzLjk1NDAzNCwidG90YWxfdG9rZW5zIjoxMDAxfX0=",
-              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjguMDUwMDM1MzQyMTEzODU1LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc5MzU2Nzk4Nzc2MzA0NzcwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDE4NDRiYzM4MzVmNDc1ZmQ4YWZhNjRkMDRkZGNiOWExZTAwODdiYjQwYTMxOTczZDkxYjE5M2U2Yzk1M2IyMjkiLCJleHRyYSI6eyJoYXJkd2FyZV9jbGFzcyI6IndpbmRvd3MvYW1kNjQvbnZpZGlhLzE2ZyIsIm1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOlE0X0tfTSIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoyNzksInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjE2MS44MTU0NTc5OTksInRvdGFsX3Rva2VucyI6NjA2Mzl9fQ=="
+              "hf.co/lmstudio-community/Phi-4-mini-reasoning-GGUF:Q3_K_L": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjQuODY3MTIzMjI2ODMyMTIsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzkzNTY4OTIwNjY2MDM5ODAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsImV4dHJhIjp7ImhhcmR3YXJlX2NsYXNzIjoid2luZG93cy9hbWQ2NC9udmlkaWEvMTZnIiwibW9kZWwiOiJoZi5jby9sbXN0dWRpby1jb21tdW5pdHkvUGhpLTQtbWluaS1yZWFzb25pbmctR0dVRjpRM19LX0wiLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MSwic291cmNlIjoibWV0cmljcy5tb2RlbHNfdG9rZW5zX3Blcl9zZWMiLCJ0b3RhbF9zZWNvbmRzIjo2MS40NDY1OTMsInRvdGFsX3Rva2VucyI6MTUyOH19",
+              "hf.co/mradermacher/Airavata-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6Ni43NzAxMTQyOTU5MzMxNDQsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzkzNTY4OTIwNjY2MDM5ODAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsImV4dHJhIjp7ImhhcmR3YXJlX2NsYXNzIjoid2luZG93cy9hbWQ2NC9udmlkaWEvMTZnIiwibW9kZWwiOiJoZi5jby9tcmFkZXJtYWNoZXIvQWlyYXZhdGEtR0dVRjpRNF9LX00iLCJub3RlIjoic2lnbmVkIHJvbGxpbmcgb2JzZXJ2YXRpb24gZnJvbSByZWFsIGxvY2FsIGluZmVyZW5jZSBtZXRyaWNzOyBDTEkgYmVuY2ggaW5mZXJlbmNlIHJlbWFpbnMgU0EtQkVOQ0gtNSIsInJ1bnRpbWUiOiJvbGxhbWEtaG9zdCIsInNhbXBsZV9jb3VudCI6MjMsInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjgyLjg2MDgwNzk5OTk5OTk2LCJ0b3RhbF90b2tlbnMiOjE5MTV9fQ==",
+              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MTYuMzM5MDI5ODM1ODE4MzE2LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc5MzU2ODkyMDY2NjAzOTgwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDE4NDRiYzM4MzVmNDc1ZmQ4YWZhNjRkMDRkZGNiOWExZTAwODdiYjQwYTMxOTczZDkxYjE5M2U2Yzk1M2IyMjkiLCJleHRyYSI6eyJoYXJkd2FyZV9jbGFzcyI6IndpbmRvd3MvYW1kNjQvbnZpZGlhLzE2ZyIsIm1vZGVsIjoiaGYuY28vdW5zbG90aC9QaGktNC1taW5pLXJlYXNvbmluZy1HR1VGOklRMV9TIiwibm90ZSI6InNpZ25lZCByb2xsaW5nIG9ic2VydmF0aW9uIGZyb20gcmVhbCBsb2NhbCBpbmZlcmVuY2UgbWV0cmljczsgQ0xJIGJlbmNoIGluZmVyZW5jZSByZW1haW5zIFNBLUJFTkNILTUiLCJydW50aW1lIjoib2xsYW1hLWhvc3QiLCJzYW1wbGVfY291bnQiOjEyLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjY1MS4yNjI2NTc5OTksInRvdGFsX3Rva2VucyI6MTA2NDF9fQ==",
+              "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ3_XXS": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6NDEuNzg4MzY4NTA2MTE0NjcsInVuaXQiOiJ0b2tlbnMvcyIsInRzIjoxNzkzNTY4OTIwNjY2MDM5ODAwLCJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsImV4dHJhIjp7ImhhcmR3YXJlX2NsYXNzIjoid2luZG93cy9hbWQ2NC9udmlkaWEvMTZnIiwibW9kZWwiOiJoZi5jby91bnNsb3RoL1BoaS00LW1pbmktcmVhc29uaW5nLUdHVUY6SVEzX1hYUyIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoxLCJzb3VyY2UiOiJtZXRyaWNzLm1vZGVsc190b2tlbnNfcGVyX3NlYyIsInRvdGFsX3NlY29uZHMiOjIzLjk1NDAzNCwidG90YWxfdG9rZW5zIjoxMDAxfX0=",
+              "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": "eyJtZXRyaWMiOiJpbmZlcmVuY2UudG9rZW5zX3Blcl9zZWMiLCJ2YWx1ZSI6MjguMDUwMDM1MzQyMTEzODU1LCJ1bml0IjoidG9rZW5zL3MiLCJ0cyI6MTc5MzU2ODkyMDY2NjAzOTgwMCwibm9kZV9kaWQiOiJkaWQ6ZXBuOjAwMjQwODAxMTIyMDE4NDRiYzM4MzVmNDc1ZmQ4YWZhNjRkMDRkZGNiOWExZTAwODdiYjQwYTMxOTczZDkxYjE5M2U2Yzk1M2IyMjkiLCJleHRyYSI6eyJoYXJkd2FyZV9jbGFzcyI6IndpbmRvd3MvYW1kNjQvbnZpZGlhLzE2ZyIsIm1vZGVsIjoiaGYuY28vdW5zbG90aC9nZW1tYS00LUUyQi1pdC1HR1VGOlE0X0tfTSIsIm5vdGUiOiJzaWduZWQgcm9sbGluZyBvYnNlcnZhdGlvbiBmcm9tIHJlYWwgbG9jYWwgaW5mZXJlbmNlIG1ldHJpY3M7IENMSSBiZW5jaCBpbmZlcmVuY2UgcmVtYWlucyBTQS1CRU5DSC01IiwicnVudGltZSI6Im9sbGFtYS1ob3N0Iiwic2FtcGxlX2NvdW50IjoyNzksInNvdXJjZSI6Im1ldHJpY3MubW9kZWxzX3Rva2Vuc19wZXJfc2VjIiwidG90YWxfc2Vjb25kcyI6MjE2MS44MTU0NTc5OTksInRvdGFsX3Rva2VucyI6NjA2Mzl9fQ=="
             }
           },
           "mem": {
@@ -133909,9 +133896,9 @@
             "echo_probe": 1,
             "list_probe_items": 1
           },
-          "generated_at": 1793567684,
-          "sig": "T0Jk7Ev3Zuka9USeDLwdQivrs7tXVue1wmYBzDYOQAVPiOjrLvJ0A6RD9DiFQPC2T8AHCN7gNc1oW8xoxc3lDA==",
-          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3OTMzNTQ0MDAsImVwb2NoX2VuZCI6MTc5MzM1ODAwMCwidHVybnMiOjIsInRvb2xfY2FsbHMiOjIsImhlbGQiOjIsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjIxOCwib3V0cHV0X3Rva2VucyI6MjIxLCJ2Y3B1X3NlY29uZHMiOjI2NS40Njg4MjEyLCJlbmVyZ3lfa3doIjowLjAwMDM2ODcwNjY5NjExMTExMTE0LCJjYXJib25fZ3JhbXMiOjAuMjYxMDQ0MzQwODQ2NjY2NjcsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL2dlbW1hLTQtRTJCLWl0LUdHVUY6UTRfS19NIl0sInRvb2xzIjpbImVjaG9fcHJvYmUiLCJsaXN0X3Byb2JlX2l0ZW1zIl0sIm1vZGVsX3R1cm5zIjp7ImhmLmNvL3Vuc2xvdGgvZ2VtbWEtNC1FMkItaXQtR0dVRjpRNF9LX00iOjJ9LCJ0b29sX2NvdW50cyI6eyJlY2hvX3Byb2JlIjoxLCJsaXN0X3Byb2JlX2l0ZW1zIjoxfSwiZ2VuZXJhdGVkX2F0IjoxNzkzNTY3Njg0fQ=="
+          "generated_at": 1793568584,
+          "sig": "iaChFauG+LKPRHZqQLGiYRs7paIrv0fU9Jg2nS9JJmve1Pri3bkucxWZZFZpuPKlVrxiX2YBBqSt8ijmHNGUDg==",
+          "signing_payload_b64": "eyJub2RlX2RpZCI6ImRpZDplcG46MDAyNDA4MDExMjIwMTg0NGJjMzgzNWY0NzVmZDhhZmE2NGQwNGRkY2I5YTFlMDA4N2JiNDBhMzE5NzNkOTFiMTkzZTZjOTUzYjIyOSIsInBlcnNvbmFfaWQiOiJlcG4uY29uY2llcmdlLnYxIiwia2luZCI6ImNvbmNpZXJnZV90dXJuIiwiZXBvY2hfc3RhcnQiOjE3OTMzNTQ0MDAsImVwb2NoX2VuZCI6MTc5MzM1ODAwMCwidHVybnMiOjIsInRvb2xfY2FsbHMiOjIsImhlbGQiOjIsImZhaWxlZCI6MCwiZ2F0ZWQiOjAsInByb21wdF90b2tlbnMiOjIxOCwib3V0cHV0X3Rva2VucyI6MjIxLCJ2Y3B1X3NlY29uZHMiOjI2NS40Njg4MjEyLCJlbmVyZ3lfa3doIjowLjAwMDM2ODcwNjY5NjExMTExMTE0LCJjYXJib25fZ3JhbXMiOjAuMjYxMDQ0MzQwODQ2NjY2NjcsIm1vZGVscyI6WyJoZi5jby91bnNsb3RoL2dlbW1hLTQtRTJCLWl0LUdHVUY6UTRfS19NIl0sInRvb2xzIjpbImVjaG9fcHJvYmUiLCJsaXN0X3Byb2JlX2l0ZW1zIl0sIm1vZGVsX3R1cm5zIjp7ImhmLmNvL3Vuc2xvdGgvZ2VtbWEtNC1FMkItaXQtR0dVRjpRNF9LX00iOjJ9LCJ0b29sX2NvdW50cyI6eyJlY2hvX3Byb2JlIjoxLCJsaXN0X3Byb2JlX2l0ZW1zIjoxfSwiZ2VuZXJhdGVkX2F0IjoxNzkzNTY4NTg0fQ=="
         }
       ],
       "class": "community",
