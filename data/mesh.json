@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-01T03:10:06.190Z",
+  "generated_at": "2026-11-01T03:25:03.583Z",
   "label": "DHT-known network, unioned across founder mesh reports",
   "reporter_count": 1,
   "node_count": 3,
@@ -1440,7 +1440,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-        "generated_at": "2026-11-01T03:06:54Z",
+        "generated_at": "2026-11-01T03:21:54Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
@@ -15275,8 +15275,8 @@
                   },
                   {
                     "engine": "ollama",
-                    "ref": "hf.co/prithivMLmods/Q3.5-9B-GLM-5.1-v2.0-GGUF:BF16",
-                    "quant": "BF16",
+                    "ref": "hf.co/prithivMLmods/Q3.5-9B-GLM-5.1-v2.0-GGUF:F16",
+                    "quant": "F16",
                     "disk_mib": 17090,
                     "attribution": "derivative",
                     "by": "prithivMLmods",
@@ -17545,6 +17545,26 @@
                 "author": "fabriziosalmi"
               },
               {
+                "id": "base~huggingface-mic",
+                "display_name": "GLM-OCR-mic",
+                "artifacts": [
+                  {
+                    "engine": "vllm",
+                    "ref": "huggingface-mic/GLM-OCR-mic",
+                    "quant": "FP32",
+                    "disk_mib": 33,
+                    "attribution": "derivative",
+                    "by": "huggingface-mic",
+                    "base": "zai-org/GLM-OCR",
+                    "cohort": 3,
+                    "rung": 9
+                  }
+                ],
+                "derivative": true,
+                "base": "base",
+                "author": "huggingface-mic"
+              },
+              {
                 "id": "base~imbenwolf-k-m",
                 "display_name": "GLM-OCR-Q4_K_M-GGUF",
                 "artifacts": [
@@ -18351,6 +18371,27 @@
                 "author": "DavidAU"
               },
               {
+                "id": "20b~halley-ai-gs32",
+                "display_name": "gpt-oss-20b-MLX-6bit-gs32",
+                "artifacts": [
+                  {
+                    "engine": "mlx",
+                    "platform": "darwin/arm64",
+                    "ref": "halley-ai/gpt-oss-20b-MLX-6bit-gs32",
+                    "quant": "6BIT",
+                    "disk_mib": 17460,
+                    "attribution": "derivative",
+                    "by": "halley-ai",
+                    "base": "openai/gpt-oss-20b",
+                    "cohort": 3,
+                    "rung": 9
+                  }
+                ],
+                "derivative": true,
+                "base": "20b",
+                "author": "halley-ai"
+              },
+              {
                 "id": "20b~huihui-ai-abliterated",
                 "display_name": "Huihui-gpt-oss-20b-BF16-abliterated",
                 "artifacts": [
@@ -18637,6 +18678,18 @@
                 "id": "1b",
                 "display_name": "Granite 4.0 1B",
                 "artifacts": [
+                  {
+                    "engine": "mlx",
+                    "platform": "darwin/arm64",
+                    "ref": "mlx-community/granite-4.0-1b-4bit",
+                    "quant": "4BIT",
+                    "disk_mib": 875,
+                    "attribution": "quantizer",
+                    "by": "mlx-community",
+                    "base": "ibm-granite/granite-4.0-1b",
+                    "cohort": 0,
+                    "rung": 0
+                  },
                   {
                     "engine": "ollama",
                     "ref": "hf.co/ibm-granite/granite-4.0-1b-GGUF:Q4_K_M",
@@ -19011,8 +19064,8 @@
                   },
                   {
                     "engine": "ollama",
-                    "ref": "hf.co/taronaeo/Granite-4.0-350M-BE-GGUF:F16",
-                    "quant": "F16",
+                    "ref": "hf.co/taronaeo/Granite-4.0-350M-BE-GGUF:BF16",
+                    "quant": "BF16",
                     "disk_mib": 675,
                     "attribution": "derivative",
                     "by": "taronaeo",
@@ -19437,8 +19490,8 @@
                   },
                   {
                     "engine": "ollama",
-                    "ref": "hf.co/taronaeo/Granite-4.0-H-350M-BE-GGUF:Q4_K_S",
-                    "quant": "Q4_K_S",
+                    "ref": "hf.co/taronaeo/Granite-4.0-H-350M-BE-GGUF:Q4_0",
+                    "quant": "Q4_0",
                     "disk_mib": 206,
                     "attribution": "derivative",
                     "by": "taronaeo",
@@ -19767,27 +19820,6 @@
                     "rung": 9
                   }
                 ]
-              },
-              {
-                "id": "h-tiny~mlx-community-dwq",
-                "display_name": "Granite-4.0-H-Tiny-4bit-DWQ",
-                "artifacts": [
-                  {
-                    "engine": "mlx",
-                    "platform": "darwin/arm64",
-                    "ref": "mlx-community/Granite-4.0-H-Tiny-4bit-DWQ",
-                    "quant": "4BIT",
-                    "disk_mib": 3725,
-                    "attribution": "derivative",
-                    "by": "mlx-community",
-                    "base": "ibm-granite/granite-4.0-h-tiny",
-                    "cohort": 3,
-                    "rung": 0
-                  }
-                ],
-                "derivative": true,
-                "base": "h-tiny",
-                "author": "mlx-community"
               },
               {
                 "id": "micro~unsloth",
@@ -57254,7 +57286,7 @@
       "energy_source": "unknown",
       "carbon_intensity": 475,
       "online": false,
-      "last_seen": "2026-11-01T03:07:16.603917495Z",
+      "last_seen": "2026-11-01T03:22:36.862040345Z",
       "class": "community"
     },
     {
@@ -58664,7 +58696,7 @@
       "proof_snapshot": {
         "schema_version": "epn.proof.snapshot.v1",
         "node_did": "did:epn:0024080112208bedb76b4021960d095907e369b1fc64d3a408d9a95f69870e6691c746c52689",
-        "generated_at": "2026-11-01T03:09:14Z",
+        "generated_at": "2026-11-01T03:24:14Z",
         "metrics": {
           "agent_work": {
             "turns": 0,
