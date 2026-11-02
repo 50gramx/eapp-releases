@@ -1,0 +1,138 @@
+name: Build iOS and iPadOS App (unsigned)
+
+# The Evo app for iPhone and iPad, built in CI so no Mac is needed. This repo is
+# public, so its macOS runners cost nothing.
+#
+# What comes out is an UNSIGNED .ipa. Apple only lets a signed app run, so you
+# install it with your own Apple ID through a sideloading tool (Sideloadly or
+# AltStore). With a free Apple ID that build runs for 7 days; with the paid
+# Developer Program it can be signed for TestFlight. Signing in CI needs the
+# certificate and profile as secrets, which this workflow does not hold yet.
+#
+# It runs when eapp-live has changed since the last iOS build, checked every
+# six hours, and on demand.
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '41 */6 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-eapp-ios
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      should_build: ${{ steps.compare.outputs.should_build }}
+      eapp_sha: ${{ steps.eapp.outputs.sha }}
+    steps:
+      - name: Latest eapp-live main
+        id: eapp
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: echo "sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)" >> "$GITHUB_OUTPUT"
+      - name: Compare against the last iOS build
+        id: compare
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EAPP_SHA: ${{ steps.eapp.outputs.sha }}
+        run: |
+          last=$(gh api repos/50gramx/eapp-releases/contents/data/last-built/evo-ios.json --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).eapp_sha||"")}catch{console.log("")}})')
+          if [ "$last" = "$EAPP_SHA" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
+            echo "should_build=false" >> "$GITHUB_OUTPUT"; echo "unchanged since $last"
+          else
+            echo "should_build=true" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout eapp-live (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.eapp_sha }}
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.3'
+          channel: stable
+          cache: true
+
+      - name: Private dependencies
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Dependencies
+        run: flutter pub get
+
+      # The world asks for the camera, location, motion and microphone. iOS ends
+      # any app that asks without saying why, so the reasons go in first.
+      - name: Say why the app asks for each sensor
+        run: |
+          set -euo pipefail
+          P=ios/Runner/Info.plist
+          put(){ /usr/libexec/PlistBuddy -c "Set :$1 $2" "$P" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$P"; }
+          put NSCameraUsageDescription "Capture photos of a place so the network can build its 3D map."
+          put NSLocationWhenInUseUsageDescription "Place you on the map and tag each photo with where it was taken."
+          put NSMotionUsageDescription "Use the compass and motion to face the map the way you face."
+          put NSMicrophoneUsageDescription "Talk with Evo and people standing in the same region."
+
+      - name: Pods
+        run: |
+          cd ios
+          pod install --repo-update
+
+      - name: Build (no signing)
+        run: flutter build ios --release --no-codesign --dart-define=BUILD_ID=${{ github.run_number }}
+
+      - name: Package .ipa
+        run: |
+          set -euo pipefail
+          mkdir -p Payload
+          cp -R build/ios/iphoneos/Runner.app Payload/
+          zip -qry evo-ios-unsigned.ipa Payload
+          ls -la evo-ios-unsigned.ipa
+
+      - name: Publish
+        uses: softprops/action-gh-release@v3
+        with:
+          files: evo-ios-unsigned.ipa
+          tag_name: evo-ios-latest
+          name: Evo for iPhone and iPad (unsigned)
+          prerelease: true
+          body: |
+            Unsigned build of eapp-live ${{ needs.check.outputs.eapp_sha }}, run ${{ github.run_number }}.
+            Install with Sideloadly or AltStore using your Apple ID. A free Apple ID runs it for 7 days.
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Checkout eapp-releases (marker)
+        uses: actions/checkout@v4
+        with:
+          path: .release-meta
+
+      - name: Record this build
+        env:
+          EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p .release-meta/data/last-built
+          printf '{\n  "eapp_sha": "%s",\n  "built_at": "%s"\n}\n' "$EAPP_SHA" "$(date -u +%FT%TZ)" > .release-meta/data/last-built/evo-ios.json
+          cd .release-meta
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add data/last-built/evo-ios.json
+          git commit -m "ci: mark evo/ios built" || exit 0
+          for i in $(seq 1 6); do
+            git pull --rebase --autostash -q origin main || git rebase --abort || true
+            if git push -q origin HEAD:main; then exit 0; fi
+            sleep $((RANDOM % 4 + 2))
+          done
