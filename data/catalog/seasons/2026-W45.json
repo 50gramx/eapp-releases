@@ -4,22 +4,23 @@
   "starts_at": "2026-11-02T00:00:00.000Z",
   "ends_at": "2026-11-09T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-03T18:54:13.554Z",
+  "published_at": "2026-11-03T19:09:01.480Z",
   "contributors": {
-    "grams": 5,
+    "grams": 6,
     "classes": [
       "darwin/arm64/apple/16g",
       "linux/amd64/nvidia/256g",
       "linux/amd64/nvidia/32g",
+      "linux/amd64/nvidia/64g",
       "windows/amd64/intel/16g"
     ]
   },
   "counts": {
-    "artifacts": 10,
-    "publishers": 4,
+    "artifacts": 12,
+    "publishers": 5,
     "by_cohort": {
-      "0": 5,
-      "1": 4,
+      "0": 6,
+      "1": 5,
       "2": 1
     }
   },
@@ -238,6 +239,63 @@
           "energy_tier": "sensor",
           "first_at": "2026-11-03T03:36:25.966Z",
           "last_at": "2026-11-03T03:36:25.966Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/unsloth/Qwen3.8-27B-GGUF:Q8_0",
+      "family": "qwen-3-8",
+      "member": "27b",
+      "engine": "ollama",
+      "quant": "Q8_0",
+      "publisher": "unsloth",
+      "attribution": "quantizer",
+      "base": "Qwen/Qwen3.8-27B",
+      "derivative": false,
+      "cohort": 1,
+      "rung": 1,
+      "disk_mib": 27701,
+      "by_class": {
+        "linux/amd64/nvidia/32g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 2.77,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 262144,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.am": 1,
+            "lang.bn": 1,
+            "lang.en": 1,
+            "lang.ha": 1,
+            "lang.hi": 1,
+            "lang.kn": 1,
+            "lang.mr": 1,
+            "lang.nl": 1,
+            "lang.ru": 1,
+            "lang.sw": 1,
+            "lang.ta": 1,
+            "lang.te": 1,
+            "lang.yo": 1,
+            "output.schema": 1,
+            "reason.channel": 1,
+            "structured_output": 1,
+            "thinking": 1,
+            "tools": 1,
+            "tools.call": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 202.09,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-03T18:50:36.027Z",
+          "last_at": "2026-11-03T18:50:36.027Z"
         }
       }
     },
@@ -688,15 +746,49 @@
           "last_at": "2026-11-03T03:58:00.527Z"
         }
       }
+    },
+    {
+      "ref": "pyannote/wespeaker-voxceleb-resnet34-LM",
+      "family": "wespeaker",
+      "member": "resnet34-lm",
+      "engine": "speaker-id",
+      "quant": "FP32",
+      "publisher": "pyannote",
+      "attribution": "vendor",
+      "base": "pyannote/wespeaker-voxceleb-resnet34-LM",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 25,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "voice.identify": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-03T19:01:07.978Z",
+          "last_at": "2026-11-03T19:01:07.978Z"
+        }
+      }
     }
   ],
   "publishers": [
     {
       "publisher": "unsloth",
-      "held": 9,
+      "held": 10,
       "grams": 4,
       "engines": {
-        "ollama": 9
+        "ollama": 10
       }
     },
     {
@@ -713,6 +805,14 @@
       "grams": 1,
       "engines": {
         "ollama": 1
+      }
+    },
+    {
+      "publisher": "pyannote",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "speaker-id": 1
       }
     },
     {
