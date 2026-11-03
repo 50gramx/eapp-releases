@@ -4,7 +4,7 @@
   "starts_at": "2026-11-02T00:00:00.000Z",
   "ends_at": "2026-11-09T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-03T21:11:22.251Z",
+  "published_at": "2026-11-03T21:25:37.759Z",
   "contributors": {
     "grams": 6,
     "classes": [
@@ -16,15 +16,57 @@
     ]
   },
   "counts": {
-    "artifacts": 13,
-    "publishers": 6,
+    "artifacts": 18,
+    "publishers": 11,
     "by_cohort": {
       "0": 7,
-      "1": 5,
-      "2": 1
+      "1": 7,
+      "2": 2,
+      "3": 2
     }
   },
   "artifacts": [
+    {
+      "ref": "AlphaOxO/GLM-OCR-NVFP4",
+      "family": "glm-ocr",
+      "member": "base",
+      "engine": "vllm",
+      "quant": "W4A16",
+      "publisher": "AlphaOxO",
+      "attribution": "quantizer",
+      "base": "zai-org/GLM-OCR",
+      "derivative": false,
+      "cohort": 1,
+      "rung": 1,
+      "disk_mib": 1301,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "code.write": 1,
+            "lang.en": 1,
+            "output.schema": 1,
+            "structured_output": 1,
+            "vision": 1,
+            "vision.read": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 0.076,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-03T21:08:21.853Z",
+          "last_at": "2026-11-03T21:08:21.853Z"
+        }
+      }
+    },
     {
       "ref": "gemma4:e2b",
       "family": "gemma-4",
@@ -144,6 +186,40 @@
           "energy_tier": "sensor",
           "first_at": "2026-11-02T22:09:43.714Z",
           "last_at": "2026-11-02T22:09:43.714Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/mradermacher/HY-MT1.5-1.8B-i1-GGUF:Q4_0",
+      "family": "hy-mt-1-5",
+      "member": "1.8b~mradermacher-i1",
+      "engine": "ollama",
+      "quant": "Q4_0",
+      "publisher": "mradermacher",
+      "attribution": "derivative",
+      "base": "tencent/HY-MT1.5-1.8B",
+      "derivative": true,
+      "cohort": 3,
+      "rung": 3,
+      "disk_mib": 1029,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 48.53,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 262144,
+          "ctx_affordable": null,
+          "caps": {},
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 257,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-03T21:20:41.123Z",
+          "last_at": "2026-11-03T21:20:41.123Z"
         }
       }
     },
@@ -798,6 +874,88 @@
       }
     },
     {
+      "ref": "kokoro",
+      "family": "kokoro",
+      "member": "base",
+      "engine": "speech-host",
+      "quant": null,
+      "publisher": "kokoro",
+      "attribution": "vendor",
+      "base": null,
+      "derivative": false,
+      "cohort": 1,
+      "rung": 9,
+      "disk_mib": 312,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.out": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-03T21:18:23.009Z",
+          "last_at": "2026-11-03T21:18:23.009Z"
+        }
+      }
+    },
+    {
+      "ref": "openai/whisper-large-v3-turbo",
+      "family": "whisper",
+      "member": "large-v3-turbo",
+      "engine": "speech-hf",
+      "quant": "FP16",
+      "publisher": "openai",
+      "attribution": "vendor",
+      "base": "openai/whisper-large-v3-turbo",
+      "derivative": false,
+      "cohort": 2,
+      "rung": 0,
+      "disk_mib": 1547,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.in": 1,
+            "lang.bn": 1,
+            "lang.en": 1,
+            "lang.gu": 1,
+            "lang.hi": 1,
+            "lang.kn": 1,
+            "lang.mr": 1,
+            "lang.ne": 1,
+            "lang.ta": 1,
+            "lang.te": 1,
+            "lang.ur": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-03T21:17:22.315Z",
+          "last_at": "2026-11-03T21:17:22.315Z"
+        }
+      }
+    },
+    {
       "ref": "pyannote/wespeaker-voxceleb-resnet34-LM",
       "family": "wespeaker",
       "member": "resnet34-lm",
@@ -827,7 +985,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T19:01:07.978Z",
-          "last_at": "2026-11-03T19:01:07.978Z"
+          "last_at": "2026-11-03T21:14:18.364Z"
         }
       }
     },
@@ -859,7 +1017,41 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T19:19:52.962Z",
-          "last_at": "2026-11-03T19:19:52.962Z"
+          "last_at": "2026-11-03T21:14:38.574Z"
+        }
+      }
+    },
+    {
+      "ref": "yujiepan/hy3-tiny-random",
+      "family": "hy-3",
+      "member": "base~yujiepan-tiny-random",
+      "engine": "vllm",
+      "quant": "BF16",
+      "publisher": "yujiepan",
+      "attribution": "derivative",
+      "base": "tencent/Hy3",
+      "derivative": true,
+      "cohort": 3,
+      "rung": 3,
+      "disk_mib": 5,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {},
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 0.141,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-03T21:13:26.540Z",
+          "last_at": "2026-11-03T21:13:26.540Z"
         }
       }
     }
@@ -871,6 +1063,14 @@
       "grams": 5,
       "engines": {
         "ollama": 11
+      }
+    },
+    {
+      "publisher": "AlphaOxO",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "vllm": 1
       }
     },
     {
@@ -887,6 +1087,30 @@
       "grams": 1,
       "engines": {
         "ollama": 1
+      }
+    },
+    {
+      "publisher": "kokoro",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "speech-host": 1
+      }
+    },
+    {
+      "publisher": "mradermacher",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "ollama": 1
+      }
+    },
+    {
+      "publisher": "openai",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "speech-hf": 1
       }
     },
     {
@@ -911,6 +1135,14 @@
       "grams": 1,
       "engines": {
         "speaker-id": 1
+      }
+    },
+    {
+      "publisher": "yujiepan",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "vllm": 1
       }
     }
   ],
