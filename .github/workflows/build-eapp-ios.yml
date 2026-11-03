@@ -122,7 +122,13 @@ jobs:
         run: |
           set -euo pipefail
           P=ios/Runner/Info.plist
-          put(){ /usr/libexec/PlistBuddy -c "Set :$1 $2" "$P" 2>/dev/null || /usr/libexec/PlistBuddy -c "Add :$1 string $2" "$P"; }
+          # plutil takes the text as its own argument. PlistBuddy parsed it as a
+          # command, and an apostrophe ("region's") silently dropped the key:
+          # build 1007 was refused for NSPhotoLibraryUsageDescription.
+          put(){
+            plutil -replace "$1" -string "$2" "$P"
+            test "$(plutil -extract "$1" raw -o - "$P")" = "$2" || { echo "$1 did not land in $P"; exit 1; }
+          }
           put NSCameraUsageDescription "Capture photos of a place so the network can build its 3D map."
           put NSLocationWhenInUseUsageDescription "Place you on the map and tag each photo with where it was taken."
           put NSMotionUsageDescription "Use the compass and motion to face the map the way you face."
