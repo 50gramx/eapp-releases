@@ -52,6 +52,14 @@ jobs:
     needs: check
     if: needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
+    env:
+      # App Store Connect API key (Admin), pasted by the account holder into this
+      # repo's secrets. With it the build is signed and sent to TestFlight; without
+      # it the unsigned .ipa below is all that comes out.
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      BRAND_ID: evo
     steps:
       - name: Checkout eapp-live (private, read-only token)
         uses: actions/checkout@v4
@@ -73,6 +81,41 @@ jobs:
       - name: Dependencies
         run: flutter pub get
 
+      # WHO THE APP IS comes from the brand contract, never from this file: the
+      # bundle id App Store Connect knows it by, its team, its name on the home
+      # screen. (Flutter's template left com.example.eappLive in the project.)
+      - name: Checkout brand contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .ci/eapp-interaction-contracts
+
+      - name: Resolve the brand
+        id: brand
+        run: |
+          node tool/ci/resolve_contract_delivery.mjs             --contracts-root ".ci/eapp-interaction-contracts"             --brand-id "$BRAND_ID" --platform ios --channel nightly             --github-output "$GITHUB_OUTPUT" --output brand-delivery.json
+
+      - name: Brand the iOS project
+        env:
+          BUNDLE_ID: ${{ steps.brand.outputs.ios_bundle_id }}
+          TEAM_ID: ${{ steps.brand.outputs.ios_team_id }}
+          DISPLAY: ${{ steps.brand.outputs.brand_display_name }}
+        run: |
+          set -euo pipefail
+          test -n "$BUNDLE_ID" || { echo "the brand contract names no iOS bundle id"; exit 1; }
+          PBX=ios/Runner.xcodeproj/project.pbxproj
+          # The app target and its tests; the tests keep their own suffix.
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = com.example.eappLive;/PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID; DEVELOPMENT_TEAM = $TEAM_ID; CODE_SIGN_STYLE = Automatic;/" "$PBX"
+          sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = com.example.eappLive.RunnerTests;/PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID.RunnerTests;/" "$PBX"
+          grep -c "PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID;" "$PBX"
+          P=ios/Runner/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $DISPLAY" "$P"
+          # Only standard HTTPS/TLS: no export-compliance question per build.
+          /usr/libexec/PlistBuddy -c "Delete :ITSAppUsesNonExemptEncryption" "$P" 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :ITSAppUsesNonExemptEncryption bool false" "$P"
+          echo "bundle $BUNDLE_ID, team $TEAM_ID, shown as $DISPLAY"
+
       # The world asks for the camera, location, motion and microphone. iOS ends
       # any app that asks without saying why, so the reasons go in first.
       - name: Say why the app asks for each sensor
@@ -84,6 +127,18 @@ jobs:
           put NSLocationWhenInUseUsageDescription "Place you on the map and tag each photo with where it was taken."
           put NSMotionUsageDescription "Use the compass and motion to face the map the way you face."
           put NSMicrophoneUsageDescription "Talk with Evo and people standing in the same region."
+          # App Store Connect refuses an upload whose code can reach a protected
+          # API without a reason, whether or not the app ever calls it.
+          put NSPhotoLibraryUsageDescription "Choose photos to share or to add to a region's map."
+          put NSPhotoLibraryAddUsageDescription "Save photos and captures you make in the app."
+          put NSLocationAlwaysAndWhenInUseUsageDescription "Place you on the map and tag each photo with where it was taken."
+          put NSLocationAlwaysUsageDescription "Place you on the map and tag each photo with where it was taken."
+          put NSBluetoothAlwaysUsageDescription "Find nearby devices of yours on the network."
+          put NSContactsUsageDescription "Invite people you know to your gramx."
+          put NSCalendarsUsageDescription "Add events from your gramx to your calendar."
+          put NSSpeechRecognitionUsageDescription "Turn what you say to Evo into text."
+          put NSFaceIDUsageDescription "Unlock your keys on this device."
+          put NSLocalNetworkUsageDescription "Reach your own grams on the same network."
 
       # The gram inside the app. iOS will not let an app start another program,
       # so epnd is built as a static library (epn-daemon cmd/epnd-ios) and the
@@ -120,7 +175,38 @@ jobs:
           pod install --repo-update
 
       - name: Build (no signing)
-        run: flutter build ios --release --no-codesign --dart-define=BUILD_ID=${{ github.run_number }}
+        run: |
+          # Version is the date, the build number the run: both always increase.
+          flutter build ios --release --no-codesign --dart-define=BUILD_ID=${{ github.run_number }}             --build-name "$(date -u +%y.%-m.%-d)" --build-number "$((1000 + ${{ github.run_number }}))"
+
+      # SIGNED, TO TESTFLIGHT. Xcode signs with the team's own certificate and
+      # profile, created and kept by Apple ("cloud-managed"), authorised by the
+      # API key -- no certificate or profile is stored anywhere here.
+      - name: Archive, sign and upload to TestFlight
+        if: env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
+        env:
+          TEAM_ID: ${{ steps.brand.outputs.ios_team_id }}
+        run: |
+          set -euo pipefail
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive "${AUTH[@]}" | tail -40
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+            <key>manageAppVersionAndBuildNumber</key><false/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Runner.xcarchive"             -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}" | tail -40
+          rm -f "$KEY"
+          echo "uploaded: it shows in TestFlight once Apple has processed it (usually 5-30 min)"
 
       - name: Package .ipa
         run: |
