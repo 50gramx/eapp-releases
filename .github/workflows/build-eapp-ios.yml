@@ -85,6 +85,35 @@ jobs:
           put NSMotionUsageDescription "Use the compass and motion to face the map the way you face."
           put NSMicrophoneUsageDescription "Talk with Evo and people standing in the same region."
 
+      # The gram inside the app. iOS will not let an app start another program,
+      # so epnd is built as a static library (epn-daemon cmd/epnd-ios) and the
+      # epnd_ios plugin links it. If this step fails the app still builds, and
+      # says it has no in-app gram.
+      - name: Checkout epn-daemon
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: .epn-daemon
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: .epn-daemon/go.mod
+          cache-dependency-path: .epn-daemon/go.sum
+
+      - name: Build the in-app gram (libepnd.a)
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          CC_IOS=$(xcrun --sdk iphoneos --find clang)
+          FLAGS="-isysroot $SDK -arch arm64 -miphoneos-version-min=15.0"
+          cd .epn-daemon
+          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 CC="$CC_IOS" CGO_CFLAGS="$FLAGS" CGO_LDFLAGS="$FLAGS"             go build -trimpath -buildmode=c-archive -ldflags "-s -w"             -o ../ios/epnd_ios/ios/libepnd.a ./cmd/epnd-ios
+          ls -la ../ios/epnd_ios/ios/libepnd.a
+          echo "epnd $(git rev-parse --short HEAD)" > ../ios/epnd_ios/ios/EPND_VERSION
+
       - name: Pods
         run: |
           cd ios
