@@ -6,7 +6,7 @@
   "peer_count": 3,
   "peers_online": 3,
   "peers_distinct_total": 1978,
-  "uptime_seconds": 12300,
+  "uptime_seconds": 13210,
   "epnd_version": "afa811d969503af890ce72ddbfd23d0de65d964c",
   "addrs": [
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/tcp/53590/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -28,7 +28,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-11-04T09:50:32Z",
+    "generated_at": "2026-11-04T10:05:42Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -47945,23 +47945,23 @@
                 "rung": 3
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/ggml-org/Qwen3.6-35B-A3B-GGUF:BF16",
-                "quant": "BF16",
-                "disk_mib": 66162,
-                "attribution": "quantizer",
-                "by": "ggml-org",
-                "base": "Qwen/Qwen3.6-35B-A3B",
-                "cohort": 2,
-                "rung": 4
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "unsloth/Qwen3.6-35B-A3B-GGUF:BF16",
                 "quant": "BF16",
                 "disk_mib": 66162,
                 "attribution": "quantizer",
                 "by": "unsloth",
+                "base": "Qwen/Qwen3.6-35B-A3B",
+                "cohort": 2,
+                "rung": 4
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/ggml-org/Qwen3.6-35B-A3B-GGUF:BF16",
+                "quant": "BF16",
+                "disk_mib": 66162,
+                "attribution": "quantizer",
+                "by": "ggml-org",
                 "base": "Qwen/Qwen3.6-35B-A3B",
                 "cohort": 2,
                 "rung": 4
@@ -48530,17 +48530,6 @@
                 "disk_mib": 21722,
                 "attribution": "quantizer",
                 "by": "lmstudio-community",
-                "base": "Qwen/Qwen3.8-27B",
-                "cohort": 1,
-                "rung": 9
-              },
-              {
-                "engine": "vllm",
-                "ref": "unsloth/Qwen3.8-27B-NVFP4",
-                "quant": "W4A4",
-                "disk_mib": 22332,
-                "attribution": "quantizer",
-                "by": "unsloth",
                 "base": "Qwen/Qwen3.8-27B",
                 "cohort": 1,
                 "rung": 9
@@ -49179,6 +49168,15 @@
                 "by": "unsloth",
                 "cohort": 1,
                 "rung": 9
+              },
+              {
+                "engine": "diffusers",
+                "ref": "hutangzhu/Qwen-Image-2.1",
+                "disk_mib": 31581,
+                "attribution": "derivative",
+                "by": "hutangzhu",
+                "cohort": 3,
+                "rung": 9
               }
             ]
           },
@@ -49763,6 +49761,26 @@
             ]
           },
           {
+            "id": "3b-base~bytedtsinghua-sia-open-mopd-mixsft",
+            "display_name": "Open-MOPD-SmolLM3-3B-MixSFT",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "BytedTsinghua-SIA/Open-MOPD-SmolLM3-3B-MixSFT",
+                "quant": "BF16",
+                "disk_mib": 6366,
+                "attribution": "derivative",
+                "by": "BytedTsinghua-SIA",
+                "base": "HuggingFaceTB/SmolLM3-3B-Base",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "3b-base",
+            "author": "BytedTsinghua-SIA"
+          },
+          {
             "id": "3b-base~moekotb12345-gsm8k-qlora",
             "display_name": "SmolLM3-3B-GSM8K-QLoRA",
             "artifacts": [
@@ -49875,6 +49893,26 @@
             "derivative": true,
             "base": "3b",
             "author": "chendren"
+          },
+          {
+            "id": "3b~huggingface-mic",
+            "display_name": "SmolLM3-3B-mic",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "huggingface-mic/SmolLM3-3B-mic",
+                "quant": "BF16",
+                "disk_mib": 67,
+                "attribution": "derivative",
+                "by": "huggingface-mic",
+                "base": "HuggingFaceTB/SmolLM3-3B",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "3b",
+            "author": "huggingface-mic"
           },
           {
             "id": "3b~mlx-community",
@@ -50088,26 +50126,6 @@
             "derivative": true,
             "base": "3b",
             "author": "MuXodious"
-          },
-          {
-            "id": "3b~onethreedlee-unit3-dpo",
-            "display_name": "smollm3-unit3-dpo",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "onethreedlee/smollm3-unit3-dpo",
-                "quant": "BF16",
-                "disk_mib": 11730,
-                "attribution": "derivative",
-                "by": "onethreedlee",
-                "base": "HuggingFaceTB/SmolLM3-3B",
-                "cohort": 3,
-                "rung": 3
-              }
-            ],
-            "derivative": true,
-            "base": "3b",
-            "author": "onethreedlee"
           },
           {
             "id": "3b~richardyoung-abliterated-obliteratus",
@@ -50388,25 +50406,6 @@
             "derivative": true,
             "base": "dpo",
             "author": "EiadEssam"
-          },
-          {
-            "id": "sft-unit1~seif6",
-            "display_name": "smollm3-sft-unit1",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "Seif6/smollm3-sft-unit1",
-                "quant": "FP16",
-                "disk_mib": 5865,
-                "attribution": "derivative",
-                "by": "Seif6",
-                "cohort": 3,
-                "rung": 3
-              }
-            ],
-            "derivative": true,
-            "base": "sft-unit1",
-            "author": "Seif6"
           }
         ],
         "schema_version": 9
@@ -51032,26 +51031,6 @@
             "author": "Intel"
           },
           {
-            "id": "flash~kilinskiy-ablitirated",
-            "display_name": "Step-3.5-Flash-Ablitirated",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "Kilinskiy/Step-3.5-Flash-Ablitirated",
-                "quant": "BF16",
-                "disk_mib": 375664,
-                "attribution": "derivative",
-                "by": "Kilinskiy",
-                "base": "stepfun-ai/Step-3.5-Flash",
-                "cohort": 3,
-                "rung": 3
-              }
-            ],
-            "derivative": true,
-            "base": "flash",
-            "author": "Kilinskiy"
-          },
-          {
             "id": "flash~lkevincc0-reap",
             "display_name": "Step-3.5-Flash-REAP-128B-A11B",
             "artifacts": [
@@ -51195,6 +51174,25 @@
             "derivative": true,
             "base": "flash",
             "author": "ngabr"
+          },
+          {
+            "id": "sglang-eagle3-flash-specforge-radixark~lmsys",
+            "display_name": "SGLang-EAGLE3-Step-3.5-Flash-SpecForge-RadixArk",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "lmsys/SGLang-EAGLE3-Step-3.5-Flash-SpecForge-RadixArk",
+                "quant": "BF16",
+                "disk_mib": 722,
+                "attribution": "derivative",
+                "by": "lmsys",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "sglang-eagle3-flash-specforge-radixark",
+            "author": "lmsys"
           }
         ],
         "schema_version": 9
@@ -51816,17 +51814,6 @@
                 "rung": 0
               },
               {
-                "engine": "vllm",
-                "ref": "kaitchup/translategemma-12b-it-FP8-Dynamic",
-                "quant": "FP8",
-                "disk_mib": 12989,
-                "attribution": "quantizer",
-                "by": "kaitchup",
-                "base": "google/translategemma-12b-it",
-                "cohort": 2,
-                "rung": 0
-              },
-              {
                 "engine": "mlx",
                 "platform": "darwin/arm64",
                 "ref": "mlx-community/translategemma-12b-it-8bit",
@@ -51945,6 +51932,70 @@
             "derivative": true,
             "base": "12b",
             "author": "Infomaniak-AI"
+          },
+          {
+            "id": "12b~mradermacher-i1",
+            "display_name": "translategemma-12b-it-i1-GGUF",
+            "artifacts": [
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/translategemma-12b-it-i1-GGUF:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 6962,
+                "attribution": "derivative",
+                "by": "mradermacher",
+                "base": "google/translategemma-12b-it",
+                "cohort": 3,
+                "rung": 0
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/translategemma-12b-it-i1-GGUF:IQ3_XXS",
+                "quant": "IQ3_XXS",
+                "disk_mib": 4563,
+                "attribution": "derivative",
+                "by": "mradermacher",
+                "base": "google/translategemma-12b-it",
+                "cohort": 3,
+                "rung": 2
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/translategemma-12b-it-i1-GGUF:Q4_0",
+                "quant": "Q4_0",
+                "disk_mib": 6589,
+                "attribution": "derivative",
+                "by": "mradermacher",
+                "base": "google/translategemma-12b-it",
+                "cohort": 3,
+                "rung": 3
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/translategemma-12b-it-i1-GGUF:IQ1_S",
+                "quant": "IQ1_S",
+                "disk_mib": 2810,
+                "attribution": "derivative",
+                "by": "mradermacher",
+                "base": "google/translategemma-12b-it",
+                "cohort": 3,
+                "rung": 5
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/translategemma-12b-it-i1-GGUF:IQ2_XXS",
+                "quant": "IQ2_XXS",
+                "disk_mib": 3363,
+                "attribution": "derivative",
+                "by": "mradermacher",
+                "base": "google/translategemma-12b-it",
+                "cohort": 3,
+                "rung": 9
+              }
+            ],
+            "derivative": true,
+            "base": "12b",
+            "author": "mradermacher"
           },
           {
             "id": "12b~nikolaykozloff-k-m",
@@ -52384,6 +52435,17 @@
             "artifacts": [
               {
                 "engine": "vllm",
+                "ref": "ViralityLeo/vllm-translategemma-4b-it-FP8-Dynamic",
+                "quant": "FP8",
+                "disk_mib": 5143,
+                "attribution": "derivative",
+                "by": "ViralityLeo",
+                "base": "Infomaniak-AI/vllm-translategemma-4b-it",
+                "cohort": 3,
+                "rung": 0
+              },
+              {
+                "engine": "vllm",
                 "ref": "Infomaniak-AI/vllm-translategemma-4b-it",
                 "quant": "BF16",
                 "disk_mib": 8201,
@@ -52636,6 +52698,18 @@
                 "base": "baidu/Unlimited-OCR-2",
                 "cohort": 1,
                 "rung": 9
+              },
+              {
+                "engine": "mlx",
+                "platform": "darwin/arm64",
+                "ref": "mlx-community/Unlimited-OCR-2-6bit",
+                "quant": "6BIT",
+                "disk_mib": 3045,
+                "attribution": "quantizer",
+                "by": "mlx-community",
+                "base": "baidu/Unlimited-OCR-2",
+                "cohort": 1,
+                "rung": 9
               }
             ]
           },
@@ -52690,6 +52764,25 @@
             "derivative": true,
             "base": "2",
             "author": "p4ulbr4dl3y"
+          },
+          {
+            "id": "autoround~jw-hubs",
+            "display_name": "Unlimited-OCR-W4A16-AutoRound",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "JW-Hubs/Unlimited-OCR-W4A16-AutoRound",
+                "quant": "INT4",
+                "disk_mib": 2834,
+                "attribution": "derivative",
+                "by": "JW-Hubs",
+                "cohort": 3,
+                "rung": 1
+              }
+            ],
+            "derivative": true,
+            "base": "autoround",
+            "author": "JW-Hubs"
           },
           {
             "id": "base",
@@ -52871,26 +52964,6 @@
                 "ref": "AutomatosX/AX-Unlimited-OCR-3B-MoE-MLX-AXQ-MXFP8",
                 "quant": "8BIT",
                 "disk_mib": 3805,
-                "attribution": "derivative",
-                "by": "AutomatosX",
-                "base": "baidu/Unlimited-OCR",
-                "cohort": 3,
-                "rung": 1
-              }
-            ],
-            "derivative": true,
-            "base": "base",
-            "author": "AutomatosX"
-          },
-          {
-            "id": "base~automatosx-ax-moe-cuda-axq",
-            "display_name": "AX-Unlimited-OCR-3B-MoE-CUDA-AXQ-NVFP4-W4A16",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "AutomatosX/AX-Unlimited-OCR-3B-MoE-CUDA-AXQ-NVFP4-W4A16",
-                "quant": "W4A16",
-                "disk_mib": 2795,
                 "attribution": "derivative",
                 "by": "AutomatosX",
                 "base": "baidu/Unlimited-OCR",
@@ -53783,5 +53856,5 @@
     "/ip6/2406:da1a:880:2600:144f:c69e:4521:697a/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS"
   ],
   "catalog": [],
-  "checked_at": "2026-11-04T09:50:32Z"
+  "checked_at": "2026-11-04T10:05:42Z"
 }
