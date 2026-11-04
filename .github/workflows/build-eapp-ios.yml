@@ -98,7 +98,7 @@ jobs:
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
       BRAND_ID: ${{ matrix.brand }}
-      CHANNEL: ${{ inputs.release_channel || 'nightly' }}
+      RELEASE_CHANNEL: ${{ inputs.release_channel || 'nightly' }}
     steps:
       - name: Checkout eapp-live (private, read-only token)
         uses: actions/checkout@v4
@@ -133,7 +133,7 @@ jobs:
       - name: Resolve the brand
         id: brand
         run: |
-          node tool/ci/resolve_contract_delivery.mjs             --contracts-root ".ci/eapp-interaction-contracts"             --brand-id "$BRAND_ID" --platform ios --channel "$CHANNEL"             --github-output "$GITHUB_OUTPUT" --output brand-delivery.json
+          node tool/ci/resolve_contract_delivery.mjs             --contracts-root ".ci/eapp-interaction-contracts"             --brand-id "$BRAND_ID" --platform ios --channel "$RELEASE_CHANNEL"             --github-output "$GITHUB_OUTPUT" --output brand-delivery.json
 
       - name: Brand the iOS project
         env:
