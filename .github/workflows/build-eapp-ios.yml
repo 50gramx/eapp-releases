@@ -9,10 +9,28 @@ name: Build iOS and iPadOS App (unsigned)
 # Developer Program it can be signed for TestFlight. Signing in CI needs the
 # certificate and profile as secrets, which this workflow does not hold yet.
 #
-# It runs when eapp-live has changed since the last iOS build, checked every
-# six hours, and on demand.
+# EVERY BRAND WHOSE CONTRACT HAS AN ios: BLOCK (bundle id + team) is built,
+# signed and sent to TestFlight, like the other platforms build every brand.
+# The in-app gram is NOT built here: Build epnd publishes libepnd-ios-arm64.a
+# to epnd-latest from the same commit as every other epnd, and this build
+# downloads and verifies it, the way Android takes its .so.
+#
+# A brand is rebuilt when eapp-live, the contracts or the published iOS gram
+# changed since its last build (data/last-built/<brand>-ios.json); checked
+# every six hours, and on demand.
 on:
   workflow_dispatch:
+    inputs:
+      brand_id:
+        description: One brand (blank = every brand whose contract declares iOS)
+        required: false
+        default: ''
+        type: string
+      release_channel:
+        description: Release channel
+        required: false
+        default: nightly
+        type: string
   schedule:
     - cron: '41 */6 * * *'
 
@@ -27,31 +45,51 @@ jobs:
   check:
     runs-on: ubuntu-latest
     outputs:
-      should_build: ${{ steps.compare.outputs.should_build }}
-      eapp_sha: ${{ steps.eapp.outputs.sha }}
+      brands: ${{ steps.compare.outputs.brands }}
+      any: ${{ steps.compare.outputs.any }}
+      eapp_sha: ${{ steps.state.outputs.eapp_sha }}
+      contracts_sha: ${{ steps.state.outputs.contracts_sha }}
+      epnd_state: ${{ steps.state.outputs.epnd_state }}
     steps:
-      - name: Latest eapp-live main
-        id: eapp
+      - uses: actions/checkout@v4
+
+      - name: Checkout brand contracts
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-interaction-contracts
+          token: ${{ secrets.CI_READ_TOKEN }}
+          path: contracts
+
+      - name: Current state of what an iOS app is made from
+        id: state
         env:
           GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
-        run: echo "sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)" >> "$GITHUB_OUTPUT"
-      - name: Compare against the last iOS build
+        run: |
+          set -euo pipefail
+          echo "eapp_sha=$(gh api repos/50gramx/eapp-live/commits/main --jq .sha)" >> "$GITHUB_OUTPUT"
+          echo "contracts_sha=$(git -C contracts rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          state=$(curl -fsSL https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/libepnd-ios-arm64.sha256 | sha256sum | awk '{print $1}')
+          echo "epnd_state=$state" >> "$GITHUB_OUTPUT"
+
+      - name: Brands to build
         id: compare
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          EAPP_SHA: ${{ steps.eapp.outputs.sha }}
+          ONLY: ${{ inputs.brand_id }}
+          FORCED: ${{ github.event_name == 'workflow_dispatch' }}
+          NOW: ${{ steps.state.outputs.eapp_sha }} ${{ steps.state.outputs.contracts_sha }} ${{ steps.state.outputs.epnd_state }}
         run: |
-          last=$(gh api repos/50gramx/eapp-releases/contents/data/last-built/evo-ios.json --jq '.content' 2>/dev/null | base64 -d 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{try{console.log(JSON.parse(s).eapp_sha||"")}catch{console.log("")}})')
-          if [ "$last" = "$EAPP_SHA" ] && [ "${{ github.event_name }}" != "workflow_dispatch" ]; then
-            echo "should_build=false" >> "$GITHUB_OUTPUT"; echo "unchanged since $last"
-          else
-            echo "should_build=true" >> "$GITHUB_OUTPUT"
-          fi
+          python3 -c "import yaml" 2>/dev/null || pip install -q pyyaml
+          python3 .github/ios_brands.py
 
   build:
     needs: check
-    if: needs.check.outputs.should_build == 'true'
+    if: needs.check.outputs.any == 'true'
     runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        brand: ${{ fromJSON(needs.check.outputs.brands) }}
     env:
       # App Store Connect API key (Admin), pasted by the account holder into this
       # repo's secrets. With it the build is signed and sent to TestFlight; without
@@ -59,7 +97,8 @@ jobs:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
-      BRAND_ID: evo
+      BRAND_ID: ${{ matrix.brand }}
+      CHANNEL: ${{ inputs.release_channel || 'nightly' }}
     steps:
       - name: Checkout eapp-live (private, read-only token)
         uses: actions/checkout@v4
@@ -94,7 +133,7 @@ jobs:
       - name: Resolve the brand
         id: brand
         run: |
-          node tool/ci/resolve_contract_delivery.mjs             --contracts-root ".ci/eapp-interaction-contracts"             --brand-id "$BRAND_ID" --platform ios --channel nightly             --github-output "$GITHUB_OUTPUT" --output brand-delivery.json
+          node tool/ci/resolve_contract_delivery.mjs             --contracts-root ".ci/eapp-interaction-contracts"             --brand-id "$BRAND_ID" --platform ios --channel "$CHANNEL"             --github-output "$GITHUB_OUTPUT" --output brand-delivery.json
 
       - name: Brand the iOS project
         env:
@@ -146,34 +185,22 @@ jobs:
           put NSFaceIDUsageDescription "Unlock your keys on this device."
           put NSLocalNetworkUsageDescription "Reach your own grams on the same network."
 
-      # The gram inside the app. iOS will not let an app start another program,
-      # so epnd is built as a static library (epn-daemon cmd/epnd-ios) and the
-      # epnd_ios plugin links it. If this step fails the app still builds, and
-      # says it has no in-app gram.
-      - name: Checkout epn-daemon
-        uses: actions/checkout@v4
-        with:
-          repository: 50gramx/epn-daemon
-          token: ${{ secrets.CI_READ_TOKEN }}
-          path: .epn-daemon
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version-file: .epn-daemon/go.mod
-          cache-dependency-path: .epn-daemon/go.sum
-
-      - name: Build the in-app gram (libepnd.a)
-        continue-on-error: true
+      # The gram inside the app, as Build epnd published it (its ios-lib job):
+      # downloaded, checked against its .sha256, linked by the epnd_ios plugin.
+      # An app without its gram is not shipped.
+      - name: Fetch the in-app gram from epnd-latest
         run: |
           set -euo pipefail
-          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
-          CC_IOS=$(xcrun --sdk iphoneos --find clang)
-          FLAGS="-isysroot $SDK -arch arm64 -miphoneos-version-min=15.0"
-          cd .epn-daemon
-          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 CC="$CC_IOS" CGO_CFLAGS="$FLAGS" CGO_LDFLAGS="$FLAGS"             go build -trimpath -buildmode=c-archive -ldflags "-s -w"             -o ../ios/epnd_ios/ios/libepnd.a ./cmd/epnd-ios
-          ls -la ../ios/epnd_ios/ios/libepnd.a
-          echo "epnd $(git rev-parse --short HEAD)" > ../ios/epnd_ios/ios/EPND_VERSION
+          cd ios/epnd_ios/ios
+          base=https://github.com/50gramx/eapp-releases/releases/download/epnd-latest
+          for f in libepnd-ios-arm64.sha256 libepnd-ios-arm64.a libepnd-ios-arm64.version; do
+            curl -fsSL --retry 4 -o "$f" "$base/$f"
+          done
+          shasum -a 256 -c libepnd-ios-arm64.sha256
+          mv libepnd-ios-arm64.a libepnd.a
+          mv libepnd-ios-arm64.version EPND_VERSION
+          rm libepnd-ios-arm64.sha256
+          echo "in-app gram: $(cat EPND_VERSION), $(du -h libepnd.a | cut -f1)"
 
       - name: Pods
         run: |
@@ -219,15 +246,15 @@ jobs:
           set -euo pipefail
           mkdir -p Payload
           cp -R build/ios/iphoneos/Runner.app Payload/
-          zip -qry evo-ios-unsigned.ipa Payload
-          ls -la evo-ios-unsigned.ipa
+          zip -qry "$BRAND_ID-ios-unsigned.ipa" Payload
+          ls -la "$BRAND_ID-ios-unsigned.ipa"
 
       - name: Publish
         uses: softprops/action-gh-release@v3
         with:
-          files: evo-ios-unsigned.ipa
-          tag_name: evo-ios-latest
-          name: Evo for iPhone and iPad (unsigned)
+          files: ${{ matrix.brand }}-ios-unsigned.ipa
+          tag_name: ${{ matrix.brand }}-ios-latest
+          name: ${{ matrix.brand }} for iPhone and iPad (unsigned)
           prerelease: true
           body: |
             Unsigned build of eapp-live ${{ needs.check.outputs.eapp_sha }}, run ${{ github.run_number }}.
@@ -243,15 +270,18 @@ jobs:
       - name: Record this build
         env:
           EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
+          CONTRACTS_SHA: ${{ needs.check.outputs.contracts_sha }}
+          EPND_STATE: ${{ needs.check.outputs.epnd_state }}
         run: |
           set -euo pipefail
           mkdir -p .release-meta/data/last-built
-          printf '{\n  "eapp_sha": "%s",\n  "built_at": "%s"\n}\n' "$EAPP_SHA" "$(date -u +%FT%TZ)" > .release-meta/data/last-built/evo-ios.json
+          printf '{\n  "eapp_sha": "%s",\n  "contracts_sha": "%s",\n  "epnd_state": "%s",\n  "built_at": "%s"\n}\n' \
+            "$EAPP_SHA" "$CONTRACTS_SHA" "$EPND_STATE" "$(date -u +%FT%TZ)" > ".release-meta/data/last-built/$BRAND_ID-ios.json"
           cd .release-meta
           git config user.name "eutopia-ci"
           git config user.email "ci@50gramx.com"
-          git add data/last-built/evo-ios.json
-          git commit -m "ci: mark evo/ios built" || exit 0
+          git add "data/last-built/$BRAND_ID-ios.json"
+          git commit -m "ci: mark $BRAND_ID/ios built" || exit 0
           for i in $(seq 1 6); do
             git pull --rebase --autostash -q origin main || git rebase --abort || true
             if git push -q origin HEAD:main; then exit 0; fi

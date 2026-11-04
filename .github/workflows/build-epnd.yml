@@ -443,8 +443,83 @@ jobs:
               windows) wf="build-eapp-windows.yml" ;;
               macos)   wf="build-eapp-macos.yml" ;;
               android) wf="build-eapp-android.yml" ;;
+              # iOS links epnd as a library the ios-lib job publishes after
+              # this job; that job dispatches the iOS builds itself.
+              ios) continue ;;
               *) echo "skip unknown platform: $platform"; continue ;;
             esac
             echo "→ $wf brand_id=$brand channel=$channel"
             gh workflow run "$wf" -f brand_id="$brand" -f release_channel="$channel"
           done < /tmp/combos.txt
+
+  # THE IN-APP GRAM FOR iPHONE AND iPAD, published beside every other epnd.
+  #
+  # iOS lets an app start no other program, so epnd goes into the app as a
+  # static library (epn-daemon cmd/epnd-ios), and only Apple's toolchain on a
+  # Mac can build that. It used to be built inside the iOS app build, from
+  # whatever epn-daemon main was at that moment: a second source of truth that
+  # skipped vet and checksums. It is built here, from the same commit as the
+  # rest of the release, and the iOS app build downloads and verifies it like
+  # Android takes its .so. A separate job so a slow macOS queue never holds
+  # back Linux, Windows and Android.
+  ios-lib:
+    needs: [check, build]
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: macos-latest
+    steps:
+      - name: Checkout epn-daemon source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: epn-daemon
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: epn-daemon/go.mod
+          cache-dependency-path: epn-daemon/go.sum
+
+      - name: Configure git for private Go deps
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - name: Build libepnd-ios-arm64.a
+        env:
+          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+        working-directory: epn-daemon
+        run: |
+          set -euo pipefail
+          SDK=$(xcrun --sdk iphoneos --show-sdk-path)
+          CC_IOS=$(xcrun --sdk iphoneos --find clang)
+          FLAGS="-isysroot $SDK -arch arm64 -miphoneos-version-min=15.0"
+          mkdir -p dist
+          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 CC="$CC_IOS" CGO_CFLAGS="$FLAGS" CGO_LDFLAGS="$FLAGS"             go build -trimpath -buildmode=c-archive -ldflags "-s -w" -o dist/libepnd-ios-arm64.a ./cmd/epnd-ios
+          cd dist
+          echo "epnd $(git -C .. rev-parse --short HEAD)" > libepnd-ios-arm64.version
+          # The .sha256 is uploaded last: an app build that finds it finds the
+          # library it names already in place.
+          shasum -a 256 libepnd-ios-arm64.a libepnd-ios-arm64.version > libepnd-ios-arm64.sha256
+          cat libepnd-ios-arm64.sha256
+          ls -la
+
+      - name: Publish to epnd-latest
+        env:
+          GH_TOKEN: ${{ github.token }}
+        working-directory: epn-daemon/dist
+        run: |
+          set -euo pipefail
+          for f in libepnd-ios-arm64.a libepnd-ios-arm64.version libepnd-ios-arm64.sha256; do
+            ok=0
+            for attempt in 1 2 3 4 5; do
+              if gh release upload epnd-latest "$f" --repo "$GITHUB_REPOSITORY" --clobber; then ok=1; break; fi
+              echo "::warning file=$f::upload attempt $attempt failed; retrying"
+              sleep $((attempt * 20))
+            done
+            [ "$ok" = 1 ] || { echo "::error::$f not published"; exit 1; }
+          done
+
+      - name: Rebuild the iOS apps (manual cascade for critical updates)
+        if: github.event_name == 'workflow_dispatch' && inputs.cascade_app_builds == true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run build-eapp-ios.yml --repo "$GITHUB_REPOSITORY"
