@@ -139,7 +139,7 @@ jobs:
         env:
           BUNDLE_ID: ${{ steps.brand.outputs.ios_bundle_id }}
           TEAM_ID: ${{ steps.brand.outputs.ios_team_id }}
-          DISPLAY: ${{ steps.brand.outputs.brand_display_name }}
+          DISPLAY: ${{ steps.brand.outputs.ios_display_name || steps.brand.outputs.brand_display_name }}
         run: |
           set -euo pipefail
           test -n "$BUNDLE_ID" || { echo "the brand contract names no iOS bundle id"; exit 1; }
