@@ -15,14 +15,24 @@ on:
 permissions:
   contents: write
 
+# ONE RUN PER REPORT, NOT ONE PER COMMIT. bootstrap-01 reports as four commits
+# a few seconds apart (snapshot, mesh, fleet, heartbeat). Each used to start a
+# run, two of them finished, and both committed: two aggregates, two Pages
+# deploys and two site builds every 15 minutes, the first built from a report
+# that was only half pushed. A newer push now cancels the run before it, and
+# each run waits for the burst to settle before it reads anything, so the
+# last commit of a report produces the one aggregate.
 concurrency:
   group: aggregate-founders
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   aggregate:
     runs-on: ubuntu-latest
     steps:
+      - name: Let the report's burst of commits settle
+        if: github.event_name == 'push'
+        run: sleep 25
       - uses: actions/checkout@v4
       - name: Regenerate + push (retry, conflict-free)
         # SITE_DISPATCH_TOKEN is a PAT with `contents: write` on the brand-site
@@ -59,6 +69,12 @@ jobs:
             git add -A data/
             if git diff --cached --quiet; then
               echo "no change"; exit 0
+            fi
+            # A run that only restamps its own clock (generated_at,
+            # published_at) changed nothing anyone reads: commit nothing, so
+            # nothing downstream deploys.
+            if [ -z "$(git diff --cached -U0 | grep -E '^[+-] ' | grep -vE '^[+-] *"(generated_at|published_at)": ')" ]; then
+              echo "only timestamps moved; nothing to publish"; git reset -q --hard origin/main; exit 0
             fi
             git commit -q -m "ci: aggregate founder nodes + network/bests/communities/gramx proof"
             if git push -q origin HEAD:main; then

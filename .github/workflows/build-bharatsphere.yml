@@ -71,6 +71,8 @@ concurrency:
 
 jobs:
   check:
+    # A cancelled or failed aggregate is no clock tick worth a poll.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     outputs:
       sha: ${{ steps.latest.outputs.sha }}

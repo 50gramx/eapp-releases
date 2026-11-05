@@ -11,12 +11,20 @@ name: Cadence release dispatcher
 #      gets picked up automatically, same as before.
 # Manual trigger stays exactly as today in build-eapp-{linux,windows,macos}.yml
 # — this only *invokes* them, on a schedule.
+#
+# ONE DISPATCH PER PAIR PER DAY. The four cadences used to be four crons, and
+# on a day two of them fell due (every Monday, the 1st and 15th) each one
+# dispatched every pair: the same source built two, three or four times, side
+# by side, into identical binaries. Now one run works out which channels are
+# due today (nightly every day; weekly on Monday; bi-weekly on the 1st and
+# 15th; stable on the 1st) and dispatches each pair ONCE, for the first due
+# channel, with the rest as also_channels: the build workflow builds at most
+# once and promotes that build to the others (build-plan.mjs,
+# promote-release.sh). Web deploys per channel, so web is still dispatched
+# per due channel; its own check skips what is already built.
 on:
   schedule:
-    - cron: '0 2 * * *'        # nightly  — every day 02:00 UTC
-    - cron: '0 2 * * 1'        # weekly   — every Monday 02:00 UTC
-    - cron: '0 2 1,15 * *'     # bi-weekly — 1st and 15th of the month 02:00 UTC
-    - cron: '0 3 1 * *'        # stable   — 1st of the month 03:00 UTC
+    - cron: '0 2 * * *'
   workflow_dispatch:
     inputs:
       channel:
@@ -41,19 +49,20 @@ jobs:
           if [ -n "${{ inputs.channel }}" ]; then
             echo "channel=${{ inputs.channel }}" >> "$GITHUB_OUTPUT"
           else
-            case "${{ github.event.schedule }}" in
-              "0 2 * * *")    echo "channel=nightly" >> "$GITHUB_OUTPUT" ;;
-              "0 2 * * 1")    echo "channel=weekly" >> "$GITHUB_OUTPUT" ;;
-              "0 2 1,15 * *") echo "channel=bi-weekly" >> "$GITHUB_OUTPUT" ;;
-              "0 3 1 * *")    echo "channel=stable" >> "$GITHUB_OUTPUT" ;;
-              *) echo "::error::Unrecognized schedule trigger"; exit 1 ;;
-            esac
+            due="nightly"
+            [ "$(date -u +%u)" = 1 ] && due="$due weekly"
+            case "$(date -u +%d)" in 01|15) due="$due bi-weekly" ;; esac
+            [ "$(date -u +%d)" = 01 ] && due="$due stable"
+            echo "channel=nightly" >> "$GITHUB_OUTPUT"
+            echo "also=$(echo $due | cut -d' ' -f2- -s | tr ' ' ',')" >> "$GITHUB_OUTPUT"
+            echo "due today: $due"
           fi
 
       - name: Rebuild every declared and every already-released brand/platform pair
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CHANNEL: ${{ steps.channel.outputs.channel }}
+          ALSO: ${{ steps.channel.outputs.also }}
         run: |
           set -euo pipefail
           node -e '
@@ -100,8 +109,16 @@ jobs:
               web)     workflow="build-eapp-web.yml" ;;
               *) echo "skip unknown platform: $platform"; continue ;;
             esac
-            echo "→ $workflow brand_id=$brand channel=$CHANNEL"
+            if [ "$platform" = web ]; then
+              for ch in $CHANNEL ${ALSO//,/ }; do
+                echo "→ $workflow brand_id=$brand channel=$ch"
+                gh workflow run "$workflow" -f brand_id="$brand" -f release_channel="$ch"
+              done
+              continue
+            fi
+            echo "→ $workflow brand_id=$brand channel=$CHANNEL also=${ALSO:-none}"
             gh workflow run "$workflow" \
               -f brand_id="$brand" \
-              -f release_channel="$CHANNEL"
+              -f release_channel="$CHANNEL" \
+              -f also_channels="$ALSO"
           done < /tmp/pairs.txt

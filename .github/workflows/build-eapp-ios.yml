@@ -50,6 +50,7 @@ jobs:
       eapp_sha: ${{ steps.state.outputs.eapp_sha }}
       contracts_sha: ${{ steps.state.outputs.contracts_sha }}
       epnd_state: ${{ steps.state.outputs.epnd_state }}
+      fingerprints: ${{ steps.compare.outputs.fingerprints }}
     steps:
       - uses: actions/checkout@v4
 
@@ -71,6 +72,20 @@ jobs:
           state=$(curl -fsSL https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/libepnd-ios-arm64.sha256 | sha256sum | awk '{print $1}')
           echo "epnd_state=$state" >> "$GITHUB_OUTPUT"
 
+      # Per brand, what its iOS build is made of (.github/scripts/build-plan.mjs):
+      # eapp-live minus docs, tests and other platforms' folders, the brand's
+      # resolved contract, this recipe, the iOS gram. A contract edit to
+      # another brand, or to this brand's store copy, no longer rebuilds it.
+      - name: Checkout eapp-live tree (no file contents but tool/ci)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/eapp-live
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ steps.state.outputs.eapp_sha }}
+          path: .plan-eapp
+          filter: blob:none
+          sparse-checkout: tool/ci
+
       - name: Brands to build
         id: compare
         env:
@@ -78,6 +93,7 @@ jobs:
           ONLY: ${{ inputs.brand_id }}
           FORCED: ${{ github.event_name == 'workflow_dispatch' }}
           NOW: ${{ steps.state.outputs.eapp_sha }} ${{ steps.state.outputs.contracts_sha }} ${{ steps.state.outputs.epnd_state }}
+          EPND_STATE: ${{ steps.state.outputs.epnd_state }}
         run: |
           python3 -c "import yaml" 2>/dev/null || pip install -q pyyaml
           python3 .github/ios_brands.py
@@ -355,11 +371,19 @@ jobs:
           EAPP_SHA: ${{ needs.check.outputs.eapp_sha }}
           CONTRACTS_SHA: ${{ needs.check.outputs.contracts_sha }}
           EPND_STATE: ${{ needs.check.outputs.epnd_state }}
+          FINGERPRINTS: ${{ needs.check.outputs.fingerprints }}
         run: |
           set -euo pipefail
           mkdir -p .release-meta/data/last-built
-          printf '{\n  "eapp_sha": "%s",\n  "contracts_sha": "%s",\n  "epnd_state": "%s",\n  "built_at": "%s"\n}\n' \
-            "$EAPP_SHA" "$CONTRACTS_SHA" "$EPND_STATE" "$(date -u +%FT%TZ)" > ".release-meta/data/last-built/$BRAND_ID-ios.json"
+          node -e '
+            const e = process.env;
+            const fp = JSON.parse(e.FINGERPRINTS || "{}")[e.BRAND_ID] || {};
+            require("fs").writeFileSync(`.release-meta/data/last-built/${e.BRAND_ID}-ios.json`, JSON.stringify({
+              eapp_sha: e.EAPP_SHA, contracts_sha: e.CONTRACTS_SHA, epnd_state: e.EPND_STATE,
+              fingerprint: fp.fingerprint || "", parts: fp.parts || {},
+              built_at: new Date().toISOString(),
+            }, null, 2) + "\n");
+          '
           cd .release-meta
           git config user.name "eutopia-ci"
           git config user.email "ci@50gramx.com"

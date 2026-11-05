@@ -4,6 +4,17 @@ on:
   workflow_dispatch:
   repository_dispatch:
     types: [release-metadata-updated]
+  # A build or a promotion changes what the page lists. Nothing sent the
+  # dispatch above, so the page caught up only at 02:17, the minute the
+  # nightly builds had just begun.
+  workflow_run:
+    workflows:
+      - Build and Release Windows App
+      - Build and Release Linux App
+      - Build and Release macOS App
+      - Build and Release Android App
+      - Build iOS and iPadOS App (unsigned)
+    types: [completed]
   schedule:
     - cron: '17 2 * * *'
 

@@ -3,6 +3,11 @@ name: Deploy GitHub Pages
 on:
   push:
     branches: [main]
+    # A gram's report (data/nodes/**) is turned into the published data by
+    # Aggregate founder nodes, whose completion deploys below; deploying the
+    # raw report as well was a second deploy of the same minute, cancelled
+    # four times out of five.
+    paths-ignore: ['data/nodes/**']
   workflow_dispatch:
   # Data commits from aggregate-founders / catalog run under GITHUB_TOKEN, which
   # by design does NOT trigger `push` workflows — so Pages would never redeploy
@@ -12,7 +17,7 @@ on:
     workflows: ["Aggregate founder nodes", "Generate Release Catalog", "Build epnd"]
     types: [completed]
   schedule:
-    - cron: '12,27,42,57 * * * *'
+    - cron: '12 * * * *'
 
 permissions:
   contents: read
@@ -25,6 +30,9 @@ concurrency:
 
 jobs:
   deploy:
+    # Only what a finished run published: a cancelled or failed upstream run
+    # published nothing, so there is nothing new to deploy.
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
