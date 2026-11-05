@@ -1,6 +1,9 @@
 """Which brands build-eapp-ios.yml builds this run.
 
-Every brand whose contract has an ios: block with a bundle-id is an iOS app.
+Every brand whose contract has an ios: block (its team-id at least) is an
+iOS app. Its bundle id is the contract's ios.bundle-id when it names one, else
+the brand's Apple id by the usual nomenclature (resolve_contract_delivery.mjs:
+the launch-environment without ".*", as on macOS).
 One is rebuilt when what it is made from (eapp-live, the contracts, the
 published in-app gram) differs from its last build's marker, or on demand.
 Writes `brands` (JSON list) and `any` to GITHUB_OUTPUT.
@@ -20,7 +23,8 @@ def ios_brands():
     for f in glob.glob("contracts/**/ethosapps.yaml", recursive=True):
         for e in yaml.safe_load(open(f, encoding="utf-8")) or []:
             b = e.get("brand") if isinstance(e, dict) else None
-            if b and (b.get("ios") or {}).get("bundle-id"):
+            ios = (b or {}).get("ios") if isinstance(b, dict) else None
+            if isinstance(ios, dict) and (ios.get("bundle-id") or ios.get("team-id")):
                 out.add(b["id"])
     return sorted(out)
 

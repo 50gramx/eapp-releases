@@ -215,10 +215,42 @@ jobs:
           cd ios
           pod install --repo-update
 
+      # THE APP IS THE BRAND'S: the same contract-resolved defines the Android
+      # build passes. Without them every iOS build came out as the default brand
+      # (evo), whatever bundle id it was signed under.
       - name: Build (no signing)
         run: |
+          set -euo pipefail
+          DEFINES=(
+            --dart-define=BRAND_ID="${{ steps.brand.outputs.brand_id }}"
+            --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}"
+            --dart-define=BRAND_DISPLAY_NAME="${{ steps.brand.outputs.brand_display_name }}"
+            --dart-define=BRAND_PRODUCT_NAME="${{ steps.brand.outputs.brand_product_name }}"
+            --dart-define=BRAND_WINDOW_TITLE="${{ steps.brand.outputs.brand_window_title }}"
+            --dart-define=BRAND_LOGO="${{ steps.brand.outputs.brand_logo }}"
+            --dart-define=BRAND_SESSION_FILE="${{ steps.brand.outputs.brand_session_file }}"
+            --dart-define=BRAND_SINGLETON_NAME="${{ steps.brand.outputs.brand_singleton_name }}"
+            --dart-define=BRAND_ORGANISATION="${{ steps.brand.outputs.brand_organisation }}"
+            --dart-define=BRAND_COMMUNITY_CODE="${{ steps.brand.outputs.brand_community_code }}"
+            --dart-define=BRAND_SHOW_APP_LIBRARY="${{ steps.brand.outputs.brand_show_app_library }}"
+            --dart-define=BRAND_SHOW_PRIVATE_SPACE_TILE="${{ steps.brand.outputs.brand_show_private_space_tile }}"
+            --dart-define=BRAND_SHOW_HISTORY="${{ steps.brand.outputs.brand_show_history }}"
+            --dart-define=BRAND_SHOW_PANE_SWITCHER="${{ steps.brand.outputs.brand_show_pane_switcher }}"
+            --dart-define=BRAND_SHOW_SPOTLIGHT="${{ steps.brand.outputs.brand_show_spotlight }}"
+            --dart-define=BRAND_SHOW_OPEN_TABS_SUMMARY="${{ steps.brand.outputs.brand_show_open_tabs_summary }}"
+            --dart-define=BRAND_SHOW_OPEN_COMMUNITIES_SUMMARY="${{ steps.brand.outputs.brand_show_open_communities_summary }}"
+            --dart-define=BRAND_SHOW_USER_DETAILS="${{ steps.brand.outputs.brand_show_user_details }}"
+            --dart-define=BRAND_SHOW_OPEN_PAGES_TABS="${{ steps.brand.outputs.brand_show_open_pages_tabs }}"
+            --dart-define=BRAND_CLEAR_SESSION_ON_START="${{ steps.brand.outputs.brand_clear_session_on_start }}"
+            --dart-define=BRAND_UNBOUNDED_SOLUTION_NAV="${{ steps.brand.outputs.brand_unbounded_solution_nav }}"
+            --dart-define=BRAND_SHOW_WALLPAPER_CREDIT="${{ steps.brand.outputs.brand_show_wallpaper_credit }}"
+            --dart-define=BRAND_SHOW_AUTO_APP_SELECTOR="${{ steps.brand.outputs.brand_show_auto_app_selector }}"
+            --dart-define=BRAND_PREFERRED_WALLPAPER="${{ steps.brand.outputs.brand_preferred_wallpaper }}"
+            --dart-define=BRAND_NAVIGATION_JSON_B64="${{ steps.brand.outputs.brand_navigation_json_b64 }}"
+          )
           # Version is the date, the build number the run: both always increase.
-          flutter build ios --release --no-codesign --dart-define=BUILD_ID=${{ github.run_number }}             --build-name "$(date -u +%y.%-m.%-d)" --build-number "$((1000 + ${{ github.run_number }}))"
+          flutter build ios --release --no-codesign --dart-define=BUILD_ID=${{ github.run_number }} "${DEFINES[@]}" \
+            --build-name "$(date -u +%y.%-m.%-d)" --build-number "$((1000 + ${{ github.run_number }}))"
 
       # SIGNED, TO TESTFLIGHT. Xcode signs with the team's own certificate and
       # profile, created and kept by Apple ("cloud-managed"), authorised by the
