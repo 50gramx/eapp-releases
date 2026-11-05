@@ -6,11 +6,11 @@ name: Deploy bharatsphere
 # and latest `v*` tag (via CI_READ_TOKEN, read-only) and only deploy when either
 # moves. Markers live on this repo's main:
 #
-#   bharatsphere-last-deployed.txt   last main SHA deployed to demo
-#   bharatsphere-last-released.txt   last v* tag deployed to live
+#   bharatsphere-last-live.txt       last main SHA deployed to live
+#   bharatsphere-last-deployed.txt   last main SHA deployed to demo (manual only)
 #
-# WHAT IS AND IS NOT HERE. The two automatic paths moved: demo web on every push
-# to main, and live on every `v*` tag. The Android/Play path did NOT — it is
+# WHAT IS AND IS NOT HERE. Live on every new main commit, automatically; demo
+# only when chosen by hand (2026-11-05). The Android/Play path did NOT — it is
 # manual, rare, and signing a public-repo build with the keystore would mean
 # putting bharatsphere's upload key and Play credentials into a repo that already
 # holds different values under those same secret names. It stays in
@@ -45,11 +45,11 @@ on:
       deploy_target:
         description: 'Deploy now, ignoring the marker'
         required: true
-        default: demo
+        default: live
         type: choice
         options:
-          - demo
           - live
+          - demo
 
 permissions:
   contents: write
@@ -97,35 +97,19 @@ jobs:
         run: |
           set -euo pipefail
           demo=false; live=false; adopt=false; live_ref=""
-          released=$(cat bharatsphere-last-released.txt 2>/dev/null || echo)
+          # LIVE IS THE DEFAULT (founder, 2026-11-05). Every new commit on
+          # bharatsphere-app main deploys to production on the next poll; demo
+          # is only ever a deliberate manual choice. Waiting for a v* tag meant
+          # production silently fell weeks behind main while demo deploys kept
+          # failing, and grams called backend functions that were never live.
+          # The live marker records the main SHA that last reached production.
           case "$DISPATCH" in
             demo) demo=true ;;
-            # A MANUAL live deploy BUILDS MAIN, NOT THE HIGHEST TAG. The old CI
-            # deployed live from a tag PUSH, where the tag was by definition the
-            # commit you had just made; "highest tag that exists" is a different
-            # thing entirely and can be arbitrarily old. It was: the first manual
-            # live run checked out v2025.1.4 from December and failed on an intl
-            # constraint fixed months later. Automatic runs still use the tag,
-            # because there the tag is new by construction.
-            live) live=true; live_ref=main ;;
+            live) live=true; live_ref="$SHA" ;;
             *)
-              [ "$(cat bharatsphere-last-deployed.txt 2>/dev/null || echo)" = "$SHA" ] || demo=true
-              # An EMPTY released-marker means this workflow has never run, not
-              # that a release is pending. Deploying prod unattended on the first
-              # cron after the cutover is exactly the wrong first act, so adopt
-              # the current tag as the baseline instead and fire from the NEXT
-              # tag onward. (The demo marker needs no such care — worst case is
-              # one redundant deploy to dev.)
-              if [ -z "$released" ] && [ -n "$TAG" ]; then
-                echo "::notice::adopting $TAG as the live baseline; not deploying"
-                adopt=true
-              elif [ -n "$TAG" ] && [ "$released" != "$TAG" ]; then
-                live=true; live_ref="$TAG"
-              fi
+              [ "$(cat bharatsphere-last-live.txt 2>/dev/null || echo)" = "$SHA" ] || { live=true; live_ref="$SHA"; }
               ;;
           esac
-          # A tagged release supersedes the demo deploy of the same commit.
-          if [ "$live" = true ] && [ "$DISPATCH" = "" ]; then demo=false; fi
           echo "deploy_demo=$demo" >> "$GITHUB_OUTPUT"
           echo "deploy_live=$live" >> "$GITHUB_OUTPUT"
           echo "adopt=$adopt" >> "$GITHUB_OUTPUT"
@@ -194,7 +178,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       - name: Install Firebase CLI
         run: npm install -g firebase-tools
@@ -310,7 +294,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
 
       # hosting:demo is HunarManch (bharat-spheres-vibes is hunarmanch-web).
       - name: Build HunarManch landing page
@@ -394,10 +378,8 @@ jobs:
           "
 
       - name: Update marker
-        # Only a tag deploy advances the release marker. A manual run built main,
-        # which is not a release and must not be recorded as one.
-        if: needs.check.outputs.live_ref == needs.check.outputs.tag && needs.check.outputs.tag != ''
+        # Every live deploy of main advances the live marker, manual or polled.
         run: |
           "${GITHUB_WORKSPACE}/.github/scripts/push-marker.sh" \
-            bharatsphere-last-released.txt "${{ needs.check.outputs.tag }}" \
-            "ci: deployed bharatsphere live @ ${{ needs.check.outputs.tag }}"
+            bharatsphere-last-live.txt "${{ needs.check.outputs.live_ref }}" \
+            "ci: deployed bharatsphere live @ ${{ needs.check.outputs.live_ref }}"
