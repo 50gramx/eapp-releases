@@ -295,21 +295,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # The AAB is kept with the run. Google Play takes a NEW app's very first
-      # bundle only by hand in Play Console (its API cannot create the package);
-      # this is that bundle, signed with the upload key. Every later one goes
-      # up by the step below.
-      - name: Keep the AAB with the run
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ inputs.brand_id }}-${{ inputs.release_channel }}-aab
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 30
-
       # Auto-publish the AAB to Google Play (internal track) for this brand's
       # contract-owned package. Skipped when the service-account secret is
       # absent, so brands without a Play listing still get the APK release.
       - name: Upload to Google Play (Internal Track)
+        id: play
         if: env.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON != ''
         uses: r0adkll/upload-google-play@v1
         with:
@@ -320,6 +310,19 @@ jobs:
           status: ${{ inputs.play_release_status }}
         env:
           GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+
+      # ONLY WHEN PLAY DID NOT TAKE IT is the signed AAB kept with the run, for
+      # 7 days: a new Play app's very first bundle goes up by hand in Play
+      # Console (its API cannot upload it), and a skipped or failed upload
+      # leaves something to upload. A build Play took, or one with no upload key
+      # (Play would refuse its debug signature), keeps nothing here.
+      - name: Keep the AAB when Play did not take it
+        if: always() && steps.play.outcome != 'success' && hashFiles('android/app/upload-keystore.jks') != '' && hashFiles('build/app/outputs/bundle/release/app-release.aab') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.brand_id }}-${{ inputs.release_channel }}-aab
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 7
 
       - name: Checkout eapp-releases (to write build marker)
         uses: actions/checkout@v4
