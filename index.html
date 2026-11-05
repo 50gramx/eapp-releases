@@ -16,40 +16,43 @@
     <link rel="stylesheet" href="release.css">
   </head>
   <body>
-    <a class="skip" href="#apps">Skip to the apps</a>
+    <a class="skip" href="#view">Skip to the apps</a>
     <header class="top">
       <a class="top__name" href="./">
         <img src="brand-assets/lib/assets/ethosverse-browser-logo-v3-transparent.png" alt="" width="28" height="28">
         <span>50GRAMx <b>Apps</b></span>
       </a>
       <nav class="top__nav" aria-label="Primary">
-        <a href="#apps">Apps</a>
-        <a href="#join">Join</a>
+        <a href="./#apps">Apps</a>
+        <a href="./#join">Join</a>
         <a href="status.html">Network</a>
       </nav>
     </header>
 
-    <main>
+    <main id="view">
+<!--home-->
       <section class="hero" aria-labelledby="hero-title">
         <h1 id="hero-title">Every 50GRAMx app, on the device in your hand.</h1>
         <p class="hero__lead">
           Get each app from its store where it is listed, or straight from the build.
           Every build here is made in public by CI from the brand's contract, with its
-          SHA-256 and the exact source it came from.
+          SHA-256, its signature status and the exact source it came from.
         </p>
         <div class="hero__row">
           <span id="deviceChip" class="chip chip--quiet">Finding your device…</span>
           <div id="channelPick" class="seg" role="group" aria-label="Build channel"></div>
         </div>
-        <ul class="trust" aria-label="Why you can trust these builds">
-          <li><b>Open builds.</b> Every file links to the CI run, source commit and contracts commit.</li>
-          <li><b>Checkable.</b> Each artifact's SHA-256 is published with it.</li>
-          <li><b>Signed where it counts.</b> Store and TestFlight builds carry the brand's own signature; direct downloads say plainly when they don't.</li>
-        </ul>
+        <div id="netStrip" class="net" hidden></div>
       </section>
 
-      <section id="apps" class="apps" aria-label="Apps" aria-live="polite">
-        <p class="loading">Loading the apps…</p>
+      <section id="apps" class="apps" aria-label="Apps">
+        <div id="filters" class="filters" role="group" aria-label="Category"></div>
+        <div id="grid" class="grid" aria-live="polite"><p class="loading">Loading the apps…</p></div>
+        <ul class="trust" aria-label="Why you can trust these builds">
+          <li><b>Open builds.</b> Every file links to its CI release, source commit and contracts commit.</li>
+          <li><b>Checkable.</b> Each artifact's SHA-256 is published with it.</li>
+          <li><b>Signed, or told plainly.</b> Each build says whether it carries the brand's own signature, a test key, or none, as the build itself recorded.</li>
+        </ul>
       </section>
 
       <section id="join" class="join" aria-labelledby="join-title">
@@ -76,10 +79,11 @@
           <p class="join__status" role="status"></p>
         </form>
       </section>
+<!--/home-->
     </main>
 
     <footer class="foot">
-      <p>Built by CI in <a href="https://github.com/50gramx/eapp-releases">50gramx/eapp-releases</a> from the brand contracts in <a href="https://github.com/50gramx/eapp-interaction-contracts">eapp-interaction-contracts</a>.</p>
+      <p>Built by CI in <a href="https://github.com/50gramx/eapp-releases">50gramx/eapp-releases</a> from the brand contracts in <a href="https://github.com/50gramx/eapp-interaction-contracts">eapp-interaction-contracts</a>. Store badges are trademarks of their owners.</p>
       <p>What you share on this page (an email or a mobile number, and your note) is used only to reach you about it.</p>
     </footer>
 

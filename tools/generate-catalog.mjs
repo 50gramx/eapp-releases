@@ -136,7 +136,77 @@ function presenceFrom(block) {
   const distribution = nestedValue(block, 'site', 'distribution').toLowerCase() === 'private' ? 'private' : 'public';
   const website = nestedValue(block, 'site', 'website') || nestedValue(block, 'web', 'url');
 
-  return { website: /^https:\/\//.test(website) ? website : '', stores, access, distribution };
+  // The web app is the brand's web: url, the address its web build serves;
+  // a website alone (a company home page) is not the app running on the web.
+  const webApp = nestedValue(block, 'web', 'url');
+
+  return {
+    website: /^https:\/\//.test(website) ? website : '',
+    webApp: /^https:\/\//.test(webApp) ? webApp : '',
+    stores,
+    access,
+    distribution,
+  };
+}
+
+// THE REST OF A BRAND'S STORE FACE, as the brand declares it in its contract's
+// site: block. A field it has not declared stays empty and the page says so;
+// nothing here is guessed. An age rating names who gave it (rating-authority),
+// because a rating nobody issued is not a rating.
+function detailsFrom(block) {
+  const value = (key) => nestedValue(block, 'site', key);
+  const https = (url) => (/^https:\/\//.test(url) ? url : '');
+  return {
+    category: value('category'),
+    description: value('description'),
+    developer: value('developer'),
+    ageRating: value('age-rating'),
+    ratingAuthority: value('rating-authority'),
+    interactive: value('interactive-elements'),
+    privacyPolicy: https(value('privacy-policy')),
+    support: https(value('support')),
+  };
+}
+
+// A BRAND WITHOUT A LOGO OF ITS OWN gets a mark drawn from its id: a golden-
+// angle spiral (the gram mark's geometry) whose hue and dot count come from a
+// hash of the id. Same id, same mark, on every build; it is replaced the day
+// the contract names a real logo.
+function hashOf(text) {
+  let h = 2166136261;
+  for (const ch of text) {
+    h ^= ch.codePointAt(0);
+    h = Math.imul(h, 16777619);
+  }
+  // Finish with an avalanche so short ids that differ by a letter or two land
+  // far apart in hue (plain FNV keeps their low bits close).
+  h ^= h >>> 16;
+  h = Math.imul(h, 0x85ebca6b);
+  h ^= h >>> 13;
+  h = Math.imul(h, 0xc2b2ae35);
+  h ^= h >>> 16;
+  return h >>> 0;
+}
+
+function generatedMark(brandId) {
+  const h = hashOf(brandId);
+  const hue = h % 360;
+  const count = 13 + ((h >>> 9) % 13);
+  const turn = ((h >>> 3) % 628) / 100;
+  const golden = Math.PI * (3 - Math.sqrt(5));
+  const dots = [];
+  for (let i = 0; i < count; i += 1) {
+    const r = 5 + 36 * Math.sqrt((i + 0.5) / count);
+    const a = turn + i * golden;
+    const size = 2.6 + 5.4 * (1 - i / count);
+    dots.push(`  <circle cx="${(64 + r * Math.cos(a)).toFixed(2)}" cy="${(64 + r * Math.sin(a)).toFixed(2)}" r="${size.toFixed(2)}" fill="hsl(${(hue + i * 6) % 360} 80% ${60 + (i % 3) * 9}%)"/>`);
+  }
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="hsl(${hue} 45% 20%)"/><stop offset="1" stop-color="hsl(${(hue + 40) % 360} 55% 9%)"/></linearGradient></defs>
+  <rect width="128" height="128" rx="28" fill="url(#g)"/>
+${dots.join('\n')}
+</svg>
+`;
 }
 
 // The brand's logo as the site serves it: the contract names the app asset
@@ -161,7 +231,9 @@ function readBrands(contractsRoot, siteRoot) {
       const productName = directValue(brand, 'product-name') || displayName;
       products.push({
         ...presenceFrom(brand),
+        ...detailsFrom(brand),
         logo: logoFor(brand, siteRoot),
+        logoGenerated: false,
         planned: plannedFromContract(brand),
         brandId,
         productId: brandId,
@@ -176,6 +248,23 @@ function readBrands(contractsRoot, siteRoot) {
         releases: [],
       });
     }
+  }
+  // A logo file two brands both name identifies neither of them (a contract
+  // pointing at another brand's logo as a placeholder): the brand that
+  // declared it first keeps it, the others get their own mark.
+  const owner = new Map();
+  for (const product of products) {
+    if (!product.logo) continue;
+    if (owner.has(product.logo)) product.logo = '';
+    else owner.set(product.logo, product.brandId);
+  }
+  for (const product of products) {
+    if (product.logo) continue;
+    const served = `brand-assets/generated/${slug(product.brandId)}.svg`;
+    mkdirSync(join(siteRoot, 'brand-assets/generated'), { recursive: true });
+    writeFileSync(join(siteRoot, served), generatedMark(product.brandId));
+    product.logo = served;
+    product.logoGenerated = true;
   }
   products.sort((a, b) => a.displayName.localeCompare(b.displayName));
   return products;
@@ -215,6 +304,11 @@ function readReleaseMetadata(metadataRoot) {
   return releases;
 }
 
+// Size and download count of every asset, by "<tag>|<asset name>", straight
+// from GitHub: the page shows what a download weighs and how often the
+// current builds were fetched, and never a number it did not read.
+const assetFacts = new Map();
+
 async function readGitHubReleaseMetadata(repo, token) {
   if (!repo) return [];
   const releases = [];
@@ -232,6 +326,12 @@ async function readGitHubReleaseMetadata(repo, token) {
     }
     const page = await response.json();
     for (const release of page) {
+      for (const item of release.assets || []) {
+        assetFacts.set(`${release.tag_name}|${item.name}`, {
+          size: item.size,
+          downloads: item.download_count,
+        });
+      }
       const asset = (release.assets || []).find((item) => item.name === 'release-metadata.json');
       if (!asset) continue;
       const assetResponse = await fetch(asset.browser_download_url, {
@@ -336,6 +436,18 @@ for (const product of products) {
     const bTime = String(b.generatedAt || '');
     return bTime.localeCompare(aTime);
   });
+  for (const release of product.releases) {
+    const facts = assetFacts.get(`${release.releaseTag}|${release.assetName}`);
+    if (facts) {
+      release.assetSize = facts.size;
+      release.downloads = facts.downloads;
+    }
+  }
+  const counted = new Map();
+  for (const release of product.releases) {
+    if (typeof release.downloads === 'number') counted.set(`${release.releaseTag}|${release.assetName}`, release.downloads);
+  }
+  product.downloads = counted.size ? [...counted.values()].reduce((a, b) => a + b, 0) : null;
   product.latestStable = stableRecent(product.releases);
   // Planned = what the contract declares + the cadence matrix + whatever has
   // shipped; the page shows each planned platform without a build as coming.
@@ -358,3 +470,26 @@ const catalog = {
 mkdirSync(dirname(output), { recursive: true });
 writeFileSync(output, `${JSON.stringify(catalog, null, 2)}\n`);
 console.log(`Wrote catalog for ${products.length} products: ${output}`);
+
+// EVERY APP HAS ITS OWN PAGE at apps/<brand>/, so it can be linked, shared and
+// found by search with its own title, summary and image. Each is index.html
+// with the app's meta filled in and the home content left out; site.js sees
+// data-app on <body> and draws that app.
+const htmlEscape = (value) => String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const shell = readFileSync(join(siteRoot, 'index.html'), 'utf8');
+for (const product of products) {
+  const id = slug(product.brandId);
+  const title = `${product.displayName} — 50GRAMx Apps`;
+  const summary = product.summary || '';
+  const page = shell
+    .replace(/<title>[^<]*<\/title>/, () => `<title>${htmlEscape(title)}</title>\n    <base href="../../">`)
+    .replace(/(<meta name="description" content=")[^"]*"/, (_, a) => `${a}${htmlEscape(summary)}"`)
+    .replace(/(<meta property="og:title" content=")[^"]*"/, (_, a) => `${a}${htmlEscape(title)}"`)
+    .replace(/(<meta property="og:description" content=")[^"]*"/, (_, a) => `${a}${htmlEscape(summary)}"`)
+    .replace(/<link rel="icon" href="[^"]*">/, () => `<link rel="icon" href="${htmlEscape(product.logo)}">\n    <meta property="og:image" content="${htmlEscape(product.logo)}">`)
+    .replace(/<body>/, () => `<body data-app="${htmlEscape(product.brandId)}">`)
+    .replace(/<!--home-->[\s\S]*?<!--\/home-->/, '<p class="loading">Loading…</p>');
+  mkdirSync(join(siteRoot, 'apps', id), { recursive: true });
+  writeFileSync(join(siteRoot, 'apps', id, 'index.html'), page);
+}
+console.log(`Wrote ${products.length} app pages under apps/`);

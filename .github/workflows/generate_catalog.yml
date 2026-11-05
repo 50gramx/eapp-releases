@@ -45,12 +45,15 @@ jobs:
 
       - name: Commit Catalog
         run: |
-          if git diff --quiet -- data/catalog.json; then
+          # The catalog, each app's own page, and the marks drawn for brands
+          # without a logo all come from the same run; status (not diff) so a
+          # new app's first page is seen too.
+          if [ -z "$(git status --porcelain -- data/catalog.json apps brand-assets/generated)" ]; then
             echo "Catalog is already current."
           else
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add data/catalog.json
+            git add data/catalog.json apps brand-assets/generated
             git commit -m "Update release catalog"
             # Conflict-safe: several scheduled workflows push this branch, so a
             # bare push races. Rebase onto latest and retry; give up gracefully.
