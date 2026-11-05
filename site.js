@@ -1,696 +1,463 @@
+// The releases page. Everything about a brand -- its name, summary, logo,
+// website, store links, which platforms it is planned for, and who may try it
+// early -- comes from data/catalog.json, which tools/generate-catalog.mjs builds
+// from the brand contracts and each build's release-metadata.json. Nothing
+// about any brand is written here.
+
+const INTEREST_URL = "https://us-central1-bharatsphere-183e7.cloudfunctions.net/epnInterest";
+const CONTACT_KEY = "epn-interest-contact";
+
 const state = {
   catalog: null,
   signing: null,
-  matrix: null,
-  releaseLookup: new Map(),
-  releaseTrigger: null,
-  filters: {
-    brand: "all",
-    platform: detectPlatform(),
-    channel: "stable",
-  },
+  device: detectDevice(),
+  channel: "stable",
+  lookup: new Map(),
 };
-
-const focusableSelectors = [
-  'a[href]',
-  'button:not([disabled])',
-  'input:not([disabled])',
-  'select:not([disabled])',
-  'textarea:not([disabled])',
-  '[tabindex]:not([tabindex="-1"])',
-].join(", ");
 
 const platformNames = {
-  windows: "Windows",
-  macos: "macOS",
-  linux: "Linux",
   android: "Android",
+  ios: "iPhone & iPad",
+  macos: "macOS",
+  windows: "Windows",
+  linux: "Linux",
   web: "Web",
 };
+const platformOrder = ["android", "ios", "macos", "windows", "linux", "web"];
+const channelNames = { stable: "Stable", weekly: "Weekly", "bi-weekly": "Bi-weekly", nightly: "Nightly" };
+const channelOrder = ["stable", "weekly", "bi-weekly", "nightly"];
 
-const channelNames = {
-  stable: "Stable",
-  weekly: "Weekly",
-  "bi-weekly": "Bi-weekly",
-  nightly: "Nightly",
+// Which store serves which platform, and how its badge reads.
+const storeInfo = {
+  "play-store": { platform: "android", label: "Get it on Google Play" },
+  "app-store": { platform: "ios", label: "Download on the App Store" },
+  testflight: { platform: "ios", label: "Test it on TestFlight" },
+  "mac-app-store": { platform: "macos", label: "Download on the Mac App Store" },
+  "microsoft-store": { platform: "windows", label: "Get it from Microsoft" },
 };
 
-const channelOrder = ["stable", "weekly", "bi-weekly", "nightly"];
+const tierInfo = {
+  alpha: { label: "Alpha", hint: "Early trials, first to see new things" },
+  beta: { label: "Beta", hint: "Test builds through the stores (TestFlight, Play testing)" },
+  gamma: { label: "For my organisation", hint: "Private to your people, through your own gramx store" },
+};
+
+const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const safeUrl = (value) => (/^https:\/\//.test(String(value || "")) ? String(value) : "");
+
+function detectDevice() {
+  const ua = navigator.userAgent.toLowerCase();
+  const touchMac = navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1;
+  if (/android/.test(ua)) return "android";
+  if (/iphone|ipad|ipod/.test(ua) || touchMac) return "ios";
+  if (/mac/.test(ua)) return "macos";
+  if (/win/.test(ua)) return "windows";
+  if (/linux|x11|cros/.test(ua)) return "linux";
+  return "web";
+}
+
+function rememberedContact() {
+  try { return localStorage.getItem(CONTACT_KEY) || ""; } catch { return ""; }
+}
+function rememberContact(value) {
+  try { localStorage.setItem(CONTACT_KEY, value); } catch { /* private mode: ask again next time */ }
+}
 
 async function loadJSON(path, optional = false) {
   const response = await fetch(path, { cache: "no-store" });
   if (!response.ok) {
     if (optional) return null;
-    throw new Error(`${path} unavailable: ${response.status}`);
+    throw new Error(`${path}: ${response.status}`);
   }
   return response.json();
 }
 
-function detectPlatform() {
-  const source = [
-    navigator.userAgentData?.platform,
-    navigator.platform,
-    navigator.userAgent,
-  ].join(" ").toLowerCase();
+// ── builds ─────────────────────────────────────────────────────────────────
 
-  if (source.includes("win")) return "windows";
-  if (source.includes("mac")) return "macos";
-  if (source.includes("linux")) return "linux";
-  if (source.includes("android")) return "android";
-  return "web";
+function releasesOf(product) {
+  const seen = new Set();
+  return [...(product.latestStable || []), ...(product.releases || [])].filter((r) => {
+    const k = [r.platform, r.channel, r.buildId, r.assetName].join("|");
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
 }
 
-function allReleases(product) {
-  return [...(product.latestStable || []), ...(product.releases || [])];
-}
-
-function resolveSigning(brandId, platform) {
-  const signing = state.signing || {};
-  const override = (signing.overrides || {})[`${brandId}/${platform}`];
-  const fallback = (signing.defaults || {})[platform];
-  return override || fallback || { signed: false, unsigned: null };
-}
-
-function plannedPlatforms(product) {
-  if (!state.matrix?.brands?.includes(product.brandId)) {
-    return [];
-  }
-  return state.matrix.platforms || [];
-}
-
-function releaseScore(release, preferredPlatform, preferredChannel) {
-  const preferredChannelRank = [
-    preferredChannel,
-    ...channelOrder.filter((channel) => channel !== preferredChannel),
-  ].indexOf(release.channel);
-
-  return (
-    (release.platform === preferredPlatform ? 100 : 0) +
-    (release.channel === preferredChannel ? 30 : 0) +
-    (release.channel === "stable" ? 20 : 0) +
-    (channelOrder.length - preferredChannelRank) * 5 +
-    Number(release.buildId || 0) / 1000 +
-    (release.generatedAt ? new Date(release.generatedAt).getTime() / 1e16 : 0)
-  );
-}
-
-function featuredRelease(product) {
-  const releases = allReleases(product);
-  if (!releases.length) return null;
-  return [...releases].sort((left, right) =>
-    releaseScore(right, state.filters.platform, state.filters.channel) -
-    releaseScore(left, state.filters.platform, state.filters.channel),
-  )[0];
-}
-
-function fmtDate(value) {
-  return value ? new Date(value).toLocaleString() : "Unknown";
-}
-
-function fmtCount(value) {
-  return Number(value ?? 0).toLocaleString();
-}
-
-function daysSince(value) {
-  if (!value) return null;
-  const now = new Date(state.catalog?.generatedAt || Date.now());
-  const then = new Date(value);
-  return Math.max(0, Math.round((now - then) / 86400000));
-}
-
-function ageLabel(value) {
-  const days = daysSince(value);
-  if (days == null) return "Unknown age";
-  if (days === 0) return "Built today";
-  if (days === 1) return "Built 1 day ago";
-  return `Built ${days} days ago`;
-}
-
-function maturityLabel(product) {
-  const releases = allReleases(product);
-  const stable = releases.some((release) => release.channel === "stable");
-  const weekly = releases.some((release) => release.channel === "weekly");
-  if (!releases.length) return { label: "Listed", tone: "cool-gray" };
-  if (stable) return { label: "Shipping", tone: "green" };
-  if (weekly) return { label: "Preview", tone: "blue" };
-  return { label: "Nightly only", tone: "warm-gray" };
-}
-
-function ringLabel(product) {
-  const releases = allReleases(product);
-  const channels = [...new Set(releases.map((release) => release.channel))];
-  if (!channels.length) return "No rings";
-  if (channels.includes("stable")) return "Stable available";
-  if (channels.includes("weekly") && channels.includes("nightly")) return "Weekly + nightly";
-  if (channels.includes("weekly")) return "Weekly only";
-  if (channels.includes("nightly")) return "Nightly only";
-  return channels.map((channel) => channelNames[channel] || channel).join(", ");
-}
-
-function shortSha(value) {
-  return value ? String(value).slice(0, 12) : "-";
-}
-
-function coverage(product) {
-  const planned = plannedPlatforms(product);
-  const published = [...new Set(allReleases(product).map((release) => release.platform))];
-  return {
-    planned,
-    published,
-    missing: planned.filter((platform) => !published.includes(platform)),
+// The build to offer for a platform: the chosen channel if there is one,
+// else the steadiest channel that exists.
+function bestFor(product, platform) {
+  const builds = releasesOf(product).filter((r) => r.platform === platform);
+  if (!builds.length) return null;
+  const rank = (r) => {
+    const order = [state.channel, ...channelOrder.filter((c) => c !== state.channel)];
+    const i = order.indexOf(r.channel);
+    return (i < 0 ? 99 : i) * 1e7 - Number(r.buildId || 0);
   };
+  return [...builds].sort((a, b) => rank(a) - rank(b))[0];
 }
 
-function currentProducts() {
-  return state.catalog.products.filter((product) =>
-    state.filters.brand === "all" || product.brandId === state.filters.brand,
-  );
+function guidanceFor(brandId, platform) {
+  const s = state.signing || {};
+  return (s.overrides || {})[`${brandId}/${platform}`] || (s.defaults || {})[platform] || { signed: false, unsigned: null };
 }
 
-function publishedPlatforms(products) {
-  return [...new Set(products.flatMap((product) => allReleases(product).map((release) => release.platform)))];
-}
-
-function availablePlatformItems() {
-  const products = currentProducts();
-  const planned = state.filters.brand === "all"
-    ? [...new Set((state.matrix?.platforms || []))]
-    : plannedPlatforms(products[0] || {});
-  const published = publishedPlatforms(products);
-  const combined = [...new Set([state.filters.platform, ...published, ...planned])];
-  return combined.map((platform) => ({
-    id: platform,
-    label: platform === detectPlatform() ? `${platformNames[platform] || platform} detected` : (platformNames[platform] || platform),
-    disabled: !published.includes(platform),
-  }));
-}
-
-function availableChannelItems() {
-  const products = currentProducts();
-  const channels = [...new Set(products.flatMap((product) => allReleases(product).map((release) => release.channel)))];
-  const combined = [...new Set(["stable", ...channels])];
-  return combined
-    .filter((channel) => channelOrder.includes(channel))
-    .map((channel) => ({
-      id: channel,
-      label: channelNames[channel] || channel,
-      disabled: !channels.includes(channel),
-    }));
-}
-
-function firstEnabled(items, preferredId) {
-  const preferred = items.find((item) => item.id === preferredId && !item.disabled);
-  if (preferred) return preferred.id;
-  const first = items.find((item) => !item.disabled);
-  return first ? first.id : preferredId;
-}
-
-function syncFilterAvailability() {
-  const platformItems = availablePlatformItems();
-  const channelItems = availableChannelItems();
-  state.filters.platform = firstEnabled(platformItems, state.filters.platform);
-  state.filters.channel = firstEnabled(channelItems, state.filters.channel);
-}
-
-function releaseKey(product, release) {
-  return [product.brandId, release.platform, release.channel, release.buildId || 0].join("|");
-}
-
-function primeReleaseLookup() {
-  state.releaseLookup = new Map();
-  for (const product of state.catalog.products) {
-    for (const release of allReleases(product)) {
-      state.releaseLookup.set(releaseKey(product, release), { product, release });
-    }
+// Signed or not, as the build that made it said; older builds fall back to
+// the guidance table.
+function signingOf(release) {
+  if (release.signing) {
+    return {
+      release: { label: "Signed", tone: "good", note: "Signed with the brand's own key." },
+      debug: { label: "Test-signed", tone: "warn", note: "Signed with a throwaway key; it cannot update a store copy." },
+      "ad-hoc": { label: "Not notarized", tone: "warn", note: "Signed on the build machine only; macOS will ask you to confirm." },
+      none: { label: "Unsigned", tone: "warn", note: "Not signed; follow the install steps." },
+    }[release.signing] || { label: "Unsigned", tone: "warn", note: "" };
   }
+  return guidanceFor(release.brandId, release.platform).signed
+    ? { label: "Signed", tone: "good", note: "" }
+    : { label: "Unsigned", tone: "warn", note: "Follow the install steps." };
 }
 
-function heroStats() {
-  const products = state.catalog.products || [];
-  const releases = products.flatMap(allReleases);
-  const shippingBrands = products.filter((product) => allReleases(product).length > 0).length;
-  const signedBuilds = releases.filter((release) => resolveSigning(release.brandId, release.platform).signed).length;
-  const latestPublished = releases.reduce((latest, release) => {
-    if (!release.generatedAt) return latest;
-    return !latest || new Date(release.generatedAt) > new Date(latest.generatedAt) ? release : latest;
-  }, null);
-  const plannedPairs = (state.matrix?.brands || []).length * (state.matrix?.platforms || []).length;
-  const publishedPairs = new Set(releases.map((release) => `${release.brandId}/${release.platform}`)).size;
-  const stableBuilds = releases.filter((release) => release.channel === "stable").length;
-  const catalogLag = latestPublished ? daysSince(latestPublished.generatedAt) : null;
+function ago(value) {
+  if (!value) return "";
+  const days = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 86400000));
+  return days === 0 ? "today" : days === 1 ? "yesterday" : `${days} days ago`;
+}
 
-  document.querySelector("#heroStats").innerHTML = [
-    stat("Brands shipping", `${shippingBrands}/${products.length}`),
-    stat("Published builds", fmtCount(releases.length)),
-    stat("Coverage", plannedPairs ? `${publishedPairs}/${plannedPairs}` : fmtCount(publishedPairs)),
-    stat("Latest artifact", latestPublished ? ageLabel(latestPublished.generatedAt) : "No builds"),
-  ].join("");
+const short = (sha) => (sha ? String(sha).slice(0, 10) : "–");
 
-  const summary = document.querySelector("#catalogSummary");
-  if (summary) {
-    summary.textContent = `Catalog generated ${fmtDate(state.catalog.generatedAt)}. Latest published artifact is ${catalogLag == null ? "unknown" : `${catalogLag} day${catalogLag === 1 ? "" : "s"} old`}. ${stableBuilds === 0 ? "No stable builds are currently published, so recommendations fall back to preview rings." : `${stableBuilds} stable build${stableBuilds === 1 ? "" : "s"} available.`}`;
+// ── rendering ──────────────────────────────────────────────────────────────
+
+function logoOf(product) {
+  if (product.logo) return `<img class="brand__logo" src="${esc(product.logo)}" alt="" width="56" height="56" loading="lazy">`;
+  const letters = (product.displayName || product.brandId).replace(/[^A-Za-z0-9]/g, "").slice(0, 2).toUpperCase();
+  return `<span class="brand__logo brand__logo--mono" aria-hidden="true">${esc(letters)}</span>`;
+}
+
+function storeBadges(product, onlyPlatform = null) {
+  return (product.stores || [])
+    .filter((s) => storeInfo[s.store] && safeUrl(s.url) && (!onlyPlatform || storeInfo[s.store].platform === onlyPlatform))
+    .map((s) => `<a class="store" href="${esc(safeUrl(s.url))}" rel="noopener" target="_blank"><span class="store__plat">${esc(platformNames[storeInfo[s.store].platform])}</span>${esc(storeInfo[s.store].label)}</a>`)
+    .join("");
+}
+
+function platformTile(product, platform) {
+  const release = bestFor(product, platform);
+  const store = (product.stores || []).find((s) => storeInfo[s.store]?.platform === platform && safeUrl(s.url));
+  const here = platform === state.device ? " tile--here" : "";
+  const name = esc(platformNames[platform] || platform);
+
+  if (platform === "web" && product.website) {
+    return `<a class="tile${here}" href="${esc(product.website)}" rel="noopener" target="_blank">
+      <span class="tile__name">${name}</span>
+      <span class="tile__what">Open in your browser</span>
+      <span class="badge badge--good">Live</span>
+    </a>`;
   }
-}
-
-function stat(label, value) {
-  return `<div class="catalog-stat"><span>${label}</span><strong>${value}</strong></div>`;
-}
-
-function buildSwitchers() {
-  syncFilterAvailability();
-
-  buildSwitcher("#brandFilter", [
-    { id: "all", label: "All" },
-    ...state.catalog.products.map((product) => ({ id: product.brandId, label: product.displayName })),
-  ], state.filters.brand, (id) => {
-    state.filters.brand = id;
-    buildSwitchers();
-    renderCatalog();
-  });
-
-  buildSwitcher("#platformFilter", availablePlatformItems(), state.filters.platform, (id) => {
-    state.filters.platform = id;
-    buildSwitchers();
-    renderCatalog();
-  });
-
-  buildSwitcher("#channelFilter", availableChannelItems(), state.filters.channel, (id) => {
-    state.filters.channel = id;
-    buildSwitchers();
-    renderCatalog();
-  });
-}
-
-function buildSwitcher(selector, items, selectedId, onSelect) {
-  const root = document.querySelector(selector);
-  root.replaceChildren();
-
-  items.forEach((item) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = `cds--content-switcher-btn${item.id === selectedId ? " cds--content-switcher--selected" : ""}`;
-    button.setAttribute("aria-pressed", item.id === selectedId ? "true" : "false");
-    button.setAttribute("aria-disabled", item.disabled ? "true" : "false");
-    button.disabled = Boolean(item.disabled);
-    button.innerHTML = `<span class="cds--content-switcher__label">${item.label}</span>`;
-    if (item.disabled) {
-      button.title = "Not available for the current brand selection";
-    }
-    if (!item.disabled) {
-      button.addEventListener("click", () => onSelect(item.id));
-    }
-    root.append(button);
-  });
-}
-
-function renderCatalog() {
-  const grid = document.querySelector("#brandGrid");
-  const summary = document.querySelector("#catalogSummary");
-  grid.replaceChildren();
-
-  const products = state.catalog.products.filter((product) =>
-    state.filters.brand === "all" || product.brandId === state.filters.brand,
-  );
-
-  let visibleBuilds = 0;
-  let missingPairs = 0;
-  let brandsOutsideCadence = 0;
-
-  for (const product of products) {
-    const releases = allReleases(product);
-    visibleBuilds += releases.length;
-    missingPairs += coverage(product).missing.length;
-    if (!plannedPlatforms(product).length) brandsOutsideCadence += 1;
-    if (!releases.length) {
-      grid.append(emptyBrand(product));
-      continue;
-    }
-    grid.append(brandCard(product));
+  if (release) {
+    const sig = signingOf(release);
+    const key = `${product.brandId}|${release.platform}|${release.channel}|${release.buildId}`;
+    state.lookup.set(key, { product, release, sig });
+    return `<button type="button" class="tile${here}" data-get="${esc(key)}">
+      <span class="tile__name">${name}</span>
+      <span class="tile__what">${esc(channelNames[release.channel] || release.channel)} · ${esc(ago(release.generatedAt))}</span>
+      <span class="badge badge--${sig.tone}">${esc(sig.label)}</span>
+      ${store ? `<span class="tile__also">Also in the store</span>` : ""}
+    </button>`;
   }
-
-  const stableFallback = state.filters.channel === "stable"
-    ? " Stable-first will fall back automatically when a brand has no stable build."
-    : "";
-  summary.textContent = `${fmtCount(products.length)} brands in view, ${fmtCount(visibleBuilds)} published builds, ${fmtCount(missingPairs)} planned desktop gaps still unfilled, ${fmtCount(brandsOutsideCadence)} listed brand${brandsOutsideCadence === 1 ? "" : "s"} outside the declared desktop cadence.${stableFallback}`;
-}
-
-function buildDownloadAction(product, release, buttonClass = "cds--btn cds--btn--primary") {
-  const signing = resolveSigning(product.brandId, release.platform);
-  if (signing.signed) {
-    return `<a class="${buttonClass}" href="${release.assetUrl || "#"}">Download</a>`;
+  if (store) {
+    return `<a class="tile${here}" href="${esc(safeUrl(store.url))}" rel="noopener" target="_blank">
+      <span class="tile__name">${name}</span>
+      <span class="tile__what">${esc(storeInfo[store.store].label)}</span>
+      <span class="badge badge--good">Store</span>
+    </a>`;
   }
-
-  return `<button type="button" class="${buttonClass} catalog-download-trigger" data-release-key="${releaseKey(product, release)}">Download</button>`;
+  return `<button type="button" class="tile tile--soon${here}" data-tier="beta" data-platform="${esc(platform)}" data-brand="${esc(product.brandId)}">
+    <span class="tile__name">${name}</span>
+    <span class="tile__what">Coming — tell me when</span>
+    <span class="badge">Planned</span>
+  </button>`;
 }
 
-function emptyBrand(product) {
-  const maturity = maturityLabel(product);
-  const inCadence = plannedPlatforms(product).length > 0;
-  const section = document.createElement("section");
-  section.className = "cds--tile cds--tile--light catalog-brand-empty";
-  section.innerHTML = `
-    <p class="catalog-panel-label">Brand not yet shipping</p>
-    <h3>${product.displayName}</h3>
-    <div class="catalog-tag-row">
-      <span class="cds--tag cds--tag--${maturity.tone}">${maturity.label}</span>
-      <span class="cds--tag cds--tag--cool-gray">0 published builds</span>
-      <span class="cds--tag ${inCadence ? "cds--tag--blue" : "cds--tag--warm-gray"}">${inCadence ? "Desktop cadence declared" : "Not in desktop cadence matrix"}</span>
+function primaryAction(product) {
+  const platform = state.device;
+  const store = (product.stores || []).find((s) => storeInfo[s.store]?.platform === platform && safeUrl(s.url));
+  const release = bestFor(product, platform);
+  if (store) {
+    return `<a class="btn btn--primary btn--big" href="${esc(safeUrl(store.url))}" rel="noopener" target="_blank">${esc(storeInfo[store.store].label)}</a>`;
+  }
+  if (platform === "web" && product.website) {
+    return `<a class="btn btn--primary btn--big" href="${esc(product.website)}" rel="noopener" target="_blank">Open ${esc(product.displayName)}</a>`;
+  }
+  if (release) {
+    const key = `${product.brandId}|${release.platform}|${release.channel}|${release.buildId}`;
+    return `<button type="button" class="btn btn--primary btn--big" data-get="${esc(key)}">Get it for ${esc(platformNames[platform])}</button>`;
+  }
+  if ((product.planned || []).includes(platform) && (product.access || []).length) {
+    return `<button type="button" class="btn btn--primary btn--big" data-tier="beta" data-platform="${esc(platform)}" data-brand="${esc(product.brandId)}">Tell me when it's on ${esc(platformNames[platform])}</button>`;
+  }
+  return "";
+}
+
+function tryEarly(product) {
+  const tiers = (product.access || []).filter((t) => tierInfo[t]);
+  if (!tiers.length) return "";
+  return `<div class="ask" data-brand="${esc(product.brandId)}">
+    <p class="ask__title">Try it early</p>
+    <div class="ask__chips">
+      ${tiers.map((t) => `<button type="button" class="pill" data-tier="${t}" data-brand="${esc(product.brandId)}" title="${esc(tierInfo[t].hint)}">${esc(tierInfo[t].label)}</button>`).join("")}
     </div>
-    <p class="catalog-brand-summary">${product.summary || "No public releases have been published for this brand yet."}</p>
-  `;
-  return section;
+    <p class="ask__title">What do you think?</p>
+    <div class="ask__chips">
+      <button type="button" class="pill" data-say="like" data-brand="${esc(product.brandId)}" aria-label="I like it">👍 Like it</button>
+      <button type="button" class="pill" data-say="dislike" data-brand="${esc(product.brandId)}" aria-label="Not for me">👎 Not for me</button>
+      <button type="button" class="pill" data-tier="feature" data-brand="${esc(product.brandId)}">💡 I want a feature</button>
+    </div>
+    <div class="ask__panel" hidden></div>
+  </div>`;
+}
+
+function provenance(product) {
+  const rows = releasesOf(product)
+    .sort((a, b) => platformOrder.indexOf(a.platform) - platformOrder.indexOf(b.platform) || channelOrder.indexOf(a.channel) - channelOrder.indexOf(b.channel))
+    .map((r) => {
+      const sig = signingOf(r);
+      const key = `${product.brandId}|${r.platform}|${r.channel}|${r.buildId}`;
+      state.lookup.set(key, { product, release: r, sig });
+      return `<li class="prov__row">
+        <div>
+          <b>${esc(platformNames[r.platform] || r.platform)} · ${esc(channelNames[r.channel] || r.channel)}</b>
+          <span>build ${esc(r.buildId)} · ${esc(ago(r.generatedAt))} · <span class="badge badge--${sig.tone}">${esc(sig.label)}</span></span>
+          <span class="mono">sha256 ${esc(short(r.sha256))} · source <a href="https://github.com/${esc(r.sourceRepo || "50gramx/eapp-live")}">${esc(short(r.sourceCommit))}</a> · contracts <a href="https://github.com/${esc(r.contractsRepo || "50gramx/eapp-interaction-contracts")}/commit/${esc(r.contractsCommit || "")}">${esc(short(r.contractsCommit))}</a>${r.epndVersion ? ` · gram ${esc(short(r.epndVersion))}` : ""}</span>
+        </div>
+        <div class="prov__acts">
+          <a class="link" href="https://github.com/50gramx/eapp-releases/releases/tag/${esc(r.releaseTag || "")}">Release</a>
+          <button type="button" class="link" data-get="${esc(key)}">Get</button>
+        </div>
+      </li>`;
+    });
+  if (!rows.length) return "";
+  return `<details class="prov"><summary>Every build, with its provenance (${rows.length})</summary><ul>${rows.join("")}</ul></details>`;
 }
 
 function brandCard(product) {
-  const featured = featuredRelease(product);
-  const releases = allReleases(product);
-  const alternates = releases
-    .filter((release) => release !== featured)
-    .sort((left, right) =>
-      releaseScore(right, state.filters.platform, state.filters.channel) -
-      releaseScore(left, state.filters.platform, state.filters.channel),
-    );
-
-  const section = document.createElement("section");
-  section.className = "cds--tile catalog-brand-card";
-
-  const stableCount = releases.filter((release) => release.channel === "stable").length;
-  const signedCount = releases.filter((release) => resolveSigning(product.brandId, release.platform).signed).length;
-  const productCoverage = coverage(product);
-  const maturity = maturityLabel(product);
-  const sourceCommitCount = new Set(releases.map((release) => release.sourceCommit).filter(Boolean)).size;
-  const contractsCommitCount = new Set(releases.map((release) => release.contractsCommit).filter(Boolean)).size;
-  const stableFallback = state.filters.channel === "stable" && stableCount === 0;
-  const hasBundledDaemon = releases.some((release) => release.epndVersion);
-  const catalogLag = daysSince(featured.generatedAt);
-  const inCadence = plannedPlatforms(product).length > 0;
-  const featuredSigning = resolveSigning(product.brandId, featured.platform);
-
-  section.innerHTML = `
-    <div>
-      <div class="catalog-brand-head">
-        <p class="catalog-panel-label">${product.organisation || "Brand"}</p>
-        <h3>${product.displayName}</h3>
-        <div class="catalog-brand-meta">${product.productName || product.displayName} | ${product.launchEnvironment || "No launch environment listed"}</div>
-        <p class="catalog-brand-summary">${product.summary || "Contract-driven product release channel."}</p>
-      </div>
-
-      <div class="catalog-tag-row">
-        <span class="cds--tag cds--tag--${maturity.tone}">${maturity.label}</span>
-        <span class="cds--tag cds--tag--blue">Coverage ${productCoverage.published.length}/${productCoverage.planned.length || productCoverage.published.length}</span>
-        <span class="cds--tag cds--tag--green">${signedCount} signed</span>
-        <span class="cds--tag cds--tag--cool-gray">${ringLabel(product)}</span>
-        <span class="cds--tag ${inCadence ? "cds--tag--blue" : "cds--tag--warm-gray"}">${inCadence ? "Cadence declared" : "Outside cadence matrix"}</span>
-        ${hasBundledDaemon ? '<span class="cds--tag cds--tag--purple">Bundled daemon</span>' : ""}
-        ${stableFallback ? '<span class="cds--tag cds--tag--warm-gray">Stable unavailable, fallback active</span>' : ""}
-      </div>
-
-      <div class="catalog-brand-metrics">
-        <div class="catalog-metric">
-          <span>Home app</span>
-          <strong>${product.homeApp || "-"}</strong>
-        </div>
-        <div class="catalog-metric">
-          <span>Builds</span>
-          <strong>${fmtCount(releases.length)}</strong>
-        </div>
-        <div class="catalog-metric">
-          <span>Artifact age</span>
-          <strong>${ageLabel(featured.generatedAt).replace("Built ", "")}</strong>
-        </div>
-        <div class="catalog-metric">
-          <span>Source revisions</span>
-          <strong>${sourceCommitCount}</strong>
-        </div>
-        <div class="catalog-metric">
-          <span>Contract revisions</span>
-          <strong>${contractsCommitCount}</strong>
+  const shipped = releasesOf(product).length;
+  const planned = platformOrder.filter((p) => (product.planned || []).includes(p) || (p === "web" && product.website));
+  const status = shipped ? (releasesOf(product).some((r) => r.channel === "stable") ? ["Shipping", "good"] : ["Preview", "info"]) : ["Coming", "quiet"];
+  const card = document.createElement("article");
+  card.className = "brand";
+  card.id = `brand-${product.brandId}`;
+  card.innerHTML = `
+    <header class="brand__head">
+      ${logoOf(product)}
+      <div class="brand__id">
+        <h2>${esc(product.displayName)}</h2>
+        <p class="brand__product">${esc(product.productName && product.productName !== product.displayName ? product.productName : "")}</p>
+        <div class="brand__chips">
+          <span class="badge badge--${status[1]}">${status[0]}</span>
+          ${product.distribution === "private" ? `<span class="badge">Private · gramx store</span>` : ""}
+          ${product.website ? `<a class="badge badge--link" href="${esc(product.website)}" rel="noopener" target="_blank">${esc(new URL(product.website).host)} ↗</a>` : ""}
         </div>
       </div>
-
-      ${productCoverage.missing.length ? `
-        <div class="catalog-note">
-          Planned desktop coverage is incomplete: ${productCoverage.missing.map((platform) => platformNames[platform] || platform).join(", ")} not yet published.
-        </div>
-      ` : ""}
-      ${catalogLag != null && catalogLag >= 3 ? `
-        <div class="catalog-note">
-          Artifact freshness is aging: the newest public build for this brand is ${catalogLag} days old even though the catalog itself is newer.
-        </div>
-      ` : ""}
-    </div>
-
-    <div class="catalog-featured">
-      <div>
-        <p class="catalog-panel-label">Recommended build</p>
-        <h4>${platformNames[featured.platform] || featured.platform} | ${channelNames[featured.channel] || featured.channel}</h4>
-        <div class="catalog-featured-meta">
-          <span>Version ${featured.version || "?"} | build ${featured.buildId || 0}</span>
-          <span>${ageLabel(featured.generatedAt)} | published ${fmtDate(featured.generatedAt)}</span>
-          <span>Source ${shortSha(featured.sourceCommit)} | contracts ${shortSha(featured.contractsCommit)}</span>
-          ${featured.epndVersion ? `<span>Bundled epnd ${shortSha(featured.epndVersion)}</span>` : ""}
-        </div>
-      </div>
-
-      <div class="catalog-tag-row">
-        <span class="cds--tag ${featuredSigning.signed ? "cds--tag--green" : "cds--tag--warm-gray"}">${featuredSigning.signed ? "Signed" : "Unsigned"}</span>
-        <span class="cds--tag cds--tag--blue">${platformNames[featured.platform] || featured.platform}</span>
-        <span class="cds--tag cds--tag--cool-gray">${channelNames[featured.channel] || featured.channel}</span>
-        ${featured.sha256 ? '<span class="cds--tag cds--tag--cool-gray">SHA-256 published</span>' : ""}
-      </div>
-
-      <div class="catalog-featured-actions">
-        ${buildDownloadAction(product, featured)}
-        <a class="cds--btn cds--btn--ghost" href="https://github.com/50gramx/eapp-releases/releases/tag/${featured.releaseTag || ""}">Release details</a>
-      </div>
-
-      ${alternates.length ? `
-        <div>
-          <p class="catalog-panel-label">Other builds</p>
-          <div class="catalog-build-pills">
-            ${alternates.slice(0, 4).map((release) => buildPill(product, release)).join("")}
-          </div>
-        </div>
-      ` : ""}
-    </div>
+    </header>
+    <p class="brand__summary">${esc(product.summary || "")}</p>
+    <div class="brand__get">${primaryAction(product)}</div>
+    ${storeBadges(product) ? `<div class="stores">${storeBadges(product)}</div>` : ""}
+    ${planned.length ? `<div class="tiles">${planned.map((p) => platformTile(product, p)).join("")}</div>` : ""}
+    ${tryEarly(product)}
+    ${provenance(product)}
   `;
-
-  const details = document.createElement("div");
-  details.className = "catalog-accordion";
-  details.innerHTML = `
-    <ul class="cds--accordion">
-      <li class="cds--accordion__item">
-        <button class="cds--accordion__heading" aria-expanded="false" type="button">
-          <svg class="cds--accordion__arrow" width="16" height="16" viewBox="0 0 16 16" aria-hidden="true">
-            <path d="M6 12L10 8 6 4 4.6 5.4 7.2 8 4.6 10.6z"></path>
-          </svg>
-          <span class="cds--accordion__title">Browse all published builds and provenance</span>
-        </button>
-        <div class="cds--accordion__wrapper">
-          <div class="cds--accordion__content">
-            <div class="catalog-release-list">
-              ${releases
-                .sort((left, right) =>
-                  releaseScore(right, state.filters.platform, state.filters.channel) -
-                  releaseScore(left, state.filters.platform, state.filters.channel),
-                )
-                .map((release) => releaseRow(product, release))
-                .join("")}
-            </div>
-          </div>
-        </div>
-      </li>
-    </ul>
-  `;
-  wireAccordion(details);
-  section.append(details);
-
-  return section;
+  return card;
 }
 
-function buildPill(product, release) {
-  const signing = resolveSigning(product.brandId, release.platform);
-  const action = signing.signed
-    ? `<a class="catalog-build-pill" href="${release.assetUrl || "#"}">`
-    : `<button type="button" class="catalog-build-pill catalog-download-trigger" data-release-key="${releaseKey(product, release)}">`;
-  const close = signing.signed ? "</a>" : "</button>";
-
-  return `
-    ${action}
-      <div>
-        <strong>${platformNames[release.platform] || release.platform} | ${channelNames[release.channel] || release.channel}</strong>
-        <span>${ageLabel(release.generatedAt)} | build ${release.buildId || 0}</span>
-      </div>
-    ${close}
-  `;
+function render() {
+  state.lookup = new Map();
+  const root = document.querySelector("#apps");
+  const products = [...(state.catalog.products || [])].sort((a, b) =>
+    releasesOf(b).length - releasesOf(a).length || a.displayName.localeCompare(b.displayName));
+  root.replaceChildren(...products.map(brandCard));
+  if (!products.length) root.innerHTML = `<p class="loading">No apps listed yet.</p>`;
 }
 
-function releaseRow(product, release) {
-  const signing = resolveSigning(product.brandId, release.platform);
-  const signed = signing.signed;
-  return `
-    <article class="catalog-release-row">
-      <div>
-        <h5>${platformNames[release.platform] || release.platform} | ${channelNames[release.channel] || release.channel}</h5>
-        <p>Version ${release.version || "?"} | build ${release.buildId || 0}</p>
-        <p>${ageLabel(release.generatedAt)} | published ${fmtDate(release.generatedAt)}</p>
-        <p>Source ${shortSha(release.sourceCommit)} | contracts ${shortSha(release.contractsCommit)}</p>
-        ${release.epndVersion ? `<p>Bundled epnd ${shortSha(release.epndVersion)} | sha ${shortSha(release.epndSha256)}</p>` : ""}
-        <div class="catalog-tag-row">
-          <span class="cds--tag ${signed ? "cds--tag--green" : "cds--tag--warm-gray"}">${signed ? "Signed" : "Unsigned"}</span>
-          ${release.sha256 ? `<span class="cds--tag cds--tag--cool-gray">Artifact sha ${shortSha(release.sha256)}</span>` : ""}
-          ${release.stableHistoryPath ? `<span class="cds--tag cds--tag--cool-gray">Stable history path declared</span>` : ""}
-        </div>
-      </div>
-      <div>
-        ${buildDownloadAction(product, release, "cds--btn cds--btn--secondary")}
-      </div>
-    </article>
-  `;
+function renderChannels() {
+  const present = new Set((state.catalog.products || []).flatMap((p) => releasesOf(p).map((r) => r.channel)));
+  const root = document.querySelector("#channelPick");
+  root.innerHTML = channelOrder.filter((c) => present.has(c)).map((c) =>
+    `<button type="button" class="seg__btn" aria-pressed="${c === state.channel}" data-channel="${c}">${esc(channelNames[c])}</button>`).join("");
+  document.querySelector("#deviceChip").textContent = `For your ${platformNames[state.device] || "device"}`;
 }
 
-function wireAccordion(root) {
-  const button = root.querySelector(".cds--accordion__heading");
-  const item = root.querySelector(".cds--accordion__item");
-  button.addEventListener("click", () => {
-    const expanded = button.getAttribute("aria-expanded") === "true";
-    button.setAttribute("aria-expanded", expanded ? "false" : "true");
-    item.classList.toggle("cds--accordion__item--active", !expanded);
-  });
-}
+// ── getting a build ────────────────────────────────────────────────────────
 
-function closeDownloadModal() {
-  const modal = document.querySelector("#downloadModal");
-  modal.hidden = true;
-  document.body.classList.remove("catalog-modal-open");
-  if (state.releaseTrigger instanceof HTMLElement) {
-    state.releaseTrigger.focus();
-  }
-  state.releaseTrigger = null;
-}
-
-function openDownloadModal(key, trigger = null) {
-  const entry = state.releaseLookup.get(key);
+function openGuide(key) {
+  const entry = state.lookup.get(key);
   if (!entry) return;
-  const { product, release } = entry;
-  const signing = resolveSigning(product.brandId, release.platform);
-  if (signing.signed) {
-    window.location.href = release.assetUrl || "#";
+  const { product, release, sig } = entry;
+  const url = safeUrl(release.assetUrl);
+  if (sig.tone === "good" && url) {
+    window.location.href = url;
     return;
   }
+  const guide = guidanceFor(product.brandId, release.platform);
+  const u = guide.unsigned || {};
+  const command = u.command ? u.command.replace("{APP}", guide.appName || "the app") : "";
+  document.querySelector("#guideKicker").textContent = `${product.displayName} · ${platformNames[release.platform] || release.platform} · ${channelNames[release.channel] || release.channel}`;
+  document.querySelector("#guideTitle").textContent = u.headline || sig.note || "Before you install";
+  document.querySelector("#guideBody").innerHTML = `
+    ${sig.note ? `<p class="guide__sig"><span class="badge badge--${sig.tone}">${esc(sig.label)}</span> ${esc(sig.note)}</p>` : ""}
+    ${u.reassurance ? `<p>${esc(u.reassurance)}</p>` : ""}
+    ${(u.steps || []).length ? `<ol>${u.steps.map((s) => `<li>${esc(s)}</li>`).join("")}</ol>` : ""}
+    ${command ? `<pre class="mono">${esc(command)}</pre>` : ""}
+    ${release.sha256 ? `<p class="mono small">SHA-256 ${esc(release.sha256)}</p>` : ""}`;
+  const go = document.querySelector("#guideGo");
+  go.href = url || "#";
+  const copy = document.querySelector("#guideCopy");
+  copy.hidden = !command;
+  copy.onclick = async () => {
+    try { await navigator.clipboard.writeText(command); copy.textContent = "Copied"; } catch { copy.textContent = "Copy failed"; }
+  };
+  copy.textContent = "Copy command";
+  document.querySelector("#guide").showModal();
+}
 
-  const modal = document.querySelector("#downloadModal");
-  const panel = modal.querySelector(".catalog-modal__panel");
-  const title = document.querySelector("#downloadModalTitle");
-  const body = document.querySelector("#downloadModalBody");
-  const continueLink = document.querySelector("#modalContinueDownload");
-  const copyButton = document.querySelector("#modalCopyCommand");
-  const unsigned = signing.unsigned || {};
-  const command = unsigned.command ? unsigned.command.replace("{APP}", signing.appName || "the app") : "";
-  state.releaseTrigger = trigger instanceof HTMLElement ? trigger : document.activeElement;
+// ── interest: one tap, one line ────────────────────────────────────────────
 
-  title.textContent = `${product.displayName} | ${platformNames[release.platform] || release.platform} | ${channelNames[release.channel] || release.channel}`;
-  body.innerHTML = `
-    <div class="catalog-modal-copy">
-      <p class="catalog-install-title">${unsigned.headline || "Unsigned build guidance"}</p>
-      ${unsigned.reassurance ? `<p class="catalog-install-copy">${unsigned.reassurance}</p>` : ""}
-      <ol class="catalog-install-steps">${(unsigned.steps || []).map((step) => `<li>${step}</li>`).join("")}</ol>
-      ${command ? `<div class="catalog-inline-code"><code>${command}</code></div>` : ""}
-      ${release.sha256 ? `<div class="catalog-guide-sha">SHA-256 available in the build metadata for verification.</div>` : ""}
+async function send(payload) {
+  const response = await fetch(INTEREST_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...payload, source: "releases-page" }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(body.error || "Couldn't send that — try again.");
+}
+
+function panelFor(button) {
+  return button.closest(".ask")?.querySelector(".ask__panel") || null;
+}
+
+function openAsk(button) {
+  const brand = button.dataset.brand;
+  const tier = button.dataset.tier;
+  const platform = button.dataset.platform || state.device;
+  let panel = panelFor(button);
+  if (!panel) {
+    // A "coming" tile or the main button: use the brand's own panel.
+    const card = document.querySelector(`#brand-${CSS.escape(brand)}`);
+    panel = card?.querySelector(".ask__panel");
+    if (!panel) return;
+  }
+  const saved = rememberedContact();
+  const isFeature = tier === "feature";
+  const lead = isFeature
+    ? "What should it do?"
+    : tier === "gamma"
+      ? "Your organisation gets it privately, through its own gramx store."
+      : tier === "alpha"
+        ? "You'll get early builds before anyone else."
+        : `You'll get the test build${platform ? ` for ${platformNames[platform] || platform}` : ""}.`;
+  panel.hidden = false;
+  panel.innerHTML = `
+    <p class="ask__lead">${esc(lead)}</p>
+    <div class="ask__line">
+      ${isFeature ? `<input class="ask__note" maxlength="600" placeholder="e.g. offline maps" aria-label="The feature you want">` : ""}
+      ${tier === "gamma" ? `<input class="ask__org" maxlength="80" placeholder="Organisation" aria-label="Organisation">` : ""}
+      <input class="ask__contact" maxlength="120" inputmode="email" autocomplete="email" placeholder="Email or mobile" aria-label="Email or mobile number" value="${esc(saved)}">
+      <button type="button" class="btn btn--primary ask__send">Send</button>
     </div>
-  `;
-  continueLink.href = release.assetUrl || "#";
-  copyButton.hidden = !command;
-  copyButton.onclick = async () => {
+    <p class="ask__status" role="status"></p>`;
+  const contact = panel.querySelector(".ask__contact");
+  (isFeature ? panel.querySelector(".ask__note") : saved ? panel.querySelector(".ask__send") : contact)?.focus();
+  panel.querySelector(".ask__send").onclick = async () => {
+    const status = panel.querySelector(".ask__status");
+    const value = contact.value.trim();
+    if (!value) { status.textContent = "Just an email or a mobile number."; contact.focus(); return; }
+    status.textContent = "Sending…";
     try {
-      await navigator.clipboard.writeText(command);
-      copyButton.textContent = "Copied";
-      setTimeout(() => {
-        copyButton.textContent = "Copy command";
-      }, 1500);
-    } catch {
-      copyButton.textContent = "Copy failed";
+      await send({
+        kind: tier,
+        brand,
+        platform,
+        contact: value,
+        note: panel.querySelector(".ask__note")?.value || "",
+        org: panel.querySelector(".ask__org")?.value || "",
+      });
+      rememberContact(value);
+      panel.innerHTML = `<p class="ask__done">Thanks — we'll be in touch at ${esc(value)}.</p>`;
+    } catch (error) {
+      status.textContent = error.message;
     }
   };
-  copyButton.textContent = "Copy command";
-  document.body.classList.add("catalog-modal-open");
-  modal.hidden = false;
-  panel.focus();
+  panel.querySelectorAll("input").forEach((input) => input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") panel.querySelector(".ask__send")?.click();
+  }));
+  panel.scrollIntoView({ block: "nearest", behavior: "smooth" });
 }
 
-function wireDownloadModal() {
-  document.addEventListener("click", (event) => {
-    const trigger = event.target.closest(".catalog-download-trigger");
-    if (trigger) {
-      openDownloadModal(trigger.dataset.releaseKey, trigger);
-      return;
-    }
-    if (event.target.closest("[data-close-modal='true']")) {
-      closeDownloadModal();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    const modal = document.querySelector("#downloadModal");
-    if (event.key === "Escape" && !modal.hidden) {
-      closeDownloadModal();
-      return;
-    }
-    if (event.key === "Tab" && !modal.hidden) {
-      const focusable = [...modal.querySelectorAll(focusableSelectors)].filter((element) => !element.hasAttribute("hidden"));
-      if (!focusable.length) {
-        event.preventDefault();
-        return;
-      }
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    }
-  });
-}
-
-function updateThemeMeta(themeName) {
-  const themeColor = document.querySelector('meta[name="theme-color"]');
-  if (themeColor) {
-    themeColor.setAttribute("content", themeName === "dark" ? "#161616" : "#0f62fe");
+async function say(button) {
+  const brand = button.dataset.brand;
+  const kind = button.dataset.say;
+  const row = button.parentElement;
+  row.querySelectorAll("[data-say]").forEach((b) => { b.disabled = true; });
+  try {
+    await send({ kind, brand, platform: state.device, contact: rememberedContact() || undefined });
+    button.classList.add("pill--on");
+    button.textContent = kind === "like" ? "👍 Thanks!" : "👎 Noted, thank you";
+  } catch (error) {
+    row.querySelectorAll("[data-say]").forEach((b) => { b.disabled = false; });
+    button.title = error.message;
   }
 }
 
-function wireSystemTheme() {
-  const media = window.matchMedia("(prefers-color-scheme: dark)");
-  const syncThemeColor = () => updateThemeMeta(media.matches ? "dark" : "light");
-  syncThemeColor();
-  media.addEventListener("change", syncThemeColor);
+function wireJoin() {
+  const form = document.querySelector("#joinForm");
+  const status = form.querySelector(".join__status");
+  const contact = form.elements.contact;
+  contact.value = rememberedContact();
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    const org = form.elements.org.value.trim();
+    const value = contact.value.trim();
+    if (!org || !value) { status.textContent = "Your brand's name and an email or mobile, please."; return; }
+    status.textContent = "Sending…";
+    try {
+      await send({ kind: "join", org, contact: value, note: form.elements.note.value, website: form.elements.website.value });
+      rememberContact(value);
+      form.innerHTML = `<p class="ask__done">Thanks — we'll reach out to ${esc(value)} about ${esc(org)}.</p>`;
+    } catch (error) {
+      status.textContent = error.message;
+    }
+  });
+}
+
+function wire() {
+  document.addEventListener("click", (event) => {
+    const get = event.target.closest("[data-get]");
+    if (get) { openGuide(get.dataset.get); return; }
+    const tier = event.target.closest("[data-tier]");
+    if (tier) { openAsk(tier); return; }
+    const sayBtn = event.target.closest("[data-say]");
+    if (sayBtn) { say(sayBtn); return; }
+    const channel = event.target.closest("[data-channel]");
+    if (channel) {
+      state.channel = channel.dataset.channel;
+      renderChannels();
+      render();
+    }
+  });
+  wireJoin();
 }
 
 try {
-  wireSystemTheme();
-  const [catalog, signing, matrix] = await Promise.all([
-    loadJSON("data/catalog.json"),
-    loadJSON("data/signing.json", true),
-    loadJSON("data/brand-platform-matrix.json", true),
-  ]);
+  const [catalog, signing] = await Promise.all([loadJSON("data/catalog.json"), loadJSON("data/signing.json", true)]);
   state.catalog = catalog;
   state.signing = signing;
-  state.matrix = matrix;
-  primeReleaseLookup();
-  heroStats();
-  buildSwitchers();
-  renderCatalog();
-  wireDownloadModal();
+  const channels = new Set((catalog.products || []).flatMap((p) => releasesOf(p).map((r) => r.channel)));
+  state.channel = channelOrder.find((c) => channels.has(c)) || "stable";
+  renderChannels();
+  render();
+  wire();
 } catch (error) {
-  document.querySelector("#brandGrid").innerHTML = `
-    <section class="cds--tile cds--tile--light catalog-brand-empty">
-      <p class="catalog-panel-label">Catalog unavailable</p>
-      <h3>Generated data is missing</h3>
-      <p class="catalog-brand-summary">Run the catalog generation step and refresh this page.</p>
-    </section>
-  `;
+  document.querySelector("#apps").innerHTML = `<p class="loading">The app list couldn't load. Refresh in a moment.</p>`;
   console.error(error);
 }

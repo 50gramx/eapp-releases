@@ -2,138 +2,98 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Eutopia Release Operations</title>
-    <meta
-      name="description"
-      content="Enterprise release operations for Eutopia products, with contract-driven desktop builds and live delivery metadata."
-    >
-    <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
-    <meta name="theme-color" content="#0f62fe">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>50GRAMx Apps</title>
+    <meta name="description" content="Every 50GRAMx app for every device: store links, signed and unsigned builds with their provenance, and early access for people and organisations.">
+    <meta name="robots" content="index,follow,max-image-preview:large">
+    <meta name="theme-color" content="#0b0c0e" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
     <meta name="color-scheme" content="light dark">
     <meta property="og:type" content="website">
-    <meta property="og:title" content="Eutopia Release Operations">
-    <meta property="og:description" content="Enterprise release operations for Eutopia products, with contract-driven desktop builds and live delivery metadata.">
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="Eutopia Release Operations">
-    <meta name="twitter:description" content="Enterprise release operations for Eutopia products, with contract-driven desktop builds and live delivery metadata.">
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "CollectionPage",
-        "name": "Eutopia Release Operations",
-        "description": "Enterprise release operations for Eutopia products, with contract-driven desktop builds and live delivery metadata.",
-        "inLanguage": "en",
-        "isAccessibleForFree": true,
-        "publisher": {
-          "@type": "Organization",
-          "name": "50GRAMx"
-        }
-      }
-    </script>
-    <link rel="stylesheet" href="styles.css">
+    <meta property="og:title" content="50GRAMx Apps">
+    <meta property="og:description" content="Every 50GRAMx app for every device, built in public from contracts.">
+    <link rel="icon" href="brand-assets/lib/assets/ethosverse-browser-logo-v3-transparent.png">
+    <link rel="stylesheet" href="release.css">
   </head>
-  <body data-page="catalog">
-    <a class="catalog-skip-link" href="#main-content">Skip to main content</a>
-    <header class="cds--header" aria-label="Eutopia Release Operations">
-      <a class="cds--header__name" href="./">
-        <span class="catalog-header-mark" aria-hidden="true"></span>
-        <span class="cds--header__name--prefix">50GRAMx</span>
-        <span>Eutopia Release Operations</span>
+  <body>
+    <a class="skip" href="#apps">Skip to the apps</a>
+    <header class="top">
+      <a class="top__name" href="./">
+        <img src="brand-assets/lib/assets/ethosverse-browser-logo-v3-transparent.png" alt="" width="28" height="28">
+        <span>50GRAMx <b>Apps</b></span>
       </a>
-      <nav id="primaryNav" class="cds--header__nav" aria-label="Primary">
-        <ul class="cds--header__menu-bar">
-          <li><a class="cds--header__menu-item cds--header__menu-item--current" aria-current="page" href="#catalog">Catalog</a></li>
-          <li><a class="cds--header__menu-item" href="status.html">Mesh Status</a></li>
-        </ul>
+      <nav class="top__nav" aria-label="Primary">
+        <a href="#apps">Apps</a>
+        <a href="#join">Join</a>
+        <a href="status.html">Network</a>
       </nav>
     </header>
 
-    <main id="main-content" class="cds--content" tabindex="-1">
-      <div class="catalog-page">
-        <section class="catalog-hero" aria-labelledby="hero-title">
-          <div class="cds--tile catalog-hero__primary">
-            <div class="catalog-kicker">
-              <span class="cds--tag cds--tag--blue">Public repo</span>
-              <span class="cds--tag cds--tag--cool-gray">CI-driven</span>
-              <span class="cds--tag cds--tag--green">Contract-shaped brands</span>
-            </div>
-            <h1 id="hero-title" class="catalog-hero__title">One release surface for every brand shipping on the mesh.</h1>
-            <p class="catalog-hero__body">
-              This page is the public delivery console for Eutopia products. It should
-              help an operator or customer land on the right build fast, while still
-              exposing the operational truth behind each brand.
-            </p>
-            <div class="catalog-actions">
-              <a class="cds--btn cds--btn--primary" href="#catalog">
-                Review brands
-                <svg focusable="false" preserveAspectRatio="xMidYMid meet" fill="currentColor" width="20" height="20" viewBox="0 0 32 32" aria-hidden="true" class="cds--btn__icon">
-                  <path d="M18 6L16.59 7.41 23.17 14H4v2h19.17l-6.58 6.59L18 24l9-9z"></path>
-                </svg>
-              </a>
-              <a class="cds--btn cds--btn--tertiary" href="status.html">Mesh status</a>
-            </div>
-          </div>
+    <main>
+      <section class="hero" aria-labelledby="hero-title">
+        <h1 id="hero-title">Every 50GRAMx app, on the device in your hand.</h1>
+        <p class="hero__lead">
+          Get each app from its store where it is listed, or straight from the build.
+          Every build here is made in public by CI from the brand's contract, with its
+          SHA-256 and the exact source it came from.
+        </p>
+        <div class="hero__row">
+          <span id="deviceChip" class="chip chip--quiet">Finding your device…</span>
+          <div id="channelPick" class="seg" role="group" aria-label="Build channel"></div>
+        </div>
+        <ul class="trust" aria-label="Why you can trust these builds">
+          <li><b>Open builds.</b> Every file links to the CI run, source commit and contracts commit.</li>
+          <li><b>Checkable.</b> Each artifact's SHA-256 is published with it.</li>
+          <li><b>Signed where it counts.</b> Store and TestFlight builds carry the brand's own signature; direct downloads say plainly when they don't.</li>
+        </ul>
+      </section>
 
-          <aside class="cds--tile cds--tile--light catalog-hero__summary" aria-label="Release summary">
-            <p class="catalog-panel-label">Live summary</p>
-            <div id="heroStats" class="catalog-stat-list">
-              <div class="catalog-stat">
-                <span>Loading</span>
-                <strong>...</strong>
-              </div>
-            </div>
-          </aside>
-        </section>
+      <section id="apps" class="apps" aria-label="Apps" aria-live="polite">
+        <p class="loading">Loading the apps…</p>
+      </section>
 
-        <section id="catalog" class="catalog-controls cds--tile cds--tile--light" aria-labelledby="controls-title">
-          <div class="catalog-controls__header">
-            <div>
-              <p class="catalog-panel-label">Preferences</p>
-              <h2 id="controls-title">Choose how the catalog should recommend builds</h2>
-            </div>
-            <p id="catalogSummary" class="catalog-support-copy">Loading catalog preferences...</p>
-          </div>
-
-          <div class="catalog-switcher-group">
-            <div>
-              <p id="brandFilterLabel" class="cds--label">Brand</p>
-              <div id="brandFilter" class="cds--content-switcher cds--content-switcher--low-contrast" role="group" aria-labelledby="brandFilterLabel"></div>
-            </div>
-            <div>
-              <p id="platformFilterLabel" class="cds--label">Platform</p>
-              <div id="platformFilter" class="cds--content-switcher cds--content-switcher--low-contrast" role="group" aria-labelledby="platformFilterLabel"></div>
-            </div>
-            <div>
-              <p id="channelFilterLabel" class="cds--label">Channel</p>
-              <div id="channelFilter" class="cds--content-switcher cds--content-switcher--low-contrast" role="group" aria-labelledby="channelFilterLabel"></div>
-            </div>
-          </div>
-        </section>
-
-        <section class="catalog-brand-list" aria-live="polite">
-          <div id="brandGrid" class="catalog-brand-grid"></div>
-        </section>
-      </div>
+      <section id="join" class="join" aria-labelledby="join-title">
+        <div class="join__copy">
+          <h2 id="join-title">Bring your brand to the Ethos apps</h2>
+          <p>An organisation can ship its own app on the network: public in the stores, or private to its people through its own gramx store. Tell us who you are and we'll reach out.</p>
+        </div>
+        <form id="joinForm" class="join__form" novalidate>
+          <label class="field">
+            <span>Brand or organisation</span>
+            <input name="org" autocomplete="organization" maxlength="80" required>
+          </label>
+          <label class="field">
+            <span>Email or mobile</span>
+            <input name="contact" inputmode="email" autocomplete="email" maxlength="120" required>
+          </label>
+          <label class="field field--wide">
+            <span>What would you build? <i>(optional)</i></span>
+            <input name="note" maxlength="600">
+          </label>
+          <input class="hp" name="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+          <button class="btn btn--primary" type="submit">Reach out to me</button>
+          <p class="join__status" role="status"></p>
+        </form>
+      </section>
     </main>
 
-    <div id="downloadModal" class="catalog-modal" hidden>
-      <div class="catalog-modal__backdrop" data-close-modal="true"></div>
-      <div class="cds--tile catalog-modal__panel" role="dialog" aria-modal="true" aria-labelledby="downloadModalTitle" aria-describedby="downloadModalBody" tabindex="-1">
-        <div class="catalog-modal__header">
-          <div>
-            <p class="catalog-panel-label">Unsigned build guidance</p>
-            <h2 id="downloadModalTitle">Download guidance</h2>
-          </div>
-          <button type="button" class="cds--btn cds--btn--ghost catalog-modal__close" data-close-modal="true">Close</button>
+    <footer class="foot">
+      <p>Built by CI in <a href="https://github.com/50gramx/eapp-releases">50gramx/eapp-releases</a> from the brand contracts in <a href="https://github.com/50gramx/eapp-interaction-contracts">eapp-interaction-contracts</a>.</p>
+      <p>What you share on this page (an email or a mobile number, and your note) is used only to reach you about it.</p>
+    </footer>
+
+    <dialog id="guide" class="guide" aria-labelledby="guideTitle">
+      <form method="dialog" class="guide__inner">
+        <p class="guide__kicker" id="guideKicker">Before you install</p>
+        <h2 id="guideTitle">Install guidance</h2>
+        <div id="guideBody"></div>
+        <div class="guide__actions">
+          <button class="btn" value="close">Close</button>
+          <button id="guideCopy" class="btn" type="button" hidden>Copy command</button>
+          <a id="guideGo" class="btn btn--primary" href="#" rel="noopener">Download</a>
         </div>
-        <div id="downloadModalBody" class="catalog-modal__body"></div>
-        <div class="catalog-modal__footer">
-          <button id="modalCopyCommand" type="button" class="cds--btn cds--btn--secondary" hidden>Copy command</button>
-          <a id="modalContinueDownload" class="cds--btn cds--btn--primary" href="#" target="_blank" rel="noopener">Continue to download</a>
-        </div>
-      </div>
-    </div>
+      </form>
+    </dialog>
 
     <script src="site.js" type="module"></script>
   </body>

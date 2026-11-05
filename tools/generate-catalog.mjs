@@ -106,7 +106,50 @@ function slug(value) {
     .replace(/^-+|-+$/g, '') || 'product';
 }
 
-function readBrands(contractsRoot) {
+function hasSection(block, section) {
+  return new RegExp(`^\\s{4}${escapeRegExp(section)}:\\s*$`, 'm').test(block);
+}
+
+// THE PLATFORMS A BRAND IS PLANNED FOR come from what it already declares, so a
+// new brand or platform appears on the page (as "coming") the day its contract
+// says so: a platform section in the brand (ios:, web:, windows:, ...) plans
+// that platform, and the build cadence's matrix plans its own pairs.
+const PLATFORM_SECTIONS = ['windows', 'macos', 'linux', 'android', 'ios', 'web'];
+
+function plannedFromContract(block) {
+  return PLATFORM_SECTIONS.filter((platform) => hasSection(block, platform));
+}
+
+// THE BRAND'S PUBLIC FACE, from its contract's site: block. Store links are
+// listed only when the contract names them (once they are public); nothing
+// about a brand is written in this file.
+const STORE_KEYS = ['play-store', 'app-store', 'testflight', 'mac-app-store', 'microsoft-store'];
+
+function presenceFrom(block) {
+  const stores = STORE_KEYS
+    .map((store) => ({ store, url: nestedValue(block, 'site', store) }))
+    .filter((entry) => /^https:\/\//.test(entry.url));
+  const access = nestedValue(block, 'site', 'access')
+    .split(/[\s,]+/)
+    .map((tier) => tier.toLowerCase())
+    .filter((tier) => ['alpha', 'beta', 'gamma'].includes(tier));
+  const distribution = nestedValue(block, 'site', 'distribution').toLowerCase() === 'private' ? 'private' : 'public';
+  const website = nestedValue(block, 'site', 'website') || nestedValue(block, 'web', 'url');
+
+  return { website: /^https:\/\//.test(website) ? website : '', stores, access, distribution };
+}
+
+// The brand's logo as the site serves it: the contract names the app asset
+// (lib/assets/...), and the site keeps a copy at brand-assets/<that path>.
+function logoFor(block, siteRoot) {
+  const logo = directValue(block, 'logo');
+  if (!logo) return '';
+  const served = `brand-assets/${logo.replace(/^\/+/, '')}`;
+
+  return existsSync(join(siteRoot, served)) ? served : '';
+}
+
+function readBrands(contractsRoot, siteRoot) {
   const products = [];
   for (const file of findEthosapps(contractsRoot)) {
     const text = readFileSync(file, 'utf8');
@@ -117,6 +160,9 @@ function readBrands(contractsRoot) {
       const displayName = directValue(brand, 'display-name') || brandId;
       const productName = directValue(brand, 'product-name') || displayName;
       products.push({
+        ...presenceFrom(brand),
+        logo: logoFor(brand, siteRoot),
+        planned: plannedFromContract(brand),
         brandId,
         productId: brandId,
         organisation: org.organisation,
@@ -243,7 +289,15 @@ const output = optional(opts, 'output', 'data/catalog.json');
 const githubReleasesRepo = optional(opts, 'github-releases-repo');
 const githubToken = optional(opts, 'github-token', process.env.GITHUB_TOKEN || '');
 
-const products = readBrands(contractsRoot);
+const siteRoot = optional(opts, 'site-root', '.');
+const matrixPath = optional(opts, 'matrix', 'data/brand-platform-matrix.json');
+const products = readBrands(contractsRoot, siteRoot);
+let matrix = { brands: [], platforms: [] };
+try {
+  matrix = JSON.parse(readFileSync(matrixPath, 'utf8'));
+} catch {
+  // No cadence matrix: the contracts alone plan the platforms.
+}
 const byBrand = new Map(products.map((product) => [product.brandId, product]));
 const releases = dedupeReleases([
   ...readReleaseMetadata(metadataRoot),
@@ -263,6 +317,12 @@ for (const release of releases) {
       launchEnvironment: '',
       summary: `${brandId} release channel.`,
       homeApp: '',
+      website: '',
+      stores: [],
+      access: [],
+      distribution: 'public',
+      logo: '',
+      planned: [],
       releases: [],
     });
     products.push(byBrand.get(brandId));
@@ -277,9 +337,14 @@ for (const product of products) {
     return bTime.localeCompare(aTime);
   });
   product.latestStable = stableRecent(product.releases);
+  // Planned = what the contract declares + the cadence matrix + whatever has
+  // shipped; the page shows each planned platform without a build as coming.
+  const fromMatrix = (matrix.brands || []).includes(product.brandId) ? matrix.platforms || [] : [];
+  const shipped = product.releases.map((release) => release.platform).filter(Boolean);
+  product.planned = [...new Set([...(product.planned || []), ...fromMatrix, ...shipped])];
 }
 
-const platforms = [...new Set(releases.map((release) => release.platform).filter(Boolean))].sort();
+const platforms = [...new Set(products.flatMap((product) => product.planned))].sort();
 const channels = [...new Set(releases.map((release) => release.channel).filter(Boolean))].sort();
 
 const catalog = {

@@ -1,5 +1,5 @@
 {
-  "_comment": "Drives the release page's signed/unsigned rendering. Hand-editable — no build-pipeline change needed. Resolution: overrides['<brandId>/<platform>'] wins, else defaults['<platform>']. When signed:true a store badge+link is shown; when signed:false the per-platform install instructions are shown. {APP} is replaced by the brand's app name (overrides[...].appName, else platform default).",
+  "_comment": "Install guidance per platform for builds that are not signed with the brand's own key. Whether a build IS signed comes from its release-metadata.json (signing: release|debug|ad-hoc|none), written by the build that signed it; this file is only the fallback for older builds and the words shown for unsigned ones. Resolution: overrides['<brandId>/<platform>'] wins, else defaults['<platform>']. {APP} is replaced by appName. Store links come from each brand's contract (site: play-store, app-store, testflight, ...), never from here.",
   "defaults": {
     "macos": {
       "signed": false,
@@ -43,6 +43,39 @@
         ],
         "command": ""
       }
+    },
+    "android": {
+      "signed": false,
+      "appName": "the app",
+      "unsigned": {
+        "headline": "Direct APK - Android will ask you to allow it",
+        "reassurance": "This APK comes straight from CI, not from a store. Until it is signed with the brand's own key it cannot update a store-installed copy, so install one or the other.",
+        "steps": [
+          "Download the .apk below on your Android phone.",
+          "Open it. Android asks to allow installs from your browser or Files app - allow it for this install.",
+          "Tap Install. If Play Protect asks, choose Install anyway."
+        ],
+        "command": ""
+      }
+    },
+    "ios": {
+      "signed": false,
+      "appName": "the app",
+      "unsigned": {
+        "headline": "Unsigned .ipa - for sideloading from a computer",
+        "reassurance": "iPhone and iPad only run signed apps. The signed build goes to TestFlight; ask for beta access on this page to be invited. This .ipa is for people who sign it themselves.",
+        "steps": [
+          "Easiest: tap Beta under Try it early on this brand, and you will get a TestFlight invite.",
+          "Or download the .ipa below on a Mac or PC.",
+          "Install it with Sideloadly or AltStore using your Apple ID (a free Apple ID runs it for 7 days)."
+        ],
+        "command": ""
+      }
+    },
+    "web": {
+      "signed": true,
+      "appName": "the web app",
+      "unsigned": null
     }
   },
   "overrides": {}
