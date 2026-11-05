@@ -4,9 +4,9 @@
   "starts_at": "2026-10-26T00:00:00.000Z",
   "ends_at": "2026-11-02T00:00:00.000Z",
   "open": false,
-  "published_at": "2026-11-05T08:23:47.460Z",
+  "published_at": "2026-11-05T08:38:39.235Z",
   "contributors": {
-    "grams": 6,
+    "grams": 7,
     "classes": [
       "linux/amd64/none/32g",
       "linux/amd64/nvidia/32g",
@@ -22,14 +22,23 @@
       "0": 18,
       "1": 15,
       "2": 27,
-      "3": 24
+      "3": 26
     }
   },
   "artifacts": [
     {
       "ref": "Darylgeero/sd-turbo",
-      "family": null,
-      "member": null,
+      "family": "sd-turbo",
+      "member": "base",
+      "engine": "diffusers",
+      "quant": "FP16",
+      "publisher": "Darylgeero",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 0,
+      "disk_mib": 12354,
       "by_class": {
         "linux/amd64/none/32g": {
           "grams": 1,
@@ -1448,8 +1457,17 @@
     },
     {
       "ref": "hf.co/North-ML1/Forge-1-Mini-GGUF:Q2_K",
-      "family": null,
-      "member": null,
+      "family": "north-1",
+      "member": "forge-1-mini~north-ml1",
+      "engine": "ollama",
+      "quant": "Q2_K",
+      "publisher": "North-ML1",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": true,
+      "cohort": 3,
+      "rung": 5,
+      "disk_mib": 2,
       "by_class": {
         "linux/amd64/none/32g": {
           "grams": 1,
@@ -1587,32 +1605,32 @@
           "held_probes": 1,
           "tokens_per_sec_best": 34.27,
           "effective_ctx_best": 8192,
+          "effective_ctx_stop": "too-slow-here",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 32768,
+          "ctx_affordable": null,
           "caps": {
             "code.write": 1,
             "faithful_tool_result": 1,
             "instruct.follow": 1,
             "lang.en": 1,
+            "lang.ja": 1,
+            "lang.zh": 1,
             "output.schema": 1,
             "structured_output": 1,
             "tools": 1,
             "tools.call": 1,
             "tools.faithful": 1,
             "tools.loop_ends": 1,
-            "tools_loop_terminated": 1,
-            "lang.ja": 1,
-            "lang.zh": 1
+            "tools_loop_terminated": 1
           },
-          "first_at": "2026-10-27T19:16:54.521Z",
-          "last_at": "2026-11-01T06:03:46.186Z",
-          "effective_ctx_stop": "recall-lost",
-          "effective_ctx_ladder": "4096,8192,16384",
-          "ctx_affordable": null,
-          "ctx_trained": 32768,
           "engine_backends": [
             "pod"
           ],
           "joules_per_token_best": 1.092,
-          "energy_tier": "modelled"
+          "energy_tier": "modelled",
+          "first_at": "2026-10-27T19:16:54.521Z",
+          "last_at": "2026-11-01T06:03:46.186Z"
         }
       }
     },
@@ -3853,7 +3871,7 @@
       "ref": "kokoro",
       "family": "kokoro",
       "member": "base",
-      "engine": "speech-pod",
+      "engine": "speech-host",
       "quant": null,
       "publisher": "kokoro",
       "attribution": "vendor",
