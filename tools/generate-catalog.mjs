@@ -167,6 +167,11 @@ function detailsFrom(block) {
     terms: https(value('terms')),
     support: https(value('support')),
     dataSafety: https(value('data-safety')),
+    // What it costs, as the brand states it ("Free", "₹499 one-time");
+    // unstated is free, since every build here is a free download.
+    price: value('price'),
+    inAppPurchases: value('in-app-purchases'),
+    ads: value('ads'),
     screenshots: value('screenshots').split(',').map((item) => item.trim()).filter(Boolean),
     video: https(value('video')),
     publisherDefaults: !/^(off|false|no)$/i.test(value('publisher-defaults')),

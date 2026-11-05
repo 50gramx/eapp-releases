@@ -294,7 +294,7 @@ function trustBar(product) {
     offered.length ? ["seal", `${signed} of ${offered.length} platforms signed or store-delivered`, "The rest say so plainly, with install steps"] : null,
     product.ageRating ? ["rating", `Rated ${product.ageRating}`, product.ratingAuthority || ""] : null,
     product.privacyPolicy ? ["privacy", product.inherited?.includes("privacyPolicy") ? `${pub.name || "Publisher"} privacy policy` : "Its own privacy policy", pub.dataProtection && product.inherited?.includes("privacyPolicy") ? `Under ${pub.dataProtection}` : ""] : null,
-    ["free", "Free to download", "No account needed to get a build"],
+    !product.price || /^free$/i.test(product.price) ? ["free", "Free to download", "No account needed to get a build"] : null,
   ].filter(Boolean);
   return `<ul class="trustbar">${rows.map(([i, t, sub]) => `<li>${ticon(i)}<span><b>${esc(t)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></li>`).join("")}</ul>`;
 }
@@ -431,7 +431,9 @@ function infoRows(product) {
       ? `${esc(product.ageRating)}${product.ratingAuthority ? ` ${muted(`· ${product.ratingAuthority}`)}` : ""}`
       : muted("Not yet rated")],
     ["Interactive elements", product.interactive ? esc(product.interactive) : missing],
-    ["Price", "Free"],
+    ["Price", esc(product.price || "Free")],
+    ["In-app purchases", product.inAppPurchases ? esc(product.inAppPurchases) : missing],
+    ["Ads", product.ads ? esc(product.ads) : missing],
     ["Developer", product.developer ? esc(product.developer) : missing],
     ["Version", versions.length ? esc(versions.join(", ")) : muted("No build yet")],
     ["Latest build", times.length ? `${esc(new Date(times.at(-1)).toLocaleDateString())} ${muted(`· ${ago(times.at(-1))}`)}` : muted("–")],
@@ -502,7 +504,7 @@ function renderApp() {
     `<div class="fact">${ratingChip(product)}<span>Age rating</span></div>`,
     `<div class="fact"><b>${esc(product.category || "–")}</b><span>Category</span></div>`,
     `<div class="fact"><b>${live} of ${platformOrder.length}</b><span>Platforms</span></div>`,
-    `<div class="fact"><b>Free</b><span>Price</span></div>`,
+    `<div class="fact"><b>${esc(product.price || "Free")}</b><span>Price</span></div>`,
     typeof product.downloads === "number" ? `<div class="fact"><b>${esc(product.downloads.toLocaleString())}</b><span>Downloads here</span></div>` : "",
   ].join("");
   const channels = channelOrder.filter((c) => builds.some((r) => r.channel === c));
