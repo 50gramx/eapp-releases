@@ -4,7 +4,11 @@
 // from the brand contracts and each build's release-metadata.json. Nothing
 // about any brand is written here.
 
-const INTEREST_URL = "https://us-central1-bharatsphere-183e7.cloudfunctions.net/epnInterest";
+// One tap lands in the same applications as the app's "Apply for a Private
+// Space" form (bharatsphere mohallaApplications.submitInterest); the longer
+// journey for an organisation or a brand is 50gramx.com/apply.
+const INTEREST_URL = "https://us-central1-bharatsphere-183e7.cloudfunctions.net/submitInterest";
+const JOURNEY_URL = "https://50gramx.com/apply";
 const CONTACT_KEY = "epn-interest-contact";
 
 const state = {
@@ -352,7 +356,7 @@ function openAsk(button) {
   const lead = isFeature
     ? "What should it do?"
     : tier === "gamma"
-      ? "Your organisation gets it privately, through its own gramx store."
+      ? "Your organisation gets it privately, through its own gramx store. Leave a way to reach you, or take the full journey."
       : tier === "alpha"
         ? "You'll get early builds before anyone else."
         : `You'll get the test build${platform ? ` for ${platformNames[platform] || platform}` : ""}.`;
@@ -365,6 +369,7 @@ function openAsk(button) {
       <input class="ask__contact" maxlength="120" inputmode="email" autocomplete="email" placeholder="Email or mobile" aria-label="Email or mobile number" value="${esc(saved)}">
       <button type="button" class="btn btn--primary ask__send">Send</button>
     </div>
+    ${tier === "gamma" ? `<a class="link" href="${JOURNEY_URL}" rel="noopener" target="_blank">Set up your organisation's space on 50gramx.com/apply ↗</a>` : ""}
     <p class="ask__status" role="status"></p>`;
   const contact = panel.querySelector(".ask__contact");
   (isFeature ? panel.querySelector(".ask__note") : saved ? panel.querySelector(".ask__send") : contact)?.focus();

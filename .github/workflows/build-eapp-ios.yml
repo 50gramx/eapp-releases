@@ -289,6 +289,25 @@ jobs:
           zip -qry "$BRAND_ID-ios-unsigned.ipa" Payload
           ls -la "$BRAND_ID-ios-unsigned.ipa"
 
+      # A NEW BRAND'S TESTERS: its App Store record starts with no TestFlight
+      # group, so its builds reach nobody. Give it the account's internal
+      # testers (an app that has a group already is left alone).
+      - name: Checkout release tools
+        uses: actions/checkout@v4
+        with:
+          path: .release-tools-repo
+          sparse-checkout: .github/ios_testers.py
+          sparse-checkout-cone-mode: false
+
+      - name: TestFlight testers
+        if: env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
+        continue-on-error: true
+        env:
+          BUNDLE_ID: ${{ steps.brand.outputs.ios_bundle_id }}
+        run: |
+          python3 -m pip install -q "pyjwt[crypto]" requests
+          python3 .release-tools-repo/.github/ios_testers.py
+
       # THE RELEASES PAGE LISTS iOS LIKE EVERY OTHER PLATFORM: the same
       # release-metadata.json the catalog reads for Android and desktop. The .ipa
       # here is unsigned (sideloading); the signed build is in TestFlight, which
