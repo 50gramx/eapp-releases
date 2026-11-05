@@ -2,8 +2,8 @@
 
 Every brand whose contract has an ios: block (its team-id at least) is an
 iOS app. Its bundle id is the contract's ios.bundle-id when it names one, else
-the brand's Apple id by the usual nomenclature (resolve_contract_delivery.mjs:
-the launch-environment without ".*", as on macOS).
+the brand's store identity by the usual nomenclature
+(resolve_contract_delivery.mjs: its Android applicationId).
 One is rebuilt when what it is made from (eapp-live, the contracts, the
 published in-app gram) differs from its last build's marker, or on demand.
 Writes `brands` (JSON list) and `any` to GITHUB_OUTPUT.
