@@ -40,6 +40,14 @@ on:
     # scheduled-workflow queue, where runs are frequently delayed or dropped.
     # Same reasoning (and a different offset) as build-epnd.yml.
     - cron: '9,24,39,54 * * * *'
+  # GitHub drops most scheduled runs on this repo (2026-11-05: the cron above
+  # fired about every 4-7 hours, not every 15 minutes). bootstrap-01's status
+  # pushes drive Aggregate founder nodes every ~15 minutes, and pages.yml and
+  # deploy-site-nextjs.yml already ride that clock; so does this poll. The
+  # check job is seconds long and deploys only when main moved.
+  workflow_run:
+    workflows: ['Aggregate founder nodes']
+    types: [completed]
   workflow_dispatch:
     inputs:
       deploy_target:

@@ -21,7 +21,9 @@ for i in $(seq 1 6); do
   git fetch -q origin main
   git reset -q --hard origin/main
   echo "$value" > "$file"
-  if git diff --quiet -- "$file"; then
+  # status, not diff: diff ignores an untracked file, so a marker that did not
+  # exist yet was reported "already current" and never created.
+  if [ -z "$(git status --porcelain -- "$file")" ]; then
     echo "marker $file already current"
     exit 0
   fi
