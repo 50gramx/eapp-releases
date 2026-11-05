@@ -118,7 +118,15 @@ jobs:
         run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
 
       - name: Dependencies
-        run: flutter pub get
+        # A CACHED CLONE OF A PRIVATE PACKAGE IS NOT REUSED. The pub cache kept a
+        # clone of bharatsphere-app whose remote had no ".git"; GitHub redirects
+        # that to ".../bharatsphere-app.git/", git drops the token on the
+        # redirect, and the fetch failed with "could not read Username" (iOS build
+        # 2026-11-05 07:22 UTC) as soon as main moved. Cloned fresh, from the URL
+        # in pubspec.yaml, the token above applies.
+        run: |
+          rm -rf "$PUB_CACHE"/git/cache/bharatsphere-app-*
+          flutter pub get
 
       # WHO THE APP IS comes from the brand contract, never from this file: the
       # bundle id App Store Connect knows it by, its team, its name on the home
