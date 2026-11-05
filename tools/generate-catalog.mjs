@@ -164,8 +164,67 @@ function detailsFrom(block) {
     ratingAuthority: value('rating-authority'),
     interactive: value('interactive-elements'),
     privacyPolicy: https(value('privacy-policy')),
+    terms: https(value('terms')),
     support: https(value('support')),
+    dataSafety: https(value('data-safety')),
+    screenshots: value('screenshots').split(',').map((item) => item.trim()).filter(Boolean),
+    video: https(value('video')),
+    publisherDefaults: !/^(off|false|no)$/i.test(value('publisher-defaults')),
   };
+}
+
+// THE PUBLISHER (src/main/contracts/publisher.yaml): who stands behind the
+// brands, and the store facts a brand inherits until it names its own.
+function readPublisher(contractsRoot) {
+  const file = join(contractsRoot, 'src/main/contracts/publisher.yaml');
+  if (!existsSync(file)) return null;
+  const out = {};
+  for (const match of readFileSync(file, 'utf8').matchAll(/^\s{2}([a-z-]+):\s*(.+?)\s*$/gm)) {
+    out[match[1].replace(/-([a-z])/g, (_, c) => c.toUpperCase())] = clean(match[2]);
+  }
+  return out.name ? out : null;
+}
+
+// What a brand takes from the publisher, field by field; `inherited` names
+// them so the page can say whose policy it is.
+function applyPublisher(product, publisher) {
+  product.inherited = [];
+  if (!publisher || !product.publisherDefaults) return;
+  const take = { developer: 'name', privacyPolicy: 'privacyPolicy', terms: 'terms', support: 'support' };
+  for (const [field, from] of Object.entries(take)) {
+    if (!product[field] && publisher[from]) {
+      product[field] = publisher[from];
+      product.inherited.push(field);
+    }
+  }
+}
+
+// SCREENS AND FILM. The contract's own (screenshots:, video:) first, then
+// what CI captured from the brand's live web app (capture-media.yml writes
+// brand-assets/media/<brand>/auto-*.png and a captured.json saying when and
+// from where). A path that is not on the site is left out, not shown broken.
+function mediaFor(product, siteRoot) {
+  const media = [];
+  for (const item of product.screenshots || []) {
+    if (/^https:\/\//.test(item)) media.push({ type: 'image', src: item, source: 'contract' });
+    else if (existsSync(join(siteRoot, item.replace(/^\/+/, '')))) media.push({ type: 'image', src: item.replace(/^\/+/, ''), source: 'contract' });
+  }
+  const dir = join(siteRoot, 'brand-assets/media', slug(product.brandId));
+  let captured = {};
+  try { captured = JSON.parse(readFileSync(join(dir, 'captured.json'), 'utf8')); } catch { /* none yet */ }
+  if (existsSync(dir)) {
+    for (const file of readdirSync(dir).filter((f) => /^auto-.*\.(png|jpe?g|webp)$/.test(f)).sort()) {
+      media.push({
+        type: 'image',
+        src: `brand-assets/media/${slug(product.brandId)}/${file}`,
+        source: 'captured',
+        capturedAt: captured.capturedAt || '',
+        from: captured.url || '',
+        frame: /phone/.test(file) ? 'phone' : 'desktop',
+      });
+    }
+  }
+  return media;
 }
 
 // A BRAND WITHOUT A LOGO OF ITS OWN gets a mark drawn from its id: a golden-
@@ -392,6 +451,11 @@ const githubToken = optional(opts, 'github-token', process.env.GITHUB_TOKEN || '
 const siteRoot = optional(opts, 'site-root', '.');
 const matrixPath = optional(opts, 'matrix', 'data/brand-platform-matrix.json');
 const products = readBrands(contractsRoot, siteRoot);
+const publisher = readPublisher(contractsRoot);
+for (const product of products) {
+  applyPublisher(product, publisher);
+  product.media = mediaFor(product, siteRoot);
+}
 let matrix = { brands: [], platforms: [] };
 try {
   matrix = JSON.parse(readFileSync(matrixPath, 'utf8'));
@@ -462,6 +526,7 @@ const channels = [...new Set(releases.map((release) => release.channel).filter(B
 const catalog = {
   schemaVersion: 1,
   generatedAt: new Date().toISOString(),
+  publisher,
   products,
   platforms,
   channels,

@@ -1,0 +1,52 @@
+name: Capture app media
+
+# Screens of every app that runs on the web (tools/capture-media.mjs), for the
+# releases page. Taken after a web build deploys, since that is when what the
+# app looks like can change; weekly as a fallback; and on demand.
+on:
+  workflow_run:
+    workflows: ['Build and Deploy Web App']
+    types: [completed]
+  schedule:
+    - cron: '33 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: capture-media
+  cancel-in-progress: true
+
+jobs:
+  capture:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Headless browser
+        run: |
+          npm install --no-save --no-package-lock playwright@1.48.2
+          npx playwright install --with-deps chromium
+
+      - name: Capture
+        run: node tools/capture-media.mjs
+
+      - name: Commit the screens
+        run: |
+          git config user.name "eutopia-ci"
+          git config user.email "ci@50gramx.com"
+          git add brand-assets/media
+          if git diff --cached --quiet; then echo "no new screens"; exit 0; fi
+          git commit -q -m "ci: capture app screens from the live web apps"
+          for i in $(seq 1 6); do
+            git pull --rebase -q origin main || git rebase --abort || true
+            if git push -q origin HEAD:main; then echo "pushed"; exit 0; fi
+            sleep $((RANDOM % 4 + 2))
+          done
+          echo "gave up pushing (not a failure); the next capture tries again"

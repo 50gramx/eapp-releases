@@ -13,12 +13,13 @@
 const INTEREST_URL = "https://us-central1-bharatsphere-183e7.cloudfunctions.net/submitInterest";
 const JOURNEY_URL = "https://50gramx.com/apply";
 const CONTACT_KEY = "epn-interest-contact";
+const DEVICE_KEY = "epn-device";
 
 const state = {
   catalog: null,
   signing: null,
   network: null,
-  device: detectDevice(),
+  device: rememberedDevice() || detectDevice(),
   channel: "stable",
   category: "",
   lookup: new Map(),
@@ -59,6 +60,15 @@ const storeInfo = {
   "microsoft-store": { platform: "windows", label: "Get it from Microsoft", img: "brand-assets/stores/microsoft-store.svg" },
 };
 
+// A store's test programme invites an account, not a phone number:
+// TestFlight sends to an Apple ID email, Play testing admits a Google account.
+const testerIdentity = {
+  ios: { label: "Apple ID email", hint: "TestFlight sends the invite to the email of your Apple ID.", email: true },
+  macos: { label: "Apple ID email", hint: "TestFlight sends the invite to the email of your Apple ID.", email: true },
+  android: { label: "Google account email", hint: "Play testing lets in the Google account you use on the phone.", email: true },
+};
+const isEmail = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+
 const tierInfo = {
   alpha: { label: "Alpha", hint: "Early trials, first to see new things" },
   beta: { label: "Beta", hint: "Test builds through the stores (TestFlight, Play testing)" },
@@ -79,6 +89,13 @@ function detectDevice() {
   if (/win/.test(ua)) return "windows";
   if (/linux|x11|cros/.test(ua)) return "linux";
   return "web";
+}
+
+function rememberedDevice() {
+  try { return localStorage.getItem(DEVICE_KEY) || ""; } catch { return ""; }
+}
+function rememberDevice(value) {
+  try { localStorage.setItem(DEVICE_KEY, value); } catch { /* not remembered; still used this visit */ }
 }
 
 function rememberedContact() {
@@ -235,6 +252,74 @@ function primaryAction(product) {
   return `<button type="button" class="btn btn--big" data-tier="feature" data-platform="${esc(platform)}" data-brand="${esc(product.brandId)}">Ask for ${esc(name)}</button>`;
 }
 
+// Screens and film: the brand's own first, then what CI captured from its
+// live web app (marked as such, with when and from where).
+function gallery(product) {
+  const items = [];
+  const video = safeUrl(product.video);
+  if (video) {
+    const yt = video.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([\w-]{6,})/);
+    items.push(yt
+      ? `<figure class="shot shot--video"><iframe src="https://www.youtube-nocookie.com/embed/${esc(yt[1])}" title="${esc(product.displayName)} video" loading="lazy" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></figure>`
+      : `<figure class="shot shot--video"><video src="${esc(video)}" controls preload="metadata" playsinline></video></figure>`);
+  }
+  for (const m of product.media || []) {
+    const note = m.source === "captured"
+      ? `Captured automatically from ${esc(hostOf(m.from))}${m.capturedAt ? `, ${esc(new Date(m.capturedAt).toLocaleDateString())}` : ""}`
+      : "";
+    items.push(`<figure class="shot shot--${esc(m.frame || "desktop")}"><a href="${esc(m.src)}" target="_blank" rel="noopener"><img src="${esc(m.src)}" alt="${esc(product.displayName)} screen" loading="lazy"></a>${note ? `<figcaption>${note}</figcaption>` : ""}</figure>`);
+  }
+  return items.length ? `<div class="gallery" role="list">${items.join("")}</div>` : "";
+}
+
+const trustIcon = {
+  ci: '<path d="M4 7h16M4 12h10M4 17h7"/><path d="m15 16 2 2 4-4"/>',
+  hash: '<path d="M9 3 7 21M17 3l-2 18M4 8.5h16M3.5 15.5h16"/>',
+  seal: '<path d="M12 3 4.5 6v5.5c0 4.4 3.1 8.2 7.5 9.5 4.4-1.3 7.5-5.1 7.5-9.5V6z"/><path d="m9 12 2 2 4-4"/>',
+  rating: '<circle cx="12" cy="12" r="9"/><path d="M8.5 12h7M12 8.5v7"/>',
+  privacy: '<rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8 10.5V8a4 4 0 0 1 8 0v2.5"/>',
+  free: '<path d="M12 3v18M16.5 7.5c0-1.7-2-3-4.5-3s-4.5 1.3-4.5 3 2 2.6 4.5 3 4.5 1.3 4.5 3-2 3-4.5 3-4.5-1.3-4.5-3"/>',
+};
+const ticon = (name) => `<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${trustIcon[name]}</svg>`;
+
+// Why to trust this app, each line a fact the page can point at.
+function trustBar(product) {
+  const builds = releasesOf(product);
+  const offered = platformOrder.map((p) => platformState(product, p)).filter((s) => s.kind === "build" || s.kind === "store");
+  const signed = offered.filter((s) => s.kind === "store" || s.tone === "good").length;
+  const pub = state.catalog.publisher || {};
+  const rows = [
+    builds.length ? ["ci", `${builds.length} builds made in public by CI`, "Each links to its source and contracts commit"] : null,
+    builds.length ? ["hash", "SHA-256 published with every file", "Check a download before you open it"] : null,
+    offered.length ? ["seal", `${signed} of ${offered.length} platforms signed or store-delivered`, "The rest say so plainly, with install steps"] : null,
+    product.ageRating ? ["rating", `Rated ${product.ageRating}`, product.ratingAuthority || ""] : null,
+    product.privacyPolicy ? ["privacy", product.inherited?.includes("privacyPolicy") ? `${pub.name || "Publisher"} privacy policy` : "Its own privacy policy", pub.dataProtection && product.inherited?.includes("privacyPolicy") ? `Under ${pub.dataProtection}` : ""] : null,
+    ["free", "Free to download", "No account needed to get a build"],
+  ].filter(Boolean);
+  return `<ul class="trustbar">${rows.map(([i, t, sub]) => `<li>${ticon(i)}<span><b>${esc(t)}</b>${sub ? `<small>${esc(sub)}</small>` : ""}</span></li>`).join("")}</ul>`;
+}
+
+function publisherFoot() {
+  const pub = state.catalog?.publisher;
+  const foot = document.querySelector("#pubFoot");
+  if (!pub || !foot) return;
+  const links = [["Privacy", pub.privacyPolicy], ["Terms", pub.terms], ["Acceptable use", pub.acceptableUse], ["Contact", pub.support]]
+    .filter(([, u]) => safeUrl(u))
+    .map(([t, u]) => `<a href="${esc(u)}" rel="noopener" target="_blank">${esc(t)}</a>`);
+  foot.innerHTML = `Published by ${esc(pub.legalName || pub.name)}${links.length ? ` · ${links.join(" · ")}` : ""}${pub.supportEmail ? ` · <a href="mailto:${esc(pub.supportEmail)}">${esc(pub.supportEmail)}</a>` : ""}`;
+}
+
+function devicePicker() {
+  for (const pick of document.querySelectorAll(".devicePick")) {
+    pick.innerHTML = platformOrder.map((p) => `<option value="${p}"${p === state.device ? " selected" : ""}>${esc(platformNames[p])}</option>`).join("");
+    pick.onchange = () => {
+      state.device = pick.value;
+      rememberDevice(pick.value);
+      render();
+    };
+  }
+}
+
 function networkStrip() {
   const n = state.network;
   if (!n) return "";
@@ -254,7 +339,9 @@ function card(product) {
   el.dataset.root = product.brandId;
   const meta = [product.category, product.developer].filter(Boolean).map(esc).join(" · ");
   const get = `${storeBadges(product)}${primaryAction(product)}`;
+  const cover = (product.media || []).find((m) => m.frame !== "phone") || (product.media || [])[0];
   el.innerHTML = `
+    ${cover ? `<a class="card__cover" href="${appHref(product)}" tabindex="-1" aria-hidden="true"><img src="${esc(cover.src)}" alt="" loading="lazy"></a>` : ""}
     <a class="card__head" href="${appHref(product)}">
       ${logoOf(product)}
       <span class="card__id">
@@ -297,7 +384,7 @@ function renderChannels() {
   root.innerHTML = channelOrder.filter((c) => present.has(c)).map((c) =>
     `<button type="button" class="seg__btn" aria-pressed="${c === state.channel}" data-channel="${c}">${esc(channelNames[c])}</button>`).join("");
   const chip = document.querySelector("#deviceChip");
-  if (chip) chip.textContent = `For your ${platformNames[state.device] || "device"}`;
+  if (chip) chip.remove();
 }
 
 // ── one app ────────────────────────────────────────────────────────────────
@@ -326,6 +413,11 @@ function platformRow(product, platform) {
   </li>`;
 }
 
+function inheritedNote(product, field) {
+  const pub = state.catalog.publisher;
+  return product.inherited?.includes(field) && pub ? ` <span class="muted">· ${esc(pub.name)}'s, until the brand publishes its own</span>` : "";
+}
+
 function infoRows(product) {
   const builds = releasesOf(product);
   const times = builds.map((r) => r.generatedAt).filter(Boolean).sort();
@@ -347,8 +439,11 @@ function infoRows(product) {
     ["Downloads here", typeof product.downloads === "number" ? `${esc(product.downloads.toLocaleString())} ${muted("· current builds, counted by GitHub")}` : muted("–")],
     ["Distribution", product.distribution === "private" ? "Private, through each organisation's gramx store" : "Public"],
     ["Website", product.website ? link(product.website) : missing],
-    ["Privacy policy", product.privacyPolicy ? link(product.privacyPolicy) : missing],
-    ["Support", product.support ? link(product.support) : missing],
+    ["Privacy policy", product.privacyPolicy ? `${link(product.privacyPolicy)}${inheritedNote(product, "privacyPolicy")}` : missing],
+    ["Terms", product.terms ? `${link(product.terms)}${inheritedNote(product, "terms")}` : missing],
+    ["Data safety", product.dataSafety ? `${link(product.dataSafety)} ${muted("· as declared to the store")}` : missing],
+    ["Support", product.support ? `${link(product.support)}${inheritedNote(product, "support")}` : missing],
+    ["Publisher", state.catalog.publisher ? esc(state.catalog.publisher.legalName || state.catalog.publisher.name) : missing],
     ["Logo", product.logoGenerated ? muted("Drawn from the app's id until the brand adds its own") : "From the brand's contract"],
   ];
   return `<dl class="info">${rows.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${v}</dd></div>`).join("")}</dl>`;
@@ -426,7 +521,10 @@ function renderApp() {
       <div class="app__get">
         ${storeBadges(product)}
         ${primaryAction(product)}
+        <label class="devpick">For my <select class="devicePick" aria-label="Your device"></select></label>
       </div>
+      ${gallery(product)}
+      ${trustBar(product)}
 
       <div class="h2row">
         <h2 class="h2">On every platform</h2>
@@ -452,6 +550,8 @@ function renderApp() {
 function render() {
   if (state.app) renderApp();
   else { renderChannels(); renderHome(); }
+  devicePicker();
+  publisherFoot();
 }
 
 // ── getting a build ────────────────────────────────────────────────────────
@@ -523,29 +623,45 @@ function openAsk(button) {
         : tier === "alpha"
           ? "You'll get early builds before anyone else."
           : `You'll get the test build${platform ? ` for ${platformNames[platform] || platform}` : ""}.`;
+  const needsDevice = tier === "beta" || tier === "alpha" || wantsPlatform;
+  const ident = tier === "beta" ? testerIdentity[platform] : null;
   panel.hidden = false;
   panel.innerHTML = `
     <p class="ask__lead">${esc(lead)}</p>
+    ${needsDevice ? `<label class="ask__device">On <select class="ask__platform" aria-label="Device">${platformOrder.map((p) => `<option value="${p}"${p === platform ? " selected" : ""}>${esc(platformNames[p])}</option>`).join("")}</select></label>` : ""}
+    <p class="ask__ident" ${ident ? "" : "hidden"}>${ident ? esc(ident.hint) : ""}</p>
     <div class="ask__line">
       ${isFeature ? `<input class="ask__note" maxlength="600" placeholder="e.g. offline maps" aria-label="The feature you want" value="${wantsPlatform ? esc(`On ${platformNames[platform] || platform}`) : ""}">` : ""}
       ${tier === "gamma" ? `<input class="ask__org" maxlength="80" placeholder="Organisation" aria-label="Organisation">` : ""}
-      <input class="ask__contact" maxlength="120" inputmode="email" autocomplete="email" placeholder="Email or mobile" aria-label="Email or mobile number" value="${esc(saved)}">
+      <input class="ask__contact" maxlength="120" inputmode="email" autocomplete="email" placeholder="${ident ? esc(ident.label) : "Email or mobile"}" aria-label="${ident ? esc(ident.label) : "Email or mobile number"}" value="${esc(saved)}">
       <button type="button" class="btn btn--primary ask__send">Send</button>
     </div>
     ${tier === "gamma" ? `<a class="link" href="${JOURNEY_URL}" rel="noopener" target="_blank">Set up your organisation's space on 50gramx.com/apply ↗</a>` : ""}
     <p class="ask__status" role="status"></p>`;
   const contact = panel.querySelector(".ask__contact");
+  const platformPick = panel.querySelector(".ask__platform");
+  const chosen = () => platformPick?.value || platform;
+  platformPick?.addEventListener("change", () => {
+    const id = tier === "beta" ? testerIdentity[chosen()] : null;
+    const line = panel.querySelector(".ask__ident");
+    line.hidden = !id;
+    line.textContent = id ? id.hint : "";
+    contact.placeholder = id ? id.label : "Email or mobile";
+    contact.setAttribute("aria-label", contact.placeholder);
+  });
   (isFeature && !wantsPlatform ? panel.querySelector(".ask__note") : saved ? panel.querySelector(".ask__send") : contact)?.focus();
   panel.querySelector(".ask__send").onclick = async () => {
     const status = panel.querySelector(".ask__status");
     const value = contact.value.trim();
     if (!value) { status.textContent = "Just an email or a mobile number."; contact.focus(); return; }
+    const id = tier === "beta" ? testerIdentity[chosen()] : null;
+    if (id?.email && !isEmail(value)) { status.textContent = `${id.label}, please: ${id.hint}`; contact.focus(); return; }
     status.textContent = "Sending…";
     try {
       await send({
         kind: tier,
         brand,
-        platform,
+        platform: chosen(),
         contact: value,
         note: panel.querySelector(".ask__note")?.value || "",
         org: panel.querySelector(".ask__org")?.value || "",
