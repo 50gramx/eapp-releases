@@ -1,4 +1,4 @@
-name: Build iOS and iPadOS App (unsigned)
+name: Build iOS and iPadOS App
 
 # The Evo app for iPhone and iPad, built in CI so no Mac is needed. This repo is
 # public, so its macOS runners cost nothing.
@@ -296,6 +296,14 @@ jobs:
       # it with the one cloud-managed distribution certificate the account
       # already holds, which is reused, not re-created, on every run. Runner has
       # no entitlements file, so an unsigned archive loses nothing.
+      #
+      # AD-HOC, NOT UNSIGNED (2026-11-07). A fully unsigned archive left the
+      # prebuilt Pods frameworks (absl, grpc, Firebase...) with no valid seal
+      # after CocoaPods thinned them, and the export's re-sign did not repair
+      # them: App Store Connect refused the upload, 90035 "Invalid Signature".
+      # So the archive is signed ad hoc ("-"): every bundle gets a valid seal,
+      # no certificate, no profile, nothing created in the account; the export
+      # then replaces every seal with the cloud-managed distribution one.
       - name: Archive, sign and upload to TestFlight
         if: env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
         env:
@@ -305,7 +313,7 @@ jobs:
           KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           printf '%s\n' "$ASC_KEY_P8" > "$KEY"
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -40
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive             CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO DEVELOPMENT_TEAM="$TEAM_ID" PROVISIONING_PROFILE_SPECIFIER="" | tail -40
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
