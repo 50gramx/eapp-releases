@@ -175,7 +175,20 @@ jobs:
         run: flutter config --enable-macos-desktop
 
       - name: Configure git for private dependencies
-        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+        # THE TOKEN MUST SURVIVE A REDIRECT. On the macOS runners GitHub answers
+        # the clone of bharatsphere-app with a redirect to ".../bharatsphere-app.git/",
+        # git drops the credentials carried in the rewritten URL, and pub fails
+        # "could not read Username ... Device not configured" (iOS 11-05 07:22,
+        # 11-06 18:10; macOS 11-05 08:57, 11-06 08:55). A credential stored for
+        # github.com is offered again after the redirect, so the token lives
+        # there as well as in the rewrite.
+        env:
+          CI_READ_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: |
+          git config --global url."https://${CI_READ_TOKEN}@github.com/".insteadOf "https://github.com/"
+          git config --global credential.https://github.com.helper store
+          echo "https://x-access-token:${CI_READ_TOKEN}@github.com" > "$HOME/.git-credentials"
+          chmod 600 "$HOME/.git-credentials"
 
       - name: Get Dependencies
         run: flutter pub get
