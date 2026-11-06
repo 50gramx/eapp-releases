@@ -271,6 +271,18 @@ jobs:
       # SIGNED, TO TESTFLIGHT. Xcode signs with the team's own certificate and
       # profile, created and kept by Apple ("cloud-managed"), authorised by the
       # API key -- no certificate or profile is stored anywhere here.
+      #
+      # SIGNED ONCE, AT EXPORT -- NEVER AT ARCHIVE (2026-11-06). The archive used
+      # to be signed too, with automatic signing, and automatic signing signs an
+      # archive with a DEVELOPMENT identity. A hosted runner starts with an empty
+      # keychain, so every run had Xcode mint a new Apple Development
+      # certificate through the API key and leave it in the account: eleven of
+      # them in three days, until Apple's cap refused the twelfth and every
+      # brand's archive failed ("Your account has reached the maximum number of
+      # certificates"). The archive is now built unsigned, and the export signs
+      # it with the one cloud-managed distribution certificate the account
+      # already holds, which is reused, not re-created, on every run. Runner has
+      # no entitlements file, so an unsigned archive loses nothing.
       - name: Archive, sign and upload to TestFlight
         if: env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
         env:
@@ -280,7 +292,7 @@ jobs:
           KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           printf '%s\n' "$ASC_KEY_P8" > "$KEY"
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive "${AUTH[@]}" | tail -40
+          xcodebuild -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release             -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" | tail -40
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
