@@ -493,7 +493,7 @@ jobs:
           CC_IOS=$(xcrun --sdk iphoneos --find clang)
           FLAGS="-isysroot $SDK -arch arm64 -miphoneos-version-min=15.0"
           mkdir -p dist
-          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 CC="$CC_IOS" CGO_CFLAGS="$FLAGS" CGO_LDFLAGS="$FLAGS"             go build -trimpath -buildmode=c-archive -ldflags "-s -w" -o dist/libepnd-ios-arm64.a ./cmd/epnd-ios
+          CGO_ENABLED=1 GOOS=ios GOARCH=arm64 CC="$CC_IOS" CGO_CFLAGS="$FLAGS" CGO_LDFLAGS="$FLAGS"             go build -trimpath -buildmode=c-archive -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=${{ needs.check.outputs.sha }}" -o dist/libepnd-ios-arm64.a ./cmd/epnd-ios
           cd dist
           echo "epnd $(git -C .. rev-parse --short HEAD)" > libepnd-ios-arm64.version
           # The .sha256 is uploaded last: an app build that finds it finds the
