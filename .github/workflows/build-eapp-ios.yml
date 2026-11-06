@@ -3,11 +3,10 @@ name: Build iOS and iPadOS App
 # The Evo app for iPhone and iPad, built in CI so no Mac is needed. This repo is
 # public, so its macOS runners cost nothing.
 #
-# What comes out is an UNSIGNED .ipa. Apple only lets a signed app run, so you
-# install it with your own Apple ID through a sideloading tool (Sideloadly or
-# AltStore). With a free Apple ID that build runs for 7 days; with the paid
-# Developer Program it can be signed for TestFlight. Signing in CI needs the
-# certificate and profile as secrets, which this workflow does not hold yet.
+# What comes out: a build SIGNED with the team's cloud-managed distribution
+# certificate and uploaded to TestFlight (when the App Store Connect key is
+# set), and an UNSIGNED .ipa attached to the GitHub release for sideloading
+# (Sideloadly or AltStore). Only that release file is unsigned.
 #
 # EVERY BRAND WHOSE CONTRACT HAS AN ios: BLOCK (bundle id + team) is built,
 # signed and sent to TestFlight, like the other platforms build every brand.
