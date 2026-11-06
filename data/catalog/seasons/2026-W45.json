@@ -4,7 +4,7 @@
   "starts_at": "2026-11-02T00:00:00.000Z",
   "ends_at": "2026-11-09T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-06T11:15:02.275Z",
+  "published_at": "2026-11-06T11:29:23.117Z",
   "contributors": {
     "grams": 10,
     "classes": [
@@ -17,13 +17,13 @@
     ]
   },
   "counts": {
-    "artifacts": 59,
-    "publishers": 27,
+    "artifacts": 72,
+    "publishers": 32,
     "by_cohort": {
-      "0": 19,
+      "0": 29,
       "1": 13,
       "2": 12,
-      "3": 10
+      "3": 14
     }
   },
   "artifacts": [
@@ -70,8 +70,17 @@
     },
     {
       "ref": "Beh1222/Sana_600M_1024px_diffusers",
-      "family": null,
-      "member": null,
+      "family": "sana",
+      "member": "600m",
+      "engine": "diffusers",
+      "quant": "FP16",
+      "publisher": "Beh1222",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 0,
+      "disk_mib": 15741,
       "by_class": {
         "linux/amd64/nvidia/64g": {
           "grams": 1,
@@ -350,7 +359,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T21:26:47.093Z",
-          "last_at": "2026-11-03T22:41:00.753Z"
+          "last_at": "2026-11-06T08:30:45.475Z"
         }
       }
     },
@@ -455,6 +464,41 @@
           "energy_tier": null,
           "first_at": "2026-11-03T22:18:12.179Z",
           "last_at": "2026-11-03T23:01:44.696Z"
+        }
+      }
+    },
+    {
+      "ref": "facebook/mms-tts-hin",
+      "family": "mms-tts",
+      "member": "hi",
+      "engine": "speech-hf",
+      "quant": "FP32",
+      "publisher": "facebook",
+      "attribution": "vendor",
+      "base": "facebook/mms-tts-hin",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 139,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.out": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-06T09:29:06.742Z",
+          "last_at": "2026-11-06T09:29:06.742Z"
         }
       }
     },
@@ -582,7 +626,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T21:59:06.846Z",
-          "last_at": "2026-11-03T23:08:50.279Z"
+          "last_at": "2026-11-06T08:58:04.262Z"
         }
       }
     },
@@ -658,7 +702,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T21:56:57.411Z",
-          "last_at": "2026-11-03T23:04:17.397Z"
+          "last_at": "2026-11-06T08:55:52.346Z"
         }
       }
     },
@@ -710,7 +754,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T21:23:44.842Z",
-          "last_at": "2026-11-03T22:40:05.202Z"
+          "last_at": "2026-11-06T08:24:32.610Z"
         }
       }
     },
@@ -758,7 +802,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T22:06:32.927Z",
-          "last_at": "2026-11-03T22:50:41.254Z"
+          "last_at": "2026-11-06T09:06:39.647Z"
         }
       }
     },
@@ -887,7 +931,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T22:11:22.484Z",
-          "last_at": "2026-11-03T22:55:33.647Z"
+          "last_at": "2026-11-06T09:13:58.425Z"
         }
       }
     },
@@ -944,33 +988,33 @@
         "linux/amd64/nvidia/64g": {
           "grams": 1,
           "held_probes": 1,
-          "tokens_per_sec_best": 317.66,
+          "tokens_per_sec_best": 319.04,
           "effective_ctx_best": 32768,
+          "effective_ctx_stop": "reached-top",
+          "effective_ctx_ladder": "4096,8192,16384,32768",
+          "ctx_trained": 32768,
+          "ctx_affordable": null,
           "caps": {
             "code.write": 1,
-            "faithful_tool_result": 1,
             "instruct.follow": 1,
             "lang.en": 1,
-            "output.long": 1,
             "output.schema": 1,
             "structured_output": 1,
             "tools": 1,
             "tools.call": 1,
-            "tools.faithful": 1,
             "tools.loop_ends": 1,
-            "tools_loop_terminated": 1
+            "tools_loop_terminated": 1,
+            "faithful_tool_result": 1,
+            "output.long": 1,
+            "tools.faithful": 1
           },
-          "first_at": "2026-11-03T21:23:08.756Z",
-          "last_at": "2026-11-03T21:23:08.756Z",
-          "effective_ctx_stop": "reached-top",
-          "effective_ctx_ladder": "4096,8192,16384,32768",
-          "ctx_affordable": null,
-          "ctx_trained": 32768,
           "engine_backends": [
             "host"
           ],
           "joules_per_token_best": 0.485,
-          "energy_tier": "sensor"
+          "energy_tier": "sensor",
+          "first_at": "2026-11-03T21:23:08.756Z",
+          "last_at": "2026-11-06T08:15:29.210Z"
         }
       }
     },
@@ -1019,6 +1063,52 @@
           "energy_tier": "modelled",
           "first_at": "2026-11-04T04:43:49.469Z",
           "last_at": "2026-11-04T04:43:49.469Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/bartowski/sarvam-1-GGUF:Q4_K_M",
+      "family": "sarvam",
+      "member": "1",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "bartowski",
+      "attribution": "quantizer",
+      "base": "sarvamai/sarvam-1",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 1476,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 121.44,
+          "effective_ctx_best": 8192,
+          "effective_ctx_stop": "reached-top",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 8192,
+          "ctx_affordable": null,
+          "caps": {
+            "lang.bn": 1,
+            "lang.gu": 1,
+            "lang.hi": 1,
+            "lang.ml": 1,
+            "lang.mr": 1,
+            "lang.pa": 1,
+            "lang.ta": 1,
+            "lang.te": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "structured_output": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 1.494,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T09:32:43.016Z",
+          "last_at": "2026-11-06T09:32:43.016Z"
         }
       }
     },
@@ -1429,6 +1519,52 @@
       }
     },
     {
+      "ref": "hf.co/openbmb/MiniCPM-V-4-gguf:Q4_K_M",
+      "family": "minicpm-v-4",
+      "member": "base",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "openbmb",
+      "attribution": "vendor",
+      "base": "openbmb/MiniCPM-V-4",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 2088,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 96.71,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 32768,
+          "ctx_affordable": null,
+          "caps": {
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "structured_output": 1,
+            "vision": 1,
+            "vision.count": 1,
+            "vision.multi_image": 1,
+            "vision.read": 1,
+            "vision.spatial": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 4.724,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T10:45:43.688Z",
+          "last_at": "2026-11-06T10:45:43.688Z"
+        }
+      }
+    },
+    {
       "ref": "hf.co/openbmb/MiniCPM-V-4.7-1B-gguf:Q8_0",
       "family": "minicpm-v-4-7",
       "member": "1b",
@@ -1473,6 +1609,270 @@
           "energy_tier": "modelled",
           "first_at": "2026-11-05T07:36:36.145Z",
           "last_at": "2026-11-05T07:36:36.145Z"
+        },
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 185.86,
+          "effective_ctx_best": 262144,
+          "effective_ctx_stop": "reached-top",
+          "effective_ctx_ladder": "4096,8192,16384,32768,65536,131072,262144",
+          "ctx_trained": 262144,
+          "ctx_affordable": null,
+          "caps": {
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "lang.ta": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "structured_output": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "vision": 1,
+            "vision.count": 1,
+            "vision.multi_image": 1,
+            "vision.read": 1,
+            "vision.spatial": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 9.714,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T08:06:44.658Z",
+          "last_at": "2026-11-06T08:06:44.658Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/openbmb/MiniCPM-V-4_5-gguf:Q4_K_M",
+      "family": "minicpm-v-4-5",
+      "member": "base",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "openbmb",
+      "attribution": "vendor",
+      "base": "openbmb/MiniCPM-V-4_5",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 4793,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 11.32,
+          "effective_ctx_best": 16384,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192,16384,32768,40960",
+          "ctx_trained": 40960,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "reason.channel": 1,
+            "research.synthesize": 1,
+            "structured_output": 1,
+            "thinking": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1,
+            "vision": 1,
+            "vision.count": 1,
+            "vision.multi_image": 1,
+            "vision.read": 1,
+            "vision.spatial": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 9.522,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T11:23:38.340Z",
+          "last_at": "2026-11-06T11:23:38.340Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/openbmb/MiniCPM-o-4_5-gguf:Q4_K_M",
+      "family": "minicpm-o-4-5",
+      "member": "base",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "openbmb",
+      "attribution": "vendor",
+      "base": "openbmb/MiniCPM-o-4_5",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 4793,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 20.23,
+          "effective_ctx_best": 8192,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192,16384",
+          "ctx_trained": 40960,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.bn": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "reason.channel": 1,
+            "research.synthesize": 1,
+            "structured_output": 1,
+            "thinking": 1,
+            "tools": 1,
+            "tools.call": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 7.387,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T09:57:23.685Z",
+          "last_at": "2026-11-06T09:57:23.685Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M",
+      "family": "minicpm-5",
+      "member": "1b",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "openbmb",
+      "attribution": "vendor",
+      "base": "openbmb/MiniCPM5-1B-GGUF",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 656,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 208.3,
+          "effective_ctx_best": 65536,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192,16384,32768,65536,131072",
+          "ctx_trained": 131072,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "faithful_tool_result": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "reason.channel": 1,
+            "structured_output": 1,
+            "thinking": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.faithful": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 1.39,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T09:46:25.417Z",
+          "last_at": "2026-11-06T09:46:25.417Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/sabafallah/DeepSeek-OCR-2-GGUF:Q4_K_M",
+      "family": "deepseek-ocr-2",
+      "member": "base",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "sabafallah",
+      "attribution": "quantizer",
+      "base": "deepseek-ai/DeepSeek-OCR-2",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 1859,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 334.82,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 8192,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "structured_output": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 2.393,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T10:40:24.795Z",
+          "last_at": "2026-11-06T10:40:24.795Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/sabafallah/DeepSeek-OCR-GGUF:Q4_K_M",
+      "family": "deepseek-ocr",
+      "member": "base",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "sabafallah",
+      "attribution": "quantizer",
+      "base": "deepseek-ai/DeepSeek-OCR",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 1859,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 340.22,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 8192,
+          "ctx_affordable": null,
+          "caps": {
+            "lang.en": 1,
+            "output.schema": 1,
+            "research.synthesize": 1,
+            "structured_output": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 2.492,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T10:35:49.206Z",
+          "last_at": "2026-11-06T10:35:49.206Z"
         }
       }
     },
@@ -1508,7 +1908,41 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-02T21:10:05.554Z",
-          "last_at": "2026-11-06T05:44:35.503Z"
+          "last_at": "2026-11-06T10:08:44.322Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/tencent/Hy-MT2-1.8B-GGUF:Q4_K_M",
+      "family": "hy-mt-2",
+      "member": "1.8b",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "tencent",
+      "attribution": "vendor",
+      "base": "tencent/Hy-MT2-1.8B",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 1080,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 36.5,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 262144,
+          "ctx_affordable": null,
+          "caps": {},
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 3.334,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T10:30:48.157Z",
+          "last_at": "2026-11-06T10:30:48.157Z"
         }
       }
     },
@@ -1813,6 +2247,46 @@
           "energy_tier": null,
           "first_at": "2026-11-03T02:37:19.884Z",
           "last_at": "2026-11-03T02:37:19.884Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M",
+      "family": "gemma-3",
+      "member": "270m",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "unsloth",
+      "attribution": "quantizer",
+      "base": "google/gemma-3-270m-it",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 241,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 291.82,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 32768,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "lang.en": 1,
+            "output.schema": 1,
+            "structured_output": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 3.229,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T10:24:40.004Z",
+          "last_at": "2026-11-06T10:24:40.004Z"
         }
       }
     },
@@ -2585,7 +3059,7 @@
       "ref": "kokoro",
       "family": "kokoro",
       "member": "base",
-      "engine": "speech-pod",
+      "engine": "speech-host",
       "quant": null,
       "publisher": "kokoro",
       "attribution": "vendor",
@@ -2700,6 +3174,40 @@
           "energy_tier": "modelled",
           "first_at": "2026-11-04T03:54:30.600Z",
           "last_at": "2026-11-05T07:04:43.806Z"
+        }
+      }
+    },
+    {
+      "ref": "nm-testing/GLM-4.5-Air-0.72B-MTP",
+      "family": "glm-4-5",
+      "member": "0.72b~nm-testing-air-mtp",
+      "engine": "vllm",
+      "quant": "BF16",
+      "publisher": "nm-testing",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": true,
+      "cohort": 3,
+      "rung": 3,
+      "disk_mib": 1370,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {},
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": 0.579,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-06T07:33:08.576Z",
+          "last_at": "2026-11-06T07:33:08.576Z"
         }
       }
     },
@@ -2847,7 +3355,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T21:17:22.315Z",
-          "last_at": "2026-11-03T23:01:13.711Z"
+          "last_at": "2026-11-06T07:55:25.054Z"
         }
       }
     },
@@ -2977,7 +3485,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T19:01:07.978Z",
-          "last_at": "2026-11-03T22:38:52.744Z"
+          "last_at": "2026-11-06T07:42:01.799Z"
         }
       }
     },
@@ -3053,7 +3561,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T22:04:32.360Z",
-          "last_at": "2026-11-03T22:46:51.139Z"
+          "last_at": "2026-11-06T09:03:34.765Z"
         }
       }
     },
@@ -3139,7 +3647,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-03T19:19:52.962Z",
-          "last_at": "2026-11-03T22:39:44.292Z"
+          "last_at": "2026-11-06T07:48:56.926Z"
         }
       }
     },
@@ -3282,6 +3790,78 @@
       }
     },
     {
+      "ref": "ununununununununununununununununununun/sd-turbo-phi-lattice",
+      "family": "sd-turbo",
+      "member": "phi-lattice",
+      "engine": "diffusers",
+      "quant": null,
+      "publisher": "ununununununununununununununununununun",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 9,
+      "disk_mib": 2460,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "image.generate": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-06T09:21:26.590Z",
+          "last_at": "2026-11-06T09:21:26.590Z"
+        }
+      }
+    },
+    {
+      "ref": "ununununununununununununununununununun/sd-turbo-phi-lattice-v2",
+      "family": "sd-turbo",
+      "member": "phi-lattice-v2",
+      "engine": "diffusers",
+      "quant": null,
+      "publisher": "ununununununununununununununununununun",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 9,
+      "disk_mib": 2460,
+      "by_class": {
+        "linux/amd64/nvidia/64g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "image.generate": 1
+          },
+          "engine_backends": [
+            "host"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-06T09:24:30.962Z",
+          "last_at": "2026-11-06T09:24:30.962Z"
+        }
+      }
+    },
+    {
       "ref": "yujiepan/hy3-tiny-random",
       "family": "hy-3",
       "member": "base~yujiepan-tiny-random",
@@ -3319,20 +3899,20 @@
   "publishers": [
     {
       "publisher": "unsloth",
-      "held": 20,
+      "held": 21,
       "grams": 6,
       "engines": {
-        "ollama": 20
+        "ollama": 21
       }
     },
     {
       "publisher": "facebook",
-      "held": 9,
+      "held": 10,
       "grams": 2,
       "engines": {
         "vision-task": 2,
         "translate-hf": 3,
-        "speech-hf": 1,
+        "speech-hf": 2,
         "audiogen": 3
       }
     },
@@ -3342,6 +3922,14 @@
       "grams": 3,
       "engines": {
         "speech-hf": 6
+      }
+    },
+    {
+      "publisher": "openbmb",
+      "held": 6,
+      "grams": 2,
+      "engines": {
+        "ollama": 6
       }
     },
     {
@@ -3419,6 +4007,22 @@
       }
     },
     {
+      "publisher": "Qwen",
+      "held": 2,
+      "grams": 2,
+      "engines": {
+        "ollama": 2
+      }
+    },
+    {
+      "publisher": "sabafallah",
+      "held": 2,
+      "grams": 1,
+      "engines": {
+        "ollama": 2
+      }
+    },
+    {
       "publisher": "speechbrain",
       "held": 2,
       "grams": 2,
@@ -3435,11 +4039,27 @@
       }
     },
     {
+      "publisher": "ununununununununununununununununununun",
+      "held": 2,
+      "grams": 1,
+      "engines": {
+        "diffusers": 2
+      }
+    },
+    {
       "publisher": "AlphaOxO",
       "held": 1,
       "grams": 1,
       "engines": {
         "vllm": 1
+      }
+    },
+    {
+      "publisher": "bartowski",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "ollama": 1
       }
     },
     {
@@ -3475,23 +4095,15 @@
       }
     },
     {
-      "publisher": "openbmb",
+      "publisher": "nm-testing",
       "held": 1,
       "grams": 1,
       "engines": {
-        "ollama": 1
+        "vllm": 1
       }
     },
     {
       "publisher": "QuantFactory",
-      "held": 1,
-      "grams": 1,
-      "engines": {
-        "ollama": 1
-      }
-    },
-    {
-      "publisher": "Qwen",
       "held": 1,
       "grams": 1,
       "engines": {
@@ -3528,6 +4140,14 @@
       "grams": 1,
       "engines": {
         "speech-hf": 1
+      }
+    },
+    {
+      "publisher": "tencent",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "ollama": 1
       }
     },
     {
