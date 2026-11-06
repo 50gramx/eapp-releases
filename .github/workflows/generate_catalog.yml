@@ -21,8 +21,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: release-catalog
@@ -31,9 +29,6 @@ concurrency:
 jobs:
   generate:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: Checkout Releases Repo
@@ -77,14 +72,8 @@ jobs:
             echo "gave up after retries (not a failure)"; exit 0
           fi
 
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Static Site
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: .
-
-      - name: Deploy Catalog Site
-        id: deployment
-        uses: actions/deploy-pages@v4
+      # NOT DEPLOYED HERE. Two workflows deployed Pages from two concurrency
+      # groups, so a catalog deploy and a push/hourly deploy met in the same
+      # minute and GitHub refused one ("Deployment failed, try again later").
+      # Deploy GitHub Pages is the one deployer; it runs when this completes
+      # (workflow_run) and serves the catalog committed above.

@@ -24,9 +24,14 @@ permissions:
   pages: write
   id-token: write
 
+# THE ONLY PAGES DEPLOYER, ONE AT A TIME, NEVER INTERRUPTED. A deploy cancelled
+# mid-flight leaves its Pages deployment pending, and every deploy after it is
+# refused "Deployment failed, try again later" until GitHub times it out. So a
+# running deploy finishes; a newer run waits, and only the newest waiting one
+# runs -- it deploys everything committed by then.
 concurrency:
   group: pages
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
