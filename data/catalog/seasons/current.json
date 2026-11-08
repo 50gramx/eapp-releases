@@ -4,7 +4,7 @@
   "starts_at": "2026-11-02T00:00:00.000Z",
   "ends_at": "2026-11-09T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-08T17:53:46.554Z",
+  "published_at": "2026-11-08T18:08:49.258Z",
   "contributors": {
     "grams": 12,
     "classes": [
@@ -19,20 +19,29 @@
     ]
   },
   "counts": {
-    "artifacts": 104,
+    "artifacts": 106,
     "publishers": 40,
     "by_cohort": {
       "0": 53,
-      "1": 12,
+      "1": 13,
       "2": 12,
-      "3": 12
+      "3": 15
     }
   },
   "artifacts": [
     {
       "ref": "AlphaOxO/GLM-OCR-NVFP4",
-      "family": null,
-      "member": null,
+      "family": "glm-ocr",
+      "member": "base",
+      "engine": "vllm",
+      "quant": "W4A16",
+      "publisher": "AlphaOxO",
+      "attribution": "quantizer",
+      "base": "zai-org/GLM-OCR",
+      "derivative": false,
+      "cohort": 1,
+      "rung": 1,
+      "disk_mib": 1301,
       "by_class": {
         "linux/amd64/nvidia/64g": {
           "grams": 1,
@@ -63,8 +72,17 @@
     },
     {
       "ref": "Beh1222/Sana_600M_1024px_diffusers",
-      "family": null,
-      "member": null,
+      "family": "sana",
+      "member": "600m",
+      "engine": "diffusers",
+      "quant": "FP16",
+      "publisher": "Beh1222",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 0,
+      "disk_mib": 15741,
       "by_class": {
         "linux/amd64/nvidia/64g": {
           "grams": 1,
@@ -420,7 +438,7 @@
         "unknown": {
           "grams": 2,
           "held_probes": 2,
-          "tokens_per_sec_best": 81.95,
+          "tokens_per_sec_best": 85.04,
           "effective_ctx_best": null,
           "effective_ctx_stop": null,
           "effective_ctx_ladder": null,
@@ -470,7 +488,7 @@
         "unknown": {
           "grams": 2,
           "held_probes": 2,
-          "tokens_per_sec_best": null,
+          "tokens_per_sec_best": 76.05,
           "effective_ctx_best": null,
           "effective_ctx_stop": null,
           "effective_ctx_ladder": null,
@@ -677,6 +695,25 @@
           "energy_tier": null,
           "first_at": "2026-11-07T20:51:54.282Z",
           "last_at": "2026-11-07T20:51:54.282Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.out": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-08T15:09:20.684Z",
+          "last_at": "2026-11-08T15:09:20.684Z"
         }
       }
     },
@@ -1044,6 +1081,26 @@
           "energy_tier": null,
           "first_at": "2026-11-03T22:06:32.927Z",
           "last_at": "2026-11-06T18:06:00.315Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.in": 1,
+            "lang.en": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-08T18:03:31.419Z",
+          "last_at": "2026-11-08T18:03:31.419Z"
         }
       }
     },
@@ -1226,6 +1283,73 @@
       }
     },
     {
+      "ref": "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:Q4_K_M",
+      "family": null,
+      "member": null,
+      "by_class": {
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 78.03,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "engine-could-not-serve",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 131072,
+          "ctx_affordable": null,
+          "caps": {
+            "faithful_tool_result": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.faithful": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 6.572,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T13:25:16.279Z",
+          "last_at": "2026-11-08T13:25:16.279Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q4_K_M",
+      "family": null,
+      "member": null,
+      "by_class": {
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 205.49,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "engine-could-not-serve",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 131072,
+          "ctx_affordable": null,
+          "caps": {
+            "code.write": 1,
+            "instruct.follow": 1,
+            "lang.bn": 1,
+            "lang.en": 1,
+            "lang.hi": 1,
+            "lang.nl": 1,
+            "lang.ru": 1,
+            "output.schema": 1,
+            "structured_output": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 2.094,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T15:45:07.861Z",
+          "last_at": "2026-11-08T15:45:07.861Z"
+        }
+      }
+    },
+    {
       "ref": "hf.co/QuantFactory/OpenHathi-7B-Hi-v0.1-Base-GGUF:Q4_K_M",
       "family": "openhathi",
       "member": "7b",
@@ -1296,6 +1420,38 @@
           "energy_tier": "modelled",
           "first_at": "2026-11-07T20:51:07.809Z",
           "last_at": "2026-11-07T20:51:07.809Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 247.91,
+          "effective_ctx_best": 8192,
+          "effective_ctx_stop": "recall-lost",
+          "effective_ctx_ladder": "4096,8192,16384",
+          "ctx_trained": 32768,
+          "ctx_affordable": 17379,
+          "caps": {
+            "code.write": 1,
+            "faithful_tool_result": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "lang.nl": 1,
+            "lang.ru": 1,
+            "output.schema": 1,
+            "structured_output": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.faithful": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 7.78,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T13:24:21.415Z",
+          "last_at": "2026-11-08T13:24:21.415Z"
         }
       }
     },
@@ -1349,10 +1505,6 @@
           "held_probes": 2,
           "tokens_per_sec_best": 27.68,
           "effective_ctx_best": 8192,
-          "effective_ctx_stop": "reached-top",
-          "effective_ctx_ladder": "4096,8192",
-          "ctx_trained": 32768,
-          "ctx_affordable": 8298,
           "caps": {
             "code.write": 2,
             "faithful_tool_result": 2,
@@ -1367,13 +1519,17 @@
             "tools.loop_ends": 2,
             "tools_loop_terminated": 2
           },
+          "first_at": "2026-11-06T09:25:33.933Z",
+          "last_at": "2026-11-07T20:51:07.809Z",
+          "effective_ctx_stop": "reached-top",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_affordable": 8298,
+          "ctx_trained": 32768,
           "engine_backends": [
             "pod"
           ],
           "joules_per_token_best": 3.748,
-          "energy_tier": "modelled",
-          "first_at": "2026-11-06T09:25:33.933Z",
-          "last_at": "2026-11-07T20:51:07.809Z"
+          "energy_tier": "modelled"
         }
       }
     },
@@ -1779,6 +1935,24 @@
           "energy_tier": "modelled",
           "first_at": "2026-11-07T14:21:08.765Z",
           "last_at": "2026-11-08T10:26:15.959Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 19.76,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "engine-could-not-serve",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 8192,
+          "ctx_affordable": null,
+          "caps": {},
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 4.453,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T13:24:58.945Z",
+          "last_at": "2026-11-08T13:24:58.945Z"
         }
       }
     },
@@ -2917,6 +3091,41 @@
           "energy_tier": "sensor",
           "first_at": "2026-11-06T09:46:25.417Z",
           "last_at": "2026-11-06T09:46:25.417Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 381.36,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "reached-top",
+          "effective_ctx_ladder": "4096",
+          "ctx_trained": 131072,
+          "ctx_affordable": 5667,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "faithful_tool_result": 1,
+            "instruct.follow": 1,
+            "lang.en": 1,
+            "output.long": 1,
+            "output.schema": 1,
+            "reason.channel": 1,
+            "research.synthesize": 1,
+            "structured_output": 1,
+            "thinking": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.faithful": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 1.79,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T13:20:06.835Z",
+          "last_at": "2026-11-08T13:20:06.835Z"
         }
       }
     },
@@ -3092,7 +3301,27 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-02T21:10:05.554Z",
-          "last_at": "2026-11-08T05:37:25.443Z"
+          "last_at": "2026-11-08T17:31:01.171Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "embed.vector": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-08T15:41:43.747Z",
+          "last_at": "2026-11-08T15:41:43.747Z"
         }
       }
     },
@@ -3179,6 +3408,24 @@
           "energy_tier": "modelled",
           "first_at": "2026-11-07T14:39:51.356Z",
           "last_at": "2026-11-07T14:39:51.356Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 221.76,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 262144,
+          "ctx_affordable": null,
+          "caps": {},
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 663.328,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T13:20:44.172Z",
+          "last_at": "2026-11-08T13:20:44.172Z"
         }
       }
     },
@@ -3900,6 +4147,30 @@
           "energy_tier": "sensor",
           "first_at": "2026-11-06T10:24:40.004Z",
           "last_at": "2026-11-06T10:24:40.004Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 286.08,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": 32768,
+          "ctx_affordable": null,
+          "caps": {
+            "code.reason": 1,
+            "code.write": 1,
+            "lang.en": 1,
+            "output.schema": 1,
+            "structured_output": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": 12.384,
+          "energy_tier": "sensor",
+          "first_at": "2026-11-08T15:41:20.899Z",
+          "last_at": "2026-11-08T15:41:20.899Z"
         }
       }
     },
@@ -3969,6 +4240,31 @@
           "energy_tier": "sensor",
           "first_at": "2026-11-03T04:32:02.604Z",
           "last_at": "2026-11-03T04:32:02.604Z"
+        },
+        "windows/amd64/nvidia/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": 182.88,
+          "effective_ctx_best": 4096,
+          "effective_ctx_stop": "engine-could-not-serve",
+          "effective_ctx_ladder": "4096,8192",
+          "ctx_trained": 131072,
+          "ctx_affordable": null,
+          "caps": {
+            "faithful_tool_result": 1,
+            "tools": 1,
+            "tools.call": 1,
+            "tools.faithful": 1,
+            "tools.loop_ends": 1,
+            "tools_loop_terminated": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-08T13:22:33.389Z",
+          "last_at": "2026-11-08T13:22:33.389Z"
         }
       }
     },
@@ -4817,7 +5113,7 @@
       "ref": "kokoro",
       "family": "kokoro",
       "member": "base",
-      "engine": "speech-pod",
+      "engine": "speech-host",
       "quant": null,
       "publisher": "kokoro",
       "attribution": "vendor",
@@ -5227,7 +5523,7 @@
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-05T12:21:23.592Z",
-          "last_at": "2026-11-07T20:50:05.542Z"
+          "last_at": "2026-11-08T15:20:15.306Z"
         },
         "linux/amd64/nvidia/64g": {
           "grams": 1,
@@ -5689,8 +5985,17 @@
     },
     {
       "ref": "ununununununununununununununununununun/sd-turbo-phi-lattice",
-      "family": null,
-      "member": null,
+      "family": "sd-turbo",
+      "member": "phi-lattice",
+      "engine": "diffusers",
+      "quant": null,
+      "publisher": "ununununununununununununununununununun",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 9,
+      "disk_mib": 2460,
       "by_class": {
         "linux/amd64/none/32g": {
           "grams": 1,
@@ -5754,8 +6059,17 @@
     },
     {
       "ref": "ununununununununununununununununununun/sd-turbo-phi-lattice-v2",
-      "family": null,
-      "member": null,
+      "family": "sd-turbo",
+      "member": "phi-lattice-v2",
+      "engine": "diffusers",
+      "quant": null,
+      "publisher": "ununununununununununununununununununun",
+      "attribution": "derivative",
+      "base": null,
+      "derivative": false,
+      "cohort": 3,
+      "rung": 9,
+      "disk_mib": 2460,
       "by_class": {
         "linux/amd64/nvidia/64g": {
           "grams": 1,
@@ -5835,29 +6149,29 @@
   "publishers": [
     {
       "publisher": "unsloth",
-      "held": 32,
-      "grams": 7,
+      "held": 34,
+      "grams": 8,
       "engines": {
-        "ollama": 32
+        "ollama": 34
       }
     },
     {
       "publisher": "facebook",
-      "held": 14,
-      "grams": 3,
+      "held": 16,
+      "grams": 4,
       "engines": {
         "vision-task": 3,
         "translate-hf": 4,
-        "speech-hf": 3,
+        "speech-hf": 5,
         "audiogen": 4
       }
     },
     {
       "publisher": "openbmb",
-      "held": 10,
-      "grams": 3,
+      "held": 11,
+      "grams": 4,
       "engines": {
-        "ollama": 10
+        "ollama": 11
       }
     },
     {
@@ -5870,10 +6184,10 @@
     },
     {
       "publisher": "bartowski",
-      "held": 5,
-      "grams": 3,
+      "held": 6,
+      "grams": 4,
       "engines": {
-        "ollama": 5
+        "ollama": 6
       }
     },
     {
@@ -5904,6 +6218,14 @@
       "publisher": "sabafallah",
       "held": 4,
       "grams": 2,
+      "engines": {
+        "ollama": 4
+      }
+    },
+    {
+      "publisher": "tencent",
+      "held": 4,
+      "grams": 3,
       "engines": {
         "ollama": 4
       }
@@ -5951,6 +6273,14 @@
       }
     },
     {
+      "publisher": "second-state",
+      "held": 3,
+      "grams": 3,
+      "engines": {
+        "ollama": 3
+      }
+    },
+    {
       "publisher": "segmind",
       "held": 3,
       "grams": 3,
@@ -5964,14 +6294,6 @@
       "grams": 3,
       "engines": {
         "diffusers": 3
-      }
-    },
-    {
-      "publisher": "tencent",
-      "held": 3,
-      "grams": 2,
-      "engines": {
-        "ollama": 3
       }
     },
     {
@@ -6004,14 +6326,6 @@
       "grams": 2,
       "engines": {
         "speaker-id": 2
-      }
-    },
-    {
-      "publisher": "second-state",
-      "held": 2,
-      "grams": 2,
-      "engines": {
-        "ollama": 2
       }
     },
     {
@@ -6237,8 +6551,8 @@
       "linux/amd64/nvidia/32g": 1,
       "darwin/arm64/apple/16g": 1,
       "windows/amd64/nvidia/8g": 1,
-      "windows/amd64/intel/16g": 2,
-      "windows/amd64/nvidia/16g": 1
+      "windows/amd64/nvidia/16g": 1,
+      "windows/amd64/intel/16g": 2
     },
     "segmind/tiny-sd": {
       "windows/amd64/intel/16g": 2,
@@ -6260,14 +6574,14 @@
     },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:q4_k_m": {
       "linux/amd64/nvidia/32g": 1,
-      "windows/amd64/intel/16g": 2,
       "linux/amd64/none/32g": 1,
       "windows/amd64/nvidia/8g": 1,
+      "windows/amd64/intel/16g": 2,
       "windows/amd64/nvidia/16g": 1
     },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/32g": 1,
       "windows/amd64/nvidia/16g": 1,
+      "linux/amd64/nvidia/32g": 1,
       "windows/amd64/intel/16g": 2,
       "linux/amd64/none/32g": 1,
       "windows/amd64/nvidia/8g": 1
@@ -6327,6 +6641,20 @@
     "claude-sonnet-5": {
       "unknown": 4
     },
+    "facebook/mms-tts-hin": {
+      "linux/amd64/none/32g": 1,
+      "windows/amd64/amd/8g": 1,
+      "linux/amd64/nvidia/64g": 1,
+      "windows/amd64/intel/16g": 1,
+      "windows/amd64/nvidia/16g": 1
+    },
+    "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
+      "linux/amd64/nvidia/64g": 1,
+      "windows/amd64/nvidia/16g": 1,
+      "windows/amd64/intel/16g": 1,
+      "linux/amd64/none/32g": 1,
+      "windows/amd64/amd/8g": 1
+    },
     "hf.co/unsloth/Phi-4-mini-instruct-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/64g": 1,
       "linux/amd64/nvidia/32g": 1,
@@ -6352,12 +6680,6 @@
       "linux/amd64/nvidia/64g": 1,
       "windows/amd64/none/16g": 1
     },
-    "facebook/mms-tts-hin": {
-      "linux/amd64/none/32g": 1,
-      "windows/amd64/amd/8g": 1,
-      "linux/amd64/nvidia/64g": 1,
-      "windows/amd64/intel/16g": 1
-    },
     "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M": {
       "unknown": 1,
       "linux/amd64/none/32g": 1,
@@ -6373,12 +6695,6 @@
       "unknown": 2,
       "linux/amd64/none/32g": 1,
       "darwin/amd64/none/8g": 1
-    },
-    "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/64g": 1,
-      "windows/amd64/intel/16g": 1,
-      "linux/amd64/none/32g": 1,
-      "windows/amd64/amd/8g": 1
     },
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M": {
       "unknown": 2
@@ -6450,6 +6766,11 @@
       "windows/amd64/amd/8g": 1,
       "windows/amd64/intel/16g": 1
     },
+    "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": 1,
+      "linux/amd64/nvidia/64g": 1,
+      "windows/amd64/intel/16g": 1
+    },
     "hf.co/Qwen/Qwen3-4B-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": 1,
       "linux/amd64/nvidia/64g": 1,
@@ -6458,6 +6779,11 @@
     "hf.co/Qwen/Qwen3-4B-GGUF:Q5_0": {
       "linux/amd64/nvidia/32g": 1,
       "darwin/arm64/apple/16g": 1,
+      "windows/amd64/nvidia/16g": 1
+    },
+    "hf.co/second-state/embeddinggemma-300m-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": 1,
+      "linux/amd64/nvidia/64g": 1,
       "windows/amd64/nvidia/16g": 1
     },
     "hf.co/tencent/Hy-MT2-1.8B-GGUF:Q4_K_M": {
@@ -6538,6 +6864,10 @@
       "linux/amd64/none/32g": 1,
       "linux/amd64/nvidia/64g": 1
     },
+    "facebook/seamless-m4t-v2-large": {
+      "linux/amd64/nvidia/64g": 1,
+      "windows/amd64/nvidia/16g": 1
+    },
     "google/madlad400-3b-mt": {
       "linux/amd64/none/32g": 1,
       "linux/amd64/nvidia/64g": 1
@@ -6592,10 +6922,6 @@
       "linux/amd64/nvidia/64g": 1,
       "linux/amd64/none/32g": 1
     },
-    "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/64g": 1,
-      "windows/amd64/intel/16g": 1
-    },
     "hf.co/QuantFactory/OpenHathi-7B-Hi-v0.1-Base-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": 1,
       "linux/amd64/nvidia/64g": 1
@@ -6615,10 +6941,6 @@
     "hf.co/sabafallah/DeepSeek-OCR-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/64g": 1,
       "windows/amd64/intel/16g": 1
-    },
-    "hf.co/second-state/embeddinggemma-300m-GGUF:Q4_K_M": {
-      "windows/amd64/intel/16g": 1,
-      "linux/amd64/nvidia/64g": 1
     },
     "hf.co/tencent/Hy-MT2-30B-A3B-GGUF:Q4_K_M": {
       "linux/amd64/none/32g": 2
@@ -6758,9 +7080,6 @@
     },
     "facebook/mms-tts-urd-script_arabic": {
       "linux/amd64/none/32g": 1
-    },
-    "facebook/seamless-m4t-v2-large": {
-      "linux/amd64/nvidia/64g": 1
     },
     "gemma4:e2b-it-qat": {
       "unknown": 1
@@ -6947,6 +7266,9 @@
     },
     "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:IQ1_S": {
       "unknown": 1
+    },
+    "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": 1
     },
     "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q2_K": {
       "windows/amd64/nvidia/16g": 1
@@ -8175,15 +8497,6 @@
         "output.schema": 1,
         "structured_output": 1
       },
-      "windows/amd64/intel/16g": {
-        "lang.hi": 1,
-        "output.schema": 2,
-        "structured_output": 2,
-        "lang.gu": 1,
-        "lang.kn": 1,
-        "lang.mr": 1,
-        "lang.pa": 1
-      },
       "windows/amd64/nvidia/16g": {
         "output.schema": 1,
         "structured_output": 1,
@@ -8194,6 +8507,15 @@
         "lang.mr": 1,
         "lang.te": 1,
         "output.long": 1
+      },
+      "windows/amd64/intel/16g": {
+        "lang.hi": 1,
+        "output.schema": 2,
+        "structured_output": 2,
+        "lang.gu": 1,
+        "lang.kn": 1,
+        "lang.mr": 1,
+        "lang.pa": 1
       }
     },
     "segmind/tiny-sd": {
@@ -8252,25 +8574,6 @@
         "tools.loop_ends": 1,
         "tools_loop_terminated": 1
       },
-      "windows/amd64/intel/16g": {
-        "code.write": 2,
-        "faithful_tool_result": 2,
-        "instruct.follow": 2,
-        "lang.en": 2,
-        "lang.nl": 1,
-        "output.schema": 2,
-        "structured_output": 2,
-        "tools": 2,
-        "tools.call": 2,
-        "tools.faithful": 2,
-        "tools.loop_ends": 2,
-        "tools_loop_terminated": 2,
-        "output.long": 1,
-        "lang.ru": 1,
-        "lang.si": 1,
-        "lang.ja": 1,
-        "lang.zh": 1
-      },
       "linux/amd64/none/32g": {
         "code.write": 1,
         "faithful_tool_result": 1,
@@ -8288,6 +8591,25 @@
         "lang.en": 1,
         "output.schema": 1,
         "structured_output": 1
+      },
+      "windows/amd64/intel/16g": {
+        "code.write": 2,
+        "faithful_tool_result": 2,
+        "instruct.follow": 2,
+        "lang.en": 2,
+        "output.schema": 2,
+        "structured_output": 2,
+        "tools": 2,
+        "tools.call": 2,
+        "tools.faithful": 2,
+        "tools.loop_ends": 2,
+        "tools_loop_terminated": 2,
+        "output.long": 1,
+        "lang.nl": 1,
+        "lang.ru": 1,
+        "lang.si": 1,
+        "lang.ja": 1,
+        "lang.zh": 1
       },
       "windows/amd64/nvidia/16g": {
         "code.write": 1,
@@ -8307,25 +8629,27 @@
       }
     },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/32g": {
+      "windows/amd64/nvidia/16g": {
         "code.write": 1,
         "faithful_tool_result": 1,
         "instruct.follow": 1,
         "lang.en": 1,
+        "lang.nl": 1,
+        "lang.ru": 1,
         "output.schema": 1,
         "structured_output": 1,
         "tools": 1,
         "tools.call": 1,
         "tools.faithful": 1,
         "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
+        "tools_loop_terminated": 1,
+        "output.long": 1
       },
-      "windows/amd64/nvidia/16g": {
+      "linux/amd64/nvidia/32g": {
         "code.write": 1,
         "faithful_tool_result": 1,
         "instruct.follow": 1,
         "lang.en": 1,
-        "output.long": 1,
         "output.schema": 1,
         "structured_output": 1,
         "tools": 1,
@@ -8678,6 +9002,65 @@
         "tools": 4
       }
     },
+    "facebook/mms-tts-hin": {
+      "linux/amd64/none/32g": {
+        "audio": 1,
+        "audio.out": 1
+      },
+      "windows/amd64/amd/8g": {
+        "audio": 1,
+        "audio.out": 1
+      },
+      "linux/amd64/nvidia/64g": {
+        "audio": 1,
+        "audio.out": 1
+      },
+      "windows/amd64/intel/16g": {
+        "audio": 1,
+        "audio.out": 1
+      },
+      "windows/amd64/nvidia/16g": {
+        "audio": 1,
+        "audio.out": 1
+      }
+    },
+    "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
+      "linux/amd64/nvidia/64g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      },
+      "windows/amd64/nvidia/16g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      },
+      "windows/amd64/intel/16g": {
+        "code.write": 1,
+        "lang.en": 1,
+        "lang.ta": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      },
+      "linux/amd64/none/32g": {
+        "code.write": 1,
+        "lang.bn": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      },
+      "windows/amd64/amd/8g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      }
+    },
     "hf.co/unsloth/Phi-4-mini-instruct-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/64g": {
         "code.write": 1,
@@ -8755,24 +9138,6 @@
         "image.generate": 1
       },
       "windows/amd64/none/16g": {}
-    },
-    "facebook/mms-tts-hin": {
-      "linux/amd64/none/32g": {
-        "audio": 1,
-        "audio.out": 1
-      },
-      "windows/amd64/amd/8g": {
-        "audio": 1,
-        "audio.out": 1
-      },
-      "linux/amd64/nvidia/64g": {
-        "audio": 1,
-        "audio.out": 1
-      },
-      "windows/amd64/intel/16g": {
-        "audio": 1,
-        "audio.out": 1
-      }
     },
     "hf.co/bartowski/Llama-3.2-1B-Instruct-GGUF:Q4_K_M": {
       "unknown": {
@@ -8860,36 +9225,6 @@
       "unknown": {},
       "linux/amd64/none/32g": {},
       "darwin/amd64/none/8g": {}
-    },
-    "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/64g": {
-        "code.reason": 1,
-        "code.write": 1,
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1
-      },
-      "windows/amd64/intel/16g": {
-        "code.write": 1,
-        "lang.en": 1,
-        "lang.ta": 1,
-        "output.schema": 1,
-        "structured_output": 1
-      },
-      "linux/amd64/none/32g": {
-        "code.write": 1,
-        "lang.bn": 1,
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1
-      },
-      "windows/amd64/amd/8g": {
-        "code.reason": 1,
-        "code.write": 1,
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1
-      }
     },
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M": {
       "unknown": {
@@ -9312,6 +9647,58 @@
         "vision.spatial": 1
       }
     },
+    "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.long": 1,
+        "output.schema": 1,
+        "reason.channel": 1,
+        "research.synthesize": 1,
+        "structured_output": 1,
+        "thinking": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      },
+      "linux/amd64/nvidia/64g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.long": 1,
+        "output.schema": 1,
+        "reason.channel": 1,
+        "structured_output": 1,
+        "thinking": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      },
+      "windows/amd64/intel/16g": {
+        "code.reason": 1,
+        "code.write": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.long": 1,
+        "output.schema": 1,
+        "reason.channel": 1,
+        "structured_output": 1,
+        "thinking": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      }
+    },
     "hf.co/Qwen/Qwen3-4B-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": {
         "code.reason": 1,
@@ -9426,6 +9813,17 @@
         "tools_loop_terminated": 1
       }
     },
+    "hf.co/second-state/embeddinggemma-300m-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": {
+        "embed.vector": 1
+      },
+      "linux/amd64/nvidia/64g": {
+        "embed.vector": 1
+      },
+      "windows/amd64/nvidia/16g": {
+        "embed.vector": 1
+      }
+    },
     "hf.co/tencent/Hy-MT2-1.8B-GGUF:Q4_K_M": {
       "windows/amd64/nvidia/16g": {},
       "linux/amd64/nvidia/64g": {},
@@ -9433,9 +9831,14 @@
     },
     "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_XS": {
       "windows/amd64/nvidia/16g": {
+        "faithful_tool_result": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1,
         "code.reason": 1,
         "code.write": 1,
-        "faithful_tool_result": 1,
         "instruct.follow": 1,
         "lang.bn": 1,
         "lang.en": 1,
@@ -9453,12 +9856,7 @@
         "research.synthesize": 1,
         "structured_output": 1,
         "thinking": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
         "tools.multi_hop": 1,
-        "tools_loop_terminated": 1,
         "vision": 1,
         "vision.count": 1,
         "vision.multi_image": 1,
@@ -9933,6 +10331,30 @@
         "translate.ur": 1
       }
     },
+    "facebook/seamless-m4t-v2-large": {
+      "linux/amd64/nvidia/64g": {
+        "audio": 1,
+        "audio.in": 1,
+        "lang.as": 1,
+        "lang.bn": 1,
+        "lang.en": 1,
+        "lang.gu": 1,
+        "lang.kn": 1,
+        "lang.ml": 1,
+        "lang.mr": 1,
+        "lang.ne": 1,
+        "lang.or": 1,
+        "lang.pa": 1,
+        "lang.ta": 1,
+        "lang.te": 1,
+        "lang.ur": 1
+      },
+      "windows/amd64/nvidia/16g": {
+        "audio": 1,
+        "audio.in": 1,
+        "lang.en": 1
+      }
+    },
     "google/madlad400-3b-mt": {
       "linux/amd64/none/32g": {
         "translate.as": 1,
@@ -10280,40 +10702,6 @@
         "vision.spatial": 1
       }
     },
-    "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/64g": {
-        "code.reason": 1,
-        "code.write": 1,
-        "faithful_tool_result": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.long": 1,
-        "output.schema": 1,
-        "reason.channel": 1,
-        "structured_output": 1,
-        "thinking": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
-      },
-      "windows/amd64/intel/16g": {
-        "code.reason": 1,
-        "code.write": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.long": 1,
-        "output.schema": 1,
-        "reason.channel": 1,
-        "structured_output": 1,
-        "thinking": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
-      }
-    },
     "hf.co/QuantFactory/OpenHathi-7B-Hi-v0.1-Base-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": {},
       "linux/amd64/nvidia/64g": {
@@ -10407,14 +10795,6 @@
       },
       "windows/amd64/intel/16g": {
         "lang.en": 1
-      }
-    },
-    "hf.co/second-state/embeddinggemma-300m-GGUF:Q4_K_M": {
-      "windows/amd64/intel/16g": {
-        "embed.vector": 1
-      },
-      "linux/amd64/nvidia/64g": {
-        "embed.vector": 1
       }
     },
     "hf.co/tencent/Hy-MT2-30B-A3B-GGUF:Q4_K_M": {
@@ -11277,25 +11657,6 @@
       "linux/amd64/none/32g": {
         "audio": 1,
         "audio.out": 1
-      }
-    },
-    "facebook/seamless-m4t-v2-large": {
-      "linux/amd64/nvidia/64g": {
-        "audio": 1,
-        "audio.in": 1,
-        "lang.as": 1,
-        "lang.bn": 1,
-        "lang.en": 1,
-        "lang.gu": 1,
-        "lang.kn": 1,
-        "lang.ml": 1,
-        "lang.mr": 1,
-        "lang.ne": 1,
-        "lang.or": 1,
-        "lang.pa": 1,
-        "lang.ta": 1,
-        "lang.te": 1,
-        "lang.ur": 1
       }
     },
     "gemma4:e2b-it-qat": {
@@ -12188,6 +12549,16 @@
         "structured_output": 1
       }
     },
+    "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": {
+        "faithful_tool_result": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      }
+    },
     "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q2_K": {
       "windows/amd64/nvidia/16g": {
         "code.write": 1,
@@ -12203,10 +12574,13 @@
         "instruct.follow": 1,
         "lang.bn": 1,
         "lang.en": 1,
-        "output.long": 1,
+        "lang.hi": 1,
+        "lang.nl": 1,
+        "lang.ru": 1,
         "output.schema": 1,
-        "research.synthesize": 1,
-        "structured_output": 1
+        "structured_output": 1,
+        "output.long": 1,
+        "research.synthesize": 1
       }
     },
     "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q4_K_S": {
@@ -14308,6 +14682,15 @@
       "class": "windows/amd64/nvidia/16g",
       "region": "IN_751030",
       "until": "2026-11-09T01:18:20.1821349+05:30"
+    },
+    {
+      "gram": "662a4e",
+      "ref": "hf.co/mradermacher/North-Mini-Code-1.0-i1-GGUF:IQ3_XXS",
+      "family": "north-1",
+      "member": "mini-code-1-0~mradermacher-i1",
+      "class": "linux/amd64/none/32g",
+      "region": null,
+      "until": "2026-11-08T19:59:33.351635193Z"
     }
   ],
   "grams": [
@@ -14316,9 +14699,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/64g",
       "state": "offline",
-      "offline_minutes": 2198,
+      "offline_minutes": 2213,
       "last_seen": "2026-11-07T05:15:02.87151797Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "clean_stop",
       "last_absence_detail": "stopped on purpose (signal) — the machine may simply have been shut down",
       "power_source": "unknown",
@@ -14359,9 +14742,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 12100,
+      "offline_minutes": 12115,
       "last_seen": "2026-10-31T08:12:35.161273721Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -14402,9 +14785,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 20757,
+      "offline_minutes": 20772,
       "last_seen": "2026-10-25T07:55:25.960825361Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -14444,9 +14827,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 13383,
+      "offline_minutes": 13398,
       "last_seen": "2026-10-30T10:49:46.768890033Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -14488,12 +14871,12 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-11-08T17:52:48.394907469Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "last_seen": "2026-11-08T18:07:42.580912484Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
-      "awake_seconds": 1158,
+      "awake_seconds": 2052,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -14530,9 +14913,9 @@
       "os": "windows",
       "class": "windows/amd64/intel/16g",
       "state": "offline",
-      "offline_minutes": 171,
+      "offline_minutes": 185,
       "last_seen": "2026-11-08T15:02:22.87672339Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -14573,12 +14956,12 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-11-08T17:52:27.530099344Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "last_seen": "2026-11-08T18:07:43.523582468Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
-      "awake_seconds": 1122,
+      "awake_seconds": 2038,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -14593,10 +14976,10 @@
         "8",
         "9"
       ],
-      "artifacts": 3756,
+      "artifacts": 3764,
       "measured": 8,
       "failed": 7,
-      "queued": 1241,
+      "queued": 1197,
       "unreachable": 14,
       "unreachable_by_engine": {
         "mlx": 3,
@@ -14605,7 +14988,7 @@
         "speech-host": 4,
         "vllm": 4
       },
-      "expected_hours": 1589.4833333333333,
+      "expected_hours": 1531.1166666666666,
       "expected_basis": "machines of this class",
       "eta_hours": null,
       "blocked": "budget"
@@ -14616,12 +14999,12 @@
       "class": "windows/amd64/nvidia/16g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-11-08T17:52:06.828603674Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "last_seen": "2026-11-08T18:06:50.233820802Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "unknown",
-      "awake_seconds": 1332,
+      "awake_seconds": 2233,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -14636,9 +15019,9 @@
         "8"
       ],
       "artifacts": 3782,
-      "measured": 7,
+      "measured": 8,
       "failed": 10,
-      "queued": 1394,
+      "queued": 1393,
       "unreachable": 18,
       "unreachable_by_engine": {
         "mlx": 3,
@@ -14649,7 +15032,7 @@
       },
       "expected_hours": 87.05,
       "expected_basis": "own samples",
-      "eta_hours": 4780,
+      "eta_hours": 4179,
       "blocked": "engine"
     },
     {
@@ -14657,9 +15040,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 5006,
+      "offline_minutes": 5021,
       "last_seen": "2026-11-05T06:26:43.387754954Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -14698,12 +15081,12 @@
       "class": "windows/amd64/intel/16g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-11-08T17:52:40.359570223Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "last_seen": "2026-11-08T17:58:59.653826668Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
-      "awake_seconds": 1375,
+      "awake_seconds": 1690,
       "slept_seconds": null,
       "likely": null,
       "engines": [],
@@ -14737,9 +15120,9 @@
       "os": "windows",
       "class": "windows/amd64/amd/8g",
       "state": "offline",
-      "offline_minutes": 14931,
+      "offline_minutes": 14946,
       "last_seen": "2026-10-29T09:02:07.675711126Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -14779,9 +15162,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 8242,
+      "offline_minutes": 8257,
       "last_seen": "2026-11-03T00:30:53.375627442Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -14822,9 +15205,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/16g",
       "state": "offline",
-      "offline_minutes": 9005,
+      "offline_minutes": 9020,
       "last_seen": "2026-11-02T11:47:39.454351566Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "battery",
@@ -14864,9 +15247,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/256g",
       "state": "offline",
-      "offline_minutes": 8105,
+      "offline_minutes": 8120,
       "last_seen": "2026-11-03T02:47:59.260150674Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -14907,9 +15290,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14294,
+      "offline_minutes": 14309,
       "last_seen": "2026-10-29T19:39:03.420758576Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -14950,9 +15333,9 @@
       "os": "linux",
       "class": "linux/amd64/nvidia/32g",
       "state": "offline",
-      "offline_minutes": 29178,
+      "offline_minutes": 29193,
       "last_seen": "2026-10-19T11:34:49.856273646Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -14991,9 +15374,9 @@
       "os": "darwin",
       "class": "darwin/arm64/apple/8g",
       "state": "offline",
-      "offline_minutes": 25858,
+      "offline_minutes": 25873,
       "last_seen": "2026-10-21T18:54:26.305874913Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "ac",
@@ -15030,9 +15413,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14079,
+      "offline_minutes": 14094,
       "last_seen": "2026-10-29T23:14:05.459165441Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15073,9 +15456,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/8g",
       "state": "offline",
-      "offline_minutes": 19145,
+      "offline_minutes": 19160,
       "last_seen": "2026-10-26T10:47:42.14649699Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -15112,9 +15495,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 13341,
+      "offline_minutes": 13356,
       "last_seen": "2026-10-30T11:31:57.821619463Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15155,9 +15538,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14031,
+      "offline_minutes": 14046,
       "last_seen": "2026-10-30T00:02:04.998324144Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15198,9 +15581,9 @@
       "os": "windows",
       "class": "windows/amd64/nvidia/16g",
       "state": "offline",
-      "offline_minutes": 9847,
+      "offline_minutes": 9862,
       "last_seen": "2026-11-01T21:45:27.88953621Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -15240,9 +15623,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14270,
+      "offline_minutes": 14285,
       "last_seen": "2026-10-29T20:02:24.867661588Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15283,9 +15666,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14296,
+      "offline_minutes": 14311,
       "last_seen": "2026-10-29T19:36:55.779962954Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15326,9 +15709,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14081,
+      "offline_minutes": 14096,
       "last_seen": "2026-10-29T23:11:56.098297999Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15369,9 +15752,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14033,
+      "offline_minutes": 14048,
       "last_seen": "2026-10-30T00:00:10.556067693Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15412,9 +15795,9 @@
       "os": "ios",
       "class": "ios/arm64/none/4g",
       "state": "offline",
-      "offline_minutes": 285,
+      "offline_minutes": 300,
       "last_seen": "2026-11-08T13:07:46.716866433Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -15454,9 +15837,9 @@
       "os": "ios",
       "class": "ios/arm64/none/4g",
       "state": "offline",
-      "offline_minutes": 209,
+      "offline_minutes": 224,
       "last_seen": "2026-11-08T14:23:57.599729055Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -15495,12 +15878,12 @@
       "class": "darwin/arm64/apple/16g",
       "state": "online",
       "offline_minutes": 0,
-      "last_seen": "2026-11-08T17:52:33.069031185Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "last_seen": "2026-11-08T18:07:51.403413451Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "battery",
-      "awake_seconds": 30036,
+      "awake_seconds": 30955,
       "slept_seconds": 95014,
       "likely": null,
       "engines": [
@@ -15518,8 +15901,8 @@
       ],
       "artifacts": 3745,
       "measured": 0,
-      "failed": 1,
-      "queued": 1313,
+      "failed": 2,
+      "queued": 1314,
       "unreachable": 16,
       "unreachable_by_engine": {
         "speech-host": 4,
@@ -15536,9 +15919,9 @@
       "os": "linux",
       "class": "linux/amd64/none/4g",
       "state": "offline",
-      "offline_minutes": 47,
+      "offline_minutes": 62,
       "last_seen": "2026-11-08T17:05:40.747073836Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "unknown",
@@ -15576,9 +15959,9 @@
       "os": "darwin",
       "class": "darwin/amd64/apple/8g",
       "state": "offline",
-      "offline_minutes": 583,
+      "offline_minutes": 598,
       "last_seen": "2026-11-08T08:09:51.728996982Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
@@ -15616,9 +15999,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 14199,
+      "offline_minutes": 14214,
       "last_seen": "2026-10-29T21:13:59.894205626Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15659,9 +16042,9 @@
       "os": "ios",
       "class": "ios/arm64/none/4g",
       "state": "offline",
-      "offline_minutes": 6632,
+      "offline_minutes": 6647,
       "last_seen": "2026-11-04T03:21:13.159245579Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
@@ -15699,9 +16082,9 @@
       "os": "linux",
       "class": "linux/amd64/none/32g",
       "state": "offline",
-      "offline_minutes": 13343,
+      "offline_minutes": 13358,
       "last_seen": "2026-10-30T11:30:10.696234081Z",
-      "as_of": "2026-11-08T17:52:53Z",
+      "as_of": "2026-11-08T18:07:51Z",
       "last_absence": null,
       "last_absence_detail": null,
       "power_source": "unknown",
@@ -15743,15 +16126,15 @@
     {
       "engine": "ollama",
       "proved_artifacts": 59,
-      "measured": 81,
+      "measured": 87,
       "unreachable": 0,
       "capabilities": {
-        "code.reason": 45,
-        "code.write": 51,
-        "faithful_tool_result": 30,
-        "instruct.follow": 53,
+        "code.reason": 47,
+        "code.write": 53,
+        "faithful_tool_result": 32,
+        "instruct.follow": 54,
         "lang.bn": 39,
-        "lang.en": 62,
+        "lang.en": 64,
         "lang.gu": 17,
         "lang.hi": 43,
         "lang.kn": 34,
@@ -15762,16 +16145,16 @@
         "lang.ru": 9,
         "lang.ta": 41,
         "lang.te": 40,
-        "output.long": 45,
-        "output.schema": 63,
-        "reason.channel": 38,
-        "structured_output": 63,
-        "thinking": 38,
-        "tools": 48,
-        "tools.call": 48,
-        "tools.faithful": 30,
-        "tools.loop_ends": 29,
-        "tools_loop_terminated": 29,
+        "output.long": 46,
+        "output.schema": 65,
+        "reason.channel": 39,
+        "structured_output": 65,
+        "thinking": 39,
+        "tools": 50,
+        "tools.call": 50,
+        "tools.faithful": 32,
+        "tools.loop_ends": 31,
+        "tools_loop_terminated": 31,
         "vision": 26,
         "vision.count": 24,
         "vision.multi_image": 23,
@@ -15796,7 +16179,7 @@
         "lang.ms": 3,
         "lang.th": 2,
         "lang.vi": 2,
-        "research.synthesize": 27,
+        "research.synthesize": 28,
         "tools.multi_hop": 15,
         "lang.as": 3,
         "lang.es": 4,
@@ -15804,22 +16187,22 @@
         "lang.si": 2,
         "lang.ur": 4,
         "lang.yo": 2,
-        "embed.vector": 4,
+        "embed.vector": 5,
         "lang.or": 2,
         "lang.ha": 3
       },
-      "classes": 6
+      "classes": 7
     },
     {
       "engine": "speech-hf",
       "proved_artifacts": 9,
-      "measured": 14,
+      "measured": 16,
       "unreachable": 391,
       "capabilities": {
-        "audio": 14,
-        "audio.out": 6,
-        "lang.en": 9,
-        "audio.in": 8,
+        "audio": 16,
+        "audio.out": 7,
+        "lang.en": 10,
+        "audio.in": 9,
         "lang.as": 1,
         "lang.bn": 6,
         "lang.gu": 5,
@@ -15834,15 +16217,15 @@
         "lang.ur": 6,
         "lang.hi": 7
       },
-      "classes": 4
+      "classes": 5
     },
     {
       "engine": "diffusers",
-      "proved_artifacts": 4,
-      "measured": 8,
+      "proved_artifacts": 7,
+      "measured": 14,
       "unreachable": 110,
       "capabilities": {
-        "image.generate": 7
+        "image.generate": 11
       },
       "classes": 3
     },
@@ -15870,17 +16253,24 @@
       "classes": 3
     },
     {
-      "engine": "speech-pod",
-      "proved_artifacts": 3,
-      "measured": 7,
-      "unreachable": 128,
+      "engine": "vllm",
+      "proved_artifacts": 4,
+      "measured": 4,
+      "unreachable": 120,
       "capabilities": {
-        "audio": 7,
-        "audio.in": 4,
-        "lang.en": 6,
-        "audio.out": 3
+        "code.write": 2,
+        "lang.en": 2,
+        "output.schema": 2,
+        "structured_output": 2,
+        "vision": 2,
+        "vision.read": 2,
+        "code.reason": 1,
+        "output.long": 1,
+        "vision.count": 1,
+        "vision.multi_image": 1,
+        "vision.spatial": 1
       },
-      "classes": 3
+      "classes": 1
     },
     {
       "engine": "vision-task",
@@ -15892,26 +16282,6 @@
         "vision.count": 3
       },
       "classes": 3
-    },
-    {
-      "engine": "vllm",
-      "proved_artifacts": 3,
-      "measured": 3,
-      "unreachable": 120,
-      "capabilities": {
-        "code.reason": 1,
-        "code.write": 1,
-        "lang.en": 1,
-        "output.long": 1,
-        "output.schema": 1,
-        "structured_output": 1,
-        "vision": 1,
-        "vision.count": 1,
-        "vision.multi_image": 1,
-        "vision.read": 1,
-        "vision.spatial": 1
-      },
-      "classes": 1
     },
     {
       "engine": "audiogen",
@@ -15932,6 +16302,30 @@
         "voice.identify": 4
       },
       "classes": 2
+    },
+    {
+      "engine": "speech-pod",
+      "proved_artifacts": 2,
+      "measured": 4,
+      "unreachable": 128,
+      "capabilities": {
+        "audio": 4,
+        "audio.in": 4,
+        "lang.en": 4
+      },
+      "classes": 2
+    },
+    {
+      "engine": "speech-host",
+      "proved_artifacts": 1,
+      "measured": 3,
+      "unreachable": 136,
+      "capabilities": {
+        "audio": 3,
+        "audio.out": 3,
+        "lang.en": 2
+      },
+      "classes": 3
     },
     {
       "engine": "mlx",
@@ -15964,19 +16358,136 @@
       "unreachable": 33,
       "capabilities": {},
       "classes": 0
-    },
-    {
-      "engine": "speech-host",
-      "proved_artifacts": 0,
-      "measured": 0,
-      "unreachable": 136,
-      "capabilities": {},
-      "classes": 0
     }
   ],
   "modalities_note": "per engine: how many artifacts this season proved, on how many hardware classes, which capabilities came back, and how many artifact-slots the fleet currently cannot reach at all (no Apple Silicon for MLX, no schedulable card for vLLM, no cluster for the speech pods). An engine with zero proved and a large unreachable count has never been shown to work on this network -- a statement about the network, not about the models.",
   "proving_note": "proving is a LEASE, not a fact: what each gram said it was working on when it last reported. It expires on its own, confers nothing and is never coverage. It is here so the network can be watched working.",
   "refusals": {
+    "myshell-ai/OpenVoiceV2": {
+      "darwin/arm64/apple/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "afa811d969503af890ce72ddbfd23d0de65d964c",
+        "first_at": "2026-11-05T05:09:17.893984Z",
+        "last_at": "2026-11-05T05:09:17.893984Z"
+      },
+      "windows/amd64/nvidia/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T14:55:57.6627286Z",
+        "last_at": "2026-11-08T14:55:57.6627286Z"
+      },
+      "windows/amd64/intel/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-10-25T00:49:09.300423Z",
+        "last_at": "2026-10-25T00:49:09.300423Z"
+      },
+      "linux/amd64/nvidia/64g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
+        "first_at": "2026-11-06T07:56:15.561004743Z",
+        "last_at": "2026-11-06T07:56:15.561004743Z"
+      },
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 3,
+        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
+        "first_at": "2026-10-24T21:40:35.789040385Z",
+        "last_at": "2026-10-25T21:58:06.895626681Z"
+      },
+      "windows/amd64/amd/8g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "43f84dc8f6de4602e28bec96e5e5d4daf0efa22b",
+        "first_at": "2026-10-28T11:58:37.5115094Z",
+        "last_at": "2026-10-28T11:58:37.5115094Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-05T09:20:20.521923406Z",
+        "last_at": "2026-11-05T09:20:20.521923406Z"
+      }
+    },
+    "hf.co/unsloth/Muse-Glimmer-30B-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-06T06:58:20.501252058Z",
+        "last_at": "2026-11-06T06:58:20.501252058Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-27B-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-06T06:59:26.197618612Z",
+        "last_at": "2026-11-06T06:59:26.197618612Z"
+      }
+    },
+    "hf.co/unsloth/gemma-3-27b-it-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 2,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-06T07:06:52.779300546Z",
+        "last_at": "2026-11-08T00:56:28.849843234Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.8-27B-GGUF:Q4_K_S": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T11:22:29.070169681Z",
+        "last_at": "2026-11-08T11:22:29.070169681Z"
+      }
+    },
+    "hf.co/unsloth/Magistral-Small-2506-GGUF:IQ2_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T11:23:36.24091785Z",
+        "last_at": "2026-11-08T11:23:36.24091785Z"
+      }
+    },
+    "hf.co/unsloth/gemma-4-12B-it-qat-GGUF:Q4_K_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T12:26:12.397238639Z",
+        "last_at": "2026-11-08T12:26:12.397238639Z"
+      }
+    },
+    "hf.co/unsloth/Devstral-Small-2505-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T12:42:59.231869295Z",
+        "last_at": "2026-11-08T12:42:59.231869295Z"
+      }
+    },
+    "hf.co/unsloth/Magistral-Small-2509-GGUF:IQ2_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T12:49:12.685536656Z",
+        "last_at": "2026-11-08T12:49:12.685536656Z"
+      }
+    },
     "hf.co/unsloth/Qwen3.6-35B-A3B-GGUF:IQ3_XXS": {
       "linux/amd64/none/32g": {
         "cause": "unavailable",
@@ -16166,15 +16677,6 @@
         "last_at": "2026-11-07T22:31:04.809703174Z"
       }
     },
-    "hf.co/unsloth/gemma-3-27b-it-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 2,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-06T07:06:52.779300546Z",
-        "last_at": "2026-11-08T00:56:28.849843234Z"
-      }
-    },
     "hf.co/unsloth/gemma-4-31B-it-GGUF:IQ2_M": {
       "linux/amd64/none/32g": {
         "cause": "unavailable",
@@ -16288,244 +16790,6 @@
         "last_at": "2026-11-08T09:41:20.881298441Z"
       }
     },
-    "bharatgenai/sooktam2": {
-      "windows/amd64/intel/16g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-09-19T08:38:29.7331866Z",
-        "last_at": "2026-09-19T08:38:29.7331866Z"
-      },
-      "windows/amd64/nvidia/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T16:20:27.278889Z",
-        "last_at": "2026-11-08T16:20:27.278889Z"
-      },
-      "linux/amd64/nvidia/64g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
-        "first_at": "2026-11-06T08:45:36.839669934Z",
-        "last_at": "2026-11-06T08:45:36.839669934Z"
-      },
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
-        "first_at": "2026-10-24T21:36:27.480230121Z",
-        "last_at": "2026-10-24T21:36:27.480230121Z"
-      }
-    },
-    "myshell-ai/OpenVoiceV2": {
-      "windows/amd64/intel/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-10-25T00:49:09.300423Z",
-        "last_at": "2026-10-25T00:49:09.300423Z"
-      },
-      "darwin/arm64/apple/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "afa811d969503af890ce72ddbfd23d0de65d964c",
-        "first_at": "2026-11-05T05:09:17.893984Z",
-        "last_at": "2026-11-05T05:09:17.893984Z"
-      },
-      "windows/amd64/nvidia/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T14:55:57.6627286Z",
-        "last_at": "2026-11-08T14:55:57.6627286Z"
-      },
-      "linux/amd64/nvidia/64g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
-        "first_at": "2026-11-06T07:56:15.561004743Z",
-        "last_at": "2026-11-06T07:56:15.561004743Z"
-      },
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 3,
-        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
-        "first_at": "2026-10-24T21:40:35.789040385Z",
-        "last_at": "2026-10-25T21:58:06.895626681Z"
-      },
-      "windows/amd64/amd/8g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "43f84dc8f6de4602e28bec96e5e5d4daf0efa22b",
-        "first_at": "2026-10-28T11:58:37.5115094Z",
-        "last_at": "2026-10-28T11:58:37.5115094Z"
-      }
-    },
-    "ai4bharat/indicconformer_stt_hi_hybrid_ctc_rnnt_large": {
-      "windows/amd64/intel/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-10-25T19:54:37.0338864Z",
-        "last_at": "2026-10-25T19:54:37.0338864Z"
-      },
-      "linux/amd64/nvidia/64g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
-        "first_at": "2026-11-06T09:48:02.125532207Z",
-        "last_at": "2026-11-06T09:48:02.125532207Z"
-      },
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "453201c4df6d692313c82e20462d91e8a924a42c",
-        "first_at": "2026-10-25T19:51:58.723803125Z",
-        "last_at": "2026-10-25T19:51:58.723803125Z"
-      }
-    },
-    "SWivid/F5-TTS": {
-      "windows/amd64/intel/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-10-27T11:41:19.7702002Z",
-        "last_at": "2026-10-27T11:41:19.7702002Z"
-      },
-      "windows/amd64/nvidia/16g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-10-02T17:40:36.1173426Z",
-        "last_at": "2026-10-02T17:40:36.1173426Z"
-      },
-      "darwin/arm64/apple/16g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "efaaa4dc7cdc07cc458af600d255b81dab68f3f1",
-        "first_at": "2026-10-16T04:57:56.373618Z",
-        "last_at": "2026-10-16T04:57:56.373618Z"
-      },
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
-        "first_at": "2026-10-24T21:40:24.552059558Z",
-        "last_at": "2026-10-24T21:40:24.552059558Z"
-      }
-    },
-    "hf.co/notSnix/Step-3.7-Flash-Q4_K_M-MTP-GGUF:Q6_K": {
-      "windows/amd64/intel/16g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-10-27T13:59:45.1575001Z",
-        "last_at": "2026-10-27T13:59:45.1575001Z"
-      }
-    },
-    "bharatgenai/Shrutam-2": {
-      "windows/amd64/intel/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-10-28T20:42:25.1932071Z",
-        "last_at": "2026-10-28T20:42:25.1932071Z"
-      },
-      "windows/amd64/nvidia/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T16:59:21.3643233Z",
-        "last_at": "2026-11-08T16:59:21.3643233Z"
-      },
-      "linux/amd64/nvidia/64g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
-        "first_at": "2026-11-06T08:52:11.46661553Z",
-        "last_at": "2026-11-06T08:52:11.46661553Z"
-      },
-      "linux/amd64/none/32g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
-        "first_at": "2026-10-25T03:08:31.008483616Z",
-        "last_at": "2026-10-25T03:08:31.008483616Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-05T09:20:20.521923406Z",
-        "last_at": "2026-11-05T09:20:20.521923406Z"
-      }
-    },
-    "hf.co/unsloth/Muse-Glimmer-30B-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-06T06:58:20.501252058Z",
-        "last_at": "2026-11-06T06:58:20.501252058Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-27B-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-06T06:59:26.197618612Z",
-        "last_at": "2026-11-06T06:59:26.197618612Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.8-27B-GGUF:Q4_K_S": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T11:22:29.070169681Z",
-        "last_at": "2026-11-08T11:22:29.070169681Z"
-      }
-    },
-    "hf.co/unsloth/Magistral-Small-2506-GGUF:IQ2_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T11:23:36.24091785Z",
-        "last_at": "2026-11-08T11:23:36.24091785Z"
-      }
-    },
-    "hf.co/unsloth/gemma-4-12B-it-qat-GGUF:Q4_K_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T12:26:12.397238639Z",
-        "last_at": "2026-11-08T12:26:12.397238639Z"
-      }
-    },
-    "hf.co/unsloth/Devstral-Small-2505-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T12:42:59.231869295Z",
-        "last_at": "2026-11-08T12:42:59.231869295Z"
-      }
-    },
-    "hf.co/unsloth/Magistral-Small-2509-GGUF:IQ2_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
-        "first_at": "2026-11-08T12:49:12.685536656Z",
-        "last_at": "2026-11-08T12:49:12.685536656Z"
-      }
-    },
     "coqui/XTTS-v2": {
       "windows/amd64/nvidia/16g": {
         "cause": "unavailable",
@@ -16554,6 +16818,128 @@
         "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
         "first_at": "2026-10-24T21:40:13.391681Z",
         "last_at": "2026-10-24T21:40:13.391681Z"
+      }
+    },
+    "SWivid/F5-TTS": {
+      "windows/amd64/nvidia/16g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-10-02T17:40:36.1173426Z",
+        "last_at": "2026-10-02T17:40:36.1173426Z"
+      },
+      "windows/amd64/intel/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-10-27T11:41:19.7702002Z",
+        "last_at": "2026-10-27T11:41:19.7702002Z"
+      },
+      "darwin/arm64/apple/16g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "efaaa4dc7cdc07cc458af600d255b81dab68f3f1",
+        "first_at": "2026-10-16T04:57:56.373618Z",
+        "last_at": "2026-10-16T04:57:56.373618Z"
+      },
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
+        "first_at": "2026-10-24T21:40:24.552059558Z",
+        "last_at": "2026-10-24T21:40:24.552059558Z"
+      }
+    },
+    "bharatgenai/sooktam2": {
+      "windows/amd64/nvidia/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T16:20:27.278889Z",
+        "last_at": "2026-11-08T16:20:27.278889Z"
+      },
+      "windows/amd64/intel/16g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-09-19T08:38:29.7331866Z",
+        "last_at": "2026-09-19T08:38:29.7331866Z"
+      },
+      "linux/amd64/nvidia/64g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
+        "first_at": "2026-11-06T08:45:36.839669934Z",
+        "last_at": "2026-11-06T08:45:36.839669934Z"
+      },
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
+        "first_at": "2026-10-24T21:36:27.480230121Z",
+        "last_at": "2026-10-24T21:36:27.480230121Z"
+      }
+    },
+    "bharatgenai/Shrutam-2": {
+      "windows/amd64/nvidia/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-11-08T16:59:21.3643233Z",
+        "last_at": "2026-11-08T16:59:21.3643233Z"
+      },
+      "windows/amd64/intel/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-10-28T20:42:25.1932071Z",
+        "last_at": "2026-10-28T20:42:25.1932071Z"
+      },
+      "linux/amd64/nvidia/64g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
+        "first_at": "2026-11-06T08:52:11.46661553Z",
+        "last_at": "2026-11-06T08:52:11.46661553Z"
+      },
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "6d1b153026b50633ad07bd2adddb0ade163f81eb",
+        "first_at": "2026-10-25T03:08:31.008483616Z",
+        "last_at": "2026-10-25T03:08:31.008483616Z"
+      }
+    },
+    "ai4bharat/indicconformer_stt_hi_hybrid_ctc_rnnt_large": {
+      "windows/amd64/intel/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-10-25T19:54:37.0338864Z",
+        "last_at": "2026-10-25T19:54:37.0338864Z"
+      },
+      "linux/amd64/nvidia/64g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "a5f43c79f3200c05f7793758ab43fdcb0e5d561c",
+        "first_at": "2026-11-06T09:48:02.125532207Z",
+        "last_at": "2026-11-06T09:48:02.125532207Z"
+      },
+      "linux/amd64/none/32g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "453201c4df6d692313c82e20462d91e8a924a42c",
+        "first_at": "2026-10-25T19:51:58.723803125Z",
+        "last_at": "2026-10-25T19:51:58.723803125Z"
+      }
+    },
+    "hf.co/notSnix/Step-3.7-Flash-Q4_K_M-MTP-GGUF:Q6_K": {
+      "windows/amd64/intel/16g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "c539eae46b8b854f85c5a8177f22d374183a70ad",
+        "first_at": "2026-10-27T13:59:45.1575001Z",
+        "last_at": "2026-10-27T13:59:45.1575001Z"
       }
     },
     "stabilityai/sd-turbo": {
@@ -16977,7 +17363,7 @@
           "bandwidth_grams": 2,
           "ms_per_active_gib": 548358,
           "probe_rate_grams": 1,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         },
         "vision-task": {
           "probe_ms_median": 602581,
@@ -17008,7 +17394,7 @@
       "download_mib_per_sec_median": 5.8,
       "download_samples": 2,
       "carried_from": null,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "token_prices": {
         "threads": 7,
         "vcpu_second_uusd": 10,
@@ -17025,7 +17411,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         },
         "ollama-host": {
           "probe_ms_median": 2804105,
@@ -17041,7 +17427,7 @@
       "download_mib_per_sec_median": 6.6,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "token_prices": {
         "threads": 15,
         "gpu_backed": true,
@@ -17058,7 +17444,7 @@
       "download_mib_per_sec_median": 3.5,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "token_prices": {
         "threads": 3,
         "vcpu_second_uusd": 10,
@@ -17095,12 +17481,12 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         }
       },
       "download_mib_per_sec_median": 590.1,
       "download_samples": 1,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null,
       "token_prices": {
         "threads": 7,
@@ -17123,7 +17509,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         },
         "speech-hf": {
           "probe_ms_median": 485399,
@@ -17133,7 +17519,7 @@
       },
       "download_mib_per_sec_median": 20.2,
       "download_samples": 1,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null,
       "token_prices": {
         "threads": 7,
@@ -17148,7 +17534,7 @@
       "engines": {},
       "download_mib_per_sec_median": 7.3,
       "download_samples": 1,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null
     },
     "windows/amd64/none/8g": {
@@ -17211,7 +17597,7 @@
           "bandwidth_grams": 2,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         },
         "vllm": {
           "probe_ms_median": 0,
@@ -17221,7 +17607,7 @@
       },
       "download_mib_per_sec_median": 105.9,
       "download_samples": 2,
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -17249,12 +17635,12 @@
           "bandwidth_grams": 4,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         }
       },
-      "download_mib_per_sec_median": 113.7,
-      "download_samples": 2,
-      "at": "2026-11-08T17:53:46.554Z",
+      "download_mib_per_sec_median": 71.5,
+      "download_samples": 3,
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -17275,7 +17661,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/256g": {
@@ -17285,7 +17671,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         }
       },
       "token_prices": {
@@ -17296,7 +17682,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/64g": {
@@ -17306,14 +17692,14 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         },
         "vllm": {
           "eff_bytes_per_sec": 528851753160,
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-08T17:53:46.554Z"
+          "at": "2026-11-08T18:08:49.258Z"
         },
         "speech-pod": {
           "probe_ms_median": 1648,
@@ -17334,7 +17720,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null,
       "download_mib_per_sec_median": 116.8,
       "download_samples": 1
@@ -17349,7 +17735,7 @@
         "tariff_basis": "bootstrap",
         "grams": 3
       },
-      "at": "2026-11-08T17:53:46.554Z",
+      "at": "2026-11-08T18:08:49.258Z",
       "carried_from": null
     }
   },
@@ -17362,15 +17748,15 @@
       "proposed": "hold",
       "history": [
         {
-          "at": "2026-11-08T17:28:02.676Z",
-          "proposal": "hold"
-        },
-        {
           "at": "2026-11-08T17:38:39.279Z",
           "proposal": "hold"
         },
         {
           "at": "2026-11-08T17:53:46.554Z",
+          "proposal": "hold"
+        },
+        {
+          "at": "2026-11-08T18:08:49.258Z",
           "proposal": "hold"
         }
       ],
@@ -17384,15 +17770,15 @@
       "proposed": "hold",
       "history": [
         {
-          "at": "2026-11-08T17:28:02.676Z",
-          "proposal": "hold"
-        },
-        {
           "at": "2026-11-08T17:38:39.279Z",
           "proposal": "hold"
         },
         {
           "at": "2026-11-08T17:53:46.554Z",
+          "proposal": "hold"
+        },
+        {
+          "at": "2026-11-08T18:08:49.258Z",
           "proposal": "hold"
         }
       ],
@@ -17434,7 +17820,7 @@
       "linux/amd64/none/32g": 7683
     },
     "claude-haiku-4-5": {
-      "unknown": 253478
+      "unknown": 318332
     },
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ1_S": {
       "darwin/arm64/apple/16g": 38976,
@@ -17448,20 +17834,20 @@
       "linux/amd64/nvidia/32g": 1608,
       "darwin/arm64/apple/16g": 1854,
       "windows/amd64/nvidia/8g": 114,
-      "windows/amd64/intel/16g": 4669,
-      "windows/amd64/nvidia/16g": 17
+      "windows/amd64/nvidia/16g": 240,
+      "windows/amd64/intel/16g": 4669
     },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:q4_k_m": {
       "linux/amd64/nvidia/32g": 12429,
-      "windows/amd64/intel/16g": 183253,
       "linux/amd64/none/32g": 11716,
       "windows/amd64/nvidia/8g": 50,
+      "windows/amd64/intel/16g": 183253,
       "windows/amd64/nvidia/16g": 4253,
       "linux/amd64/nvidia/64g": 14370
     },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": 15683,
       "linux/amd64/nvidia/32g": 12429,
-      "windows/amd64/nvidia/16g": 4253,
       "windows/amd64/intel/16g": 160190,
       "linux/amd64/none/32g": 11716,
       "windows/amd64/nvidia/8g": 50
@@ -17474,6 +17860,16 @@
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:IQ3_XXS": {
       "windows/amd64/nvidia/16g": 5345,
       "darwin/arm64/apple/16g": 25616
+    },
+    "claude-sonnet-5": {
+      "unknown": 4855
+    },
+    "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
+      "linux/amd64/nvidia/64g": 2882,
+      "windows/amd64/nvidia/16g": 2525,
+      "windows/amd64/intel/16g": 3018,
+      "linux/amd64/none/32g": 3668,
+      "windows/amd64/amd/8g": 1335
     },
     "hf.co/unsloth/Phi-4-mini-instruct-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/64g": 1945,
@@ -17498,12 +17894,6 @@
       "unknown": 569,
       "linux/amd64/none/32g": 5172,
       "darwin/amd64/none/8g": 389
-    },
-    "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/64g": 2882,
-      "windows/amd64/intel/16g": 3018,
-      "linux/amd64/none/32g": 3668,
-      "windows/amd64/amd/8g": 1335
     },
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q3_K_M": {
       "unknown": 1228
@@ -17562,6 +17952,11 @@
       "windows/amd64/amd/8g": 1713,
       "windows/amd64/intel/16g": 1733
     },
+    "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": 18128,
+      "linux/amd64/nvidia/64g": 20541,
+      "windows/amd64/intel/16g": 20679
+    },
     "hf.co/Qwen/Qwen3-4B-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": 22786,
       "linux/amd64/nvidia/64g": 23622
@@ -17572,12 +17967,12 @@
       "windows/amd64/nvidia/16g": 7038
     },
     "hf.co/tencent/Hy-MT2-1.8B-GGUF:Q4_K_M": {
-      "windows/amd64/nvidia/16g": 8752,
+      "windows/amd64/nvidia/16g": 9777,
       "linux/amd64/nvidia/64g": 8914,
       "windows/amd64/intel/16g": 12025
     },
     "hf.co/unsloth/gemma-4-E2B-it-GGUF:IQ4_XS": {
-      "windows/amd64/nvidia/16g": 2722,
+      "windows/amd64/nvidia/16g": 5612,
       "linux/amd64/nvidia/32g": 23711,
       "linux/amd64/none/32g": 7732
     },
@@ -17657,10 +18052,6 @@
     "hf.co/openbmb/MiniCPM-V-4.7-1B-gguf:Q8_0": {
       "linux/amd64/nvidia/64g": 3739,
       "linux/amd64/none/32g": 3296
-    },
-    "hf.co/openbmb/MiniCPM5-1B-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/64g": 20541,
-      "windows/amd64/intel/16g": 20679
     },
     "hf.co/QuantFactory/OpenHathi-7B-Hi-v0.1-Base-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/32g": 105255,
@@ -17854,11 +18245,14 @@
     "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:IQ1_S": {
       "unknown": 58
     },
+    "hf.co/MaziyarPanahi/Llama-3.2-3B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/nvidia/16g": 397
+    },
     "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q2_K": {
       "windows/amd64/nvidia/16g": 36
     },
     "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q4_K_M": {
-      "windows/amd64/nvidia/16g": 66
+      "windows/amd64/nvidia/16g": 9727
     },
     "hf.co/MaziyarPanahi/Phi-4-mini-instruct-GGUF:Q4_K_S": {
       "windows/amd64/nvidia/16g": 27
