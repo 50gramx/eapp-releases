@@ -166,6 +166,11 @@ jobs:
           token: ${{ secrets.CI_READ_TOKEN }}
           path: .ci/eapp-interaction-contracts
 
+      # The app starts from this snapshot instead of fetching every contract
+      # at launch (eapp-live lib/services/contract_snapshot.dart).
+      - name: Snapshot the contracts into the app
+        run: node tool/ci/snapshot_contracts.mjs --contracts-root ".ci/eapp-interaction-contracts" --out assets/contracts_snapshot.json
+
       - name: Resolve the brand
         id: brand
         run: |
