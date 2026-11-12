@@ -31,6 +31,14 @@ permissions:
   contents: write
   actions: write   # to dispatch app rebuilds when manually requested
 
+# A push to epn-daemon now starts this at once (epn-daemon's
+# trigger-gram-build.yml); the schedule above stays as the backstop. One run
+# at a time, queued not cancelled, so the push and the schedule never build
+# the same commit side by side and a finished build is never thrown away.
+concurrency:
+  group: build-epnd
+  cancel-in-progress: false
+
 jobs:
   check:
     runs-on: ubuntu-latest
@@ -79,7 +87,21 @@ jobs:
 
       - name: Compare against last built marker
         id: compare
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
         run: |
+          # True when every file changed between two epn-daemon commits is
+          # documentation. Any doubt (API error, a list GitHub truncated at
+          # 300 files) answers false, which builds: never skip on a guess.
+          docs_only() {
+            local files
+            files=$(gh api "repos/50gramx/epn-daemon/compare/$1...$2" \
+              --jq 'if (.files|length) >= 300 then "TRUNCATED" else .files[].filename end' 2>/dev/null) || return 1
+            [ -n "$files" ] || return 1
+            echo "$files" | grep -q TRUNCATED && return 1
+            # Docs only when nothing is left after removing the docs lines.
+            [ -z "$(echo "$files" | grep -vE '^docs/|\.md$')" ]
+          }
           # The marker is "<epn-daemon sha> <scripts hash>". A first line alone
           # is an older marker: treat it as a scripts mismatch so the next run
           # republishes once and settles.
@@ -87,20 +109,234 @@ jobs:
           want="${{ steps.latest.outputs.sha }} ${{ steps.scripts.outputs.hash }}"
           if [ "$last" = "$want" ]; then
             echo "should_build=false" >> "$GITHUB_OUTPUT"
+          elif [ "${last#* }" = "${{ steps.scripts.outputs.hash }}" ] && [ -n "${last%% *}" ] && docs_only "${last%% *}" "${{ steps.latest.outputs.sha }}"; then
+            # NOTHING THE BINARY IS MADE OF CHANGED. A commit touching only
+            # docs/ or Markdown builds a byte-identical epnd, yet a new SHA is
+            # a new "build" to every gram: each one downloads it and restarts.
+            # On 13 Nov a docs commit (fde5ef48) did exactly that and killed a
+            # site publish in progress. The marker stays where it is, so the
+            # next code change is compared from the last real build.
+            echo "only docs changed since ${last%% *}; nothing to build"
+            echo "should_build=false" >> "$GITHUB_OUTPUT"
           else
             echo "should_build=true" >> "$GITHUB_OUTPUT"
           fi
           echo "marker=$want" >> "$GITHUB_OUTPUT"
 
-  build:
+  # ── BUILT IN PARALLEL, CACHED, PUBLISHED ONCE (13 Nov) ─────────────────
+  #
+  # Until 13 Nov one job did everything in sequence and from cold, ~16 min:
+  #   2:39 cloning this repo's full 2 GB history (heartbeat commits), unneeded
+  #   1:37 vet, then 5:45 for five desktop targets one after another, then
+  #   3:24 for three Android ABIs, then the viewer, then 1:03 of serial uploads
+  # and NO Go cache at all: setup-go looked for go.sum at this repo's root
+  # ("Restore cache failed: Dependencies file is not found"), and installed Go
+  # 1.22 only for every run to download the 1.26 epn-daemon's go.mod asks for.
+  #
+  # Now vet, each binary and the viewer are separate jobs that run at once,
+  # each with its own Go build cache keyed on epn-daemon's go.sum, and Go is
+  # taken from epn-daemon's go.mod. `publish` waits for all of them -- vet
+  # still gates every public binary -- stages, uploads in parallel (binaries
+  # first, checksums.txt only after every binary is up, so a gram never reads
+  # new checksums beside an old file), and writes the marker.
+  vet:
     needs: check
     if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
     steps:
+      - name: Checkout epn-daemon source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: epn-daemon
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: epn-daemon/go.mod
+          cache: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-vet-${{ hashFiles('epn-daemon/go.sum') }}
+          restore-keys: go-vet-
+      - name: Configure git for private Go deps
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      # Fetched before anything judges the code, and retried: proxy.golang.org
+      # drops a stream now and then, and vet reports that as broken code.
+      - name: Download modules (retried — the proxy is not always up)
+        working-directory: epn-daemon
+        run: |
+          for i in 1 2 3; do
+            if go mod download all; then exit 0; fi
+            echo "module download failed (attempt $i) — retrying"; sleep 15
+          done
+          echo "module download failed three times; the proxy is not reachable" >&2; exit 1
+      - name: Gate — vet must pass before we publish a public binary
+        working-directory: epn-daemon
+        run: go vet ./...
+
+  bin:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        include:
+          - { goos: windows, goarch: amd64, out: epnd-windows-amd64.exe }
+          - { goos: linux,   goarch: amd64, out: epnd-linux-amd64 }
+          - { goos: linux,   goarch: arm64, out: epnd-linux-arm64 }
+          - { goos: darwin,  goarch: amd64, out: epnd-darwin-amd64 }
+          - { goos: darwin,  goarch: arm64, out: epnd-darwin-arm64 }
+          # Android runs the daemon in lite mode, inside the APK as a jniLibs
+          # .so exec'd from nativeLibraryDir: a real Android PIE binary, which
+          # needs CGO and the NDK (a CGO_ENABLED=0 GOOS=android build fails
+          # linking libp2p's wlynxg/anet netlink helper).
+          - { goos: android, goarch: arm64, out: epnd-android-arm64-v8a,   cc: aarch64-linux-android21-clang }
+          - { goos: android, goarch: arm,   out: epnd-android-armeabi-v7a, cc: armv7a-linux-androideabi21-clang, goarm: '7' }
+          - { goos: android, goarch: amd64, out: epnd-android-x86_64,      cc: x86_64-linux-android21-clang }
+    env:
+      GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+    steps:
+      - name: Checkout epn-daemon source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: epn-daemon
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: epn-daemon/go.mod
+          cache: false
+      # One cache per target: a build cache holds what one GOOS/GOARCH
+      # compiled. Keyed on go.sum, so dependencies (most of the compile) come
+      # back warm and only changed packages rebuild.
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-${{ matrix.goos }}-${{ matrix.goarch }}-${{ hashFiles('epn-daemon/go.sum') }}
+          restore-keys: go-${{ matrix.goos }}-${{ matrix.goarch }}-
+      - name: Configure git for private Go deps
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - name: Download modules (retried)
+        working-directory: epn-daemon
+        run: |
+          for i in 1 2 3; do
+            if go mod download; then exit 0; fi
+            echo "module download failed (attempt $i) — retrying"; sleep 15
+          done
+          exit 1
+      - name: Setup Android NDK
+        if: matrix.goos == 'android'
+        id: ndk
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r26d
+          # MUST be false: local-cache round-trips the NDK through tar, which
+          # breaks the `clang` symlink (clang -> clang-17).
+          local-cache: false
+      - name: Build ${{ matrix.out }}
+        working-directory: epn-daemon
+        env:
+          NDK: ${{ steps.ndk.outputs.ndk-path }}
+        run: |
+          set -euo pipefail
+          SHA="${{ needs.check.outputs.sha }}"
+          mkdir -p dist
+          export GOOS="${{ matrix.goos }}" GOARCH="${{ matrix.goarch }}"
+          if [ "$GOOS" = android ]; then
+            TC="$NDK/toolchains/llvm/prebuilt/linux-x86_64/bin"
+            if [ ! -x "$TC/${{ matrix.cc }}" ]; then
+              echo "::error::NDK compiler missing: $TC/${{ matrix.cc }}"; ls -la "$TC" | head -40; exit 1
+            fi
+            export CGO_ENABLED=1 CC="$TC/${{ matrix.cc }}"
+            [ -n "${{ matrix.goarm }}" ] && export GOARM="${{ matrix.goarm }}"
+            # -checklinkname=0: Go 1.23+ rejects //go:linkname to unexported
+            # stdlib symbols; go-libp2p's Android dep (wlynxg/anet) links to
+            # net.zoneCache on purpose. Android only.
+            LDX="-checklinkname=0"
+          else
+            export CGO_ENABLED=0
+            LDX=""
+          fi
+          go build -trimpath -ldflags "-s -w $LDX -X epn.io/daemon/internal/cmd.Version=$SHA" \
+            -o "dist/${{ matrix.out }}" ./cmd/epnd
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bin-${{ matrix.out }}
+          path: epn-daemon/dist/${{ matrix.out }}
+          retention-days: 3
+          compression-level: 0
+
+  # /world on the brand site loads the same page a gram serves at /v1/world,
+  # from a Go program compiled to wasm: daemon code, built with the daemon.
+  viewer:
+    needs: check
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    env:
+      GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
+    steps:
+      - name: Checkout epn-daemon source (private, read-only token)
+        uses: actions/checkout@v4
+        with:
+          repository: 50gramx/epn-daemon
+          token: ${{ secrets.CI_READ_TOKEN }}
+          ref: ${{ needs.check.outputs.sha }}
+          path: epn-daemon
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: epn-daemon/go.mod
+          cache: false
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/go/pkg/mod
+            ~/.cache/go-build
+          key: go-js-wasm-${{ hashFiles('epn-daemon/go.sum') }}
+          restore-keys: go-js-wasm-
+      - name: Configure git for private Go deps
+        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Build the world viewer (js/wasm)
+        working-directory: epn-daemon/web/shell
+        run: |
+          set -euo pipefail
+          npm install --no-audit --no-fund
+          bash build.sh dist
+          mv dist/index.html dist/world-viewer.html
+          ls -la dist
+      - uses: actions/upload-artifact@v4
+        with:
+          name: viewer
+          path: |
+            epn-daemon/web/shell/dist/epn.wasm
+            epn-daemon/web/shell/dist/wasm_exec.js
+            epn-daemon/web/shell/dist/epn-shell.js
+            epn-daemon/web/shell/dist/world-viewer.html
+          retention-days: 3
+
+  publish:
+    needs: [check, vet, bin, viewer]
+    if: needs.check.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # This repo's history is ~2 GB of status commits; only the tip is needed
+      # (the marker commit re-fetches and resets to origin/main itself).
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
+          fetch-depth: 1
       - name: Checkout epn-daemon source (private, read-only token)
         uses: actions/checkout@v4
         with:
@@ -110,288 +346,83 @@ jobs:
           path: epn-daemon
           # Enough history for epnd-commits.txt (staged below).
           fetch-depth: 500
-
-      - uses: actions/setup-go@v5
+      - uses: actions/download-artifact@v4
         with:
-          go-version: '1.22.x'
-          cache: true
-
-      - name: Configure git for private Go deps
-        run: git config --global url."https://${{ secrets.CI_READ_TOKEN }}@github.com/".insteadOf "https://github.com/"
-
-      # Fetch the module graph before anything judges the code, and retry.
-      #
-      # proxy.golang.org drops a stream occasionally -- "INTERNAL_ERROR;
-      # received from peer" partway through a zip -- and go vet reports that as
-      # a build failure, which reads exactly like the code is broken. It bites
-      # hardest right after a dependency bump, because the setup-go cache is
-      # keyed on go.sum and a changed go.sum means every module is downloaded
-      # cold at once.
-      #
-      # Three tries with a pause. A proxy that is genuinely down still fails the
-      # build, and says so on its own line rather than inside a vet run.
-      - name: Download modules (retried — the proxy is not always up)
-        env:
-          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
-        working-directory: epn-daemon
-        run: |
-          for i in 1 2 3; do
-            if go mod download all; then exit 0; fi
-            echo "module download failed (attempt $i) — retrying"
-            sleep 15
-          done
-          echo "module download failed three times; the proxy is not reachable" >&2
-          exit 1
-
-      - name: Gate — vet must pass before we publish a public binary
-        env:
-          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
-        working-directory: epn-daemon
-        run: go vet ./...
-
-      - name: Build matrix (pure Go, cross-compiled)
-        env:
-          CGO_ENABLED: '0'
-          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
-        working-directory: epn-daemon
-        run: |
-          set -euo pipefail
-          mkdir -p dist
-          build() {
-            local goos="$1" goarch="$2" out="$3"
-            GOOS="$goos" GOARCH="$goarch" go build -trimpath \
-              -ldflags "-s -w -X epn.io/daemon/internal/cmd.Version=${{ needs.check.outputs.sha }}" \
-              -o "dist/$out" ./cmd/epnd
-          }
-          build windows amd64 epnd-windows-amd64.exe
-          build linux   amd64 epnd-linux-amd64
-          build linux   arm64 epnd-linux-arm64
-          build darwin  amd64 epnd-darwin-amd64
-          build darwin  arm64 epnd-darwin-arm64
-
-      # Android runs the daemon in lite mode only (identity + wallet + p2p +
-      # concierge, no k3s — enforced daemon-side: config auto-sets Lite on
-      # GOOS=android). It ships INSIDE the APK as a jniLibs .so and is exec'd
-      # from nativeLibraryDir, so it must be a real Android PIE binary — that
-      # needs CGO + the NDK toolchain (a pure CGO_ENABLED=0 GOOS=android build
-      # fails linking libp2p's wlynxg/anet netlink helper).
-      - name: Setup Android NDK
-        id: ndk
-        uses: nttld/setup-ndk@v1
+          pattern: bin-*
+          path: epn-daemon/dist
+          merge-multiple: true
+      - uses: actions/download-artifact@v4
         with:
-          ndk-version: r26d
-          # MUST be false: local-cache round-trips the NDK through tar, which
-          # breaks the `clang` symlink (clang → clang-17), so the per-ABI
-          # wrapper scripts fail with "clang: No such file or directory". A
-          # fresh download keeps symlinks intact.
-          local-cache: false
-
-      - name: Build Android (NDK, CGO) — all shipped ABIs
-        env:
-          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
-          ANDROID_NDK_HOME: ${{ steps.ndk.outputs.ndk-path }}
-        working-directory: epn-daemon
-        run: |
-          set -euo pipefail
-          SHA="${{ needs.check.outputs.sha }}"
-          TC="$ANDROID_NDK_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin"
-          API=21   # Android 5.0 floor — binary built at API 21 runs on 21+.
-          abuild() {
-            local abi="$1" goarch="$2" cc="$3" goarm="${4:-}"
-            echo "→ android/$abi ($goarch)"
-            # Fail loudly (with the bin listing) if the NDK toolchain isn't where
-            # we expect, instead of a cryptic 127 from go's cgo child.
-            if [ ! -x "$TC/$cc" ]; then
-              echo "::error::NDK compiler missing: $TC/$cc"
-              echo "toolchain bin contents:"; ls -la "$TC" | head -40
-              exit 1
-            fi
-            # Export in a subshell rather than an inline `VAR=v … \` prefix: the
-            # multiline-backslash prefix form was being mis-parsed by bash (it
-            # tried to exec `CC=<path>` as a command, hence the 127).
-            # -checklinkname=0: Go 1.23+ rejects //go:linkname to unexported
-            # stdlib symbols by default, but go-libp2p's Android interface-
-            # enumeration dep (wlynxg/anet) links to net.zoneCache on purpose.
-            # This is the standard, go-libp2p-recommended escape hatch and only
-            # applies to the Android CGO build (desktop is pure-Go, no anet).
-            ( export CGO_ENABLED=1 GOOS=android GOARCH="$goarch" CC="$TC/$cc"
-              [ -n "$goarm" ] && export GOARM="$goarm"
-              go build -trimpath \
-                -ldflags "-s -w -checklinkname=0 -X epn.io/daemon/internal/cmd.Version=$SHA" \
-                -o "dist/epnd-android-$abi" ./cmd/epnd )
-          }
-          abuild arm64-v8a   arm64 aarch64-linux-android${API}-clang
-          abuild armeabi-v7a arm   armv7a-linux-androideabi${API}-clang 7
-          abuild x86_64      amd64 x86_64-linux-android${API}-clang
-          ls -la dist/epnd-android-*
-
-      # -- THE WORLD VIEWER, BUILT WHERE THE DAEMON IS BUILT --------------
-      #
-      # /world on the brand site loads the same page a gram serves at
-      # /v1/world, driven by a Go program compiled to wasm. It is daemon code,
-      # so it belongs in the daemon's build -- not, as it was until now,
-      # recompiled from a fresh epn-daemon checkout inside the site deploy.
-      #
-      # That arrangement ran a Go toolchain, a module download and an npm
-      # install on every site deploy -- ~96 times a day, since the site
-      # rebuilds after each aggregate-founders run -- to produce a byte-
-      # identical asset that only ever changes when epn-daemon does. Worse, it
-      # coupled the two: a copy edit to the site could not ship while the
-      # daemon repo was unreachable, and the viewer went out with no vet gate.
-      #
-      # No marker change is needed for this. The viewer's sources (cmd/epnwasm,
-      # web/shell, internal/api/world) all live in epn-daemon, so they move
-      # exactly when the daemon SHA the marker already tracks moves. The
-      # scripts hash covers what lives in THIS repo; the SHA covers this.
-      - name: Setup Node (for the viewer bundle)
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Build the world viewer (js/wasm)
-        env:
-          GOPRIVATE: 'github.com/50gramx/*,epn.io/*'
-        working-directory: epn-daemon/web/shell
-        run: |
-          set -euo pipefail
-          npm install --no-audit --no-fund
-          # Invoked through bash rather than as ./build.sh: the file mode of a
-          # script committed from a Windows checkout is not something this
-          # workflow should depend on.
-          bash build.sh dist
-          # index.html is the right name for a static host to serve and the
-          # wrong name for a release asset sitting beside epnd binaries. It is
-          # renamed on publish and renamed back by whoever consumes it.
-          mv dist/index.html dist/world-viewer.html
-          ls -la dist
-
+          name: viewer
+          path: epn-daemon/dist
       - name: PowerShell scripts must be pure ASCII
         run: |
           set -euo pipefail
           python3 scripts/check-ps1-ascii.py 'scripts/*.ps1'
-          # ASCII-clean is necessary, not sufficient: a script that does not parse
-          # must never be published either.
           if command -v pwsh >/dev/null 2>&1; then
             for f in scripts/*.ps1; do
-              pwsh -NoProfile -Command "\$e = \$null; [void][System.Management.Automation.Language.Parser]::ParseFile('$f', [ref]\$null, [ref]\$e); if (\$e.Count) { \$e | ForEach-Object { Write-Host \$_.Message }; exit 1 }"                 || { echo "::error file=$f::does not parse"; exit 1; }
+              pwsh -NoProfile -Command "\$e = \$null; [void][System.Management.Automation.Language.Parser]::ParseFile('$f', [ref]\$null, [ref]\$e); if (\$e.Count) { \$e | ForEach-Object { Write-Host \$_.Message }; exit 1 }" \
+                || { echo "::error file=$f::does not parse"; exit 1; }
             done
           fi
-
       - name: Stage installer + checksums
         run: |
           set -euo pipefail
-          # Source of truth for install/update scripts is THIS repo's scripts/
-          # dir (public, reviewable) — not epn-daemon's private copies, which
-          # drift silently since nothing ever diffs them against what's on the
-          # public site's "run a node" command.
-          cp scripts/install.sh epn-daemon/dist/install.sh
-          cp scripts/install.ps1 epn-daemon/dist/install.ps1
-          cp scripts/epnd-autoupdate.sh epn-daemon/dist/epnd-autoupdate.sh
-          cp scripts/epnd-autoupdate.ps1 epn-daemon/dist/epnd-autoupdate.ps1
-          # Status reporter stays sourced from epn-daemon — it's founder-node-only
-          # (needs a provisioned root PAT) and hasn't diverged from this repo.
-          cp epn-daemon/scripts/report-bootstrap-status.sh epn-daemon/dist/report-bootstrap-status.sh
-          # The viewer, from the same build that produced the binaries.
-          cp epn-daemon/web/shell/dist/epn.wasm epn-daemon/dist/epn.wasm
-          cp epn-daemon/web/shell/dist/wasm_exec.js epn-daemon/dist/wasm_exec.js
-          cp epn-daemon/web/shell/dist/epn-shell.js epn-daemon/dist/epn-shell.js
-          cp epn-daemon/web/shell/dist/world-viewer.html epn-daemon/dist/world-viewer.html
-          # The commits this build contains, newest (the build's own) first,
-          # shas only. A run that needs "at least commit X" can then accept a
-          # newer build: `epnd version` names one sha, and the source repo is
-          # private, so nothing public could say a newer build contains X.
+          cp scripts/install.sh scripts/install.ps1 scripts/epnd-autoupdate.sh scripts/epnd-autoupdate.ps1 epn-daemon/dist/
+          cp epn-daemon/scripts/report-bootstrap-status.sh epn-daemon/dist/
+          chmod +x epn-daemon/dist/epnd-linux-* epn-daemon/dist/epnd-darwin-* epn-daemon/dist/epnd-android-* || true
           git -C epn-daemon log --format=%H -n 500 > epn-daemon/dist/epnd-commits.txt
           cd epn-daemon/dist
-          # The viewer files are named individually rather than folded into the
-          # epnd-* glob: a consumer that downloads them over the network needs
-          # something to verify them against, and the site now does exactly that.
-          # -- CHECKSUM EVERYTHING PUBLISHED, NOT EVERYTHING NAMED epnd-* ---
-          #
-          # The glob was a filename pattern standing in for "the things we
-          # ship", and they stopped being the same set the moment a shipped file
-          # was named something else. install.sh, install.ps1 and
-          # report-bootstrap-status.sh are all copied into dist above and
-          # uploaded below, and NONE of them has ever had a checksum row.
-          #
-          # epnd-autoupdate.sh will not write a file it cannot verify, so
-          # report-bootstrap-status.sh became the one shipped artifact no
-          # release could ever update: bootstrap-01 ran a copy older than the
-          # repo's for weeks and the only way to move it was to log into the
-          # box. Same defect as the hardcoded BIN path and the launchd interval
-          # -- a fact fixed once at install time that no build can reach.
-          #
-          # An explicit list, because the next file added will not match a glob
-          # either, and a missing row fails SILENTLY: the updater simply
-          # concludes there is nothing to check.
-          sha256sum epnd-* install.sh install.ps1 report-bootstrap-status.sh             epn.wasm wasm_exec.js epn-shell.js world-viewer.html > checksums.txt
-
+          for f in epnd-windows-amd64.exe epnd-linux-amd64 epnd-linux-arm64 epnd-darwin-amd64 epnd-darwin-arm64 \
+                   epnd-android-arm64-v8a epnd-android-armeabi-v7a epnd-android-x86_64 \
+                   epn.wasm wasm_exec.js epn-shell.js world-viewer.html; do
+            [ -s "$f" ] || { echo "::error::$f is missing from the build"; exit 1; }
+          done
+          sha256sum epnd-* install.sh install.ps1 report-bootstrap-status.sh \
+            epn.wasm wasm_exec.js epn-shell.js world-viewer.html > checksums.txt
+          ls -la
       - name: Publish (rolling epnd-latest)
-        # -- ONE ASSET AT A TIME, RETRIED, AND NEVER DELETED BEFORE REPLACED --
-        #
-        # From 17:00 UTC on 2026-09-17, 8 of 10 runs failed here with
-        # "Headers Timeout Error" from GitHub's asset-upload endpoint while
-        # the previous action fired all eighteen uploads at once. Nothing in
-        # this workflow had changed in twelve days and the binaries were the
-        # same ~77 MB they had been through thirty straight successes -- a
-        # platform-side timeout, intermittent, and the two successes in the
-        # same window said so.
-        #
-        # What made a blip into an outage was the action's order of work: it
-        # DELETED every existing asset first, then uploaded. A run that timed
-        # out mid-upload left the rolling release with binaries missing --
-        # epnd-linux-arm64 and epnd-android-x86_64 were absent from it when
-        # this was written -- so a gram checking for an update on that
-        # architecture found nothing to download at all.
-        #
-        # gh release upload --clobber replaces an asset in place, so the old
-        # binary stays servable until the new one is up. Sequential, so one
-        # slow upload is one slow upload rather than six contending for the
-        # same endpoint. Retried per asset with backoff, so a timeout costs a
-        # minute and not the release.
         env:
           GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           cd epn-daemon/dist
           tag=epnd-latest
-          # The release itself is only created if missing; its notes are
-          # refreshed every run, which is cheap and cannot strip an asset.
-          if ! gh release view "$tag" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            gh release create "$tag" --repo "$GITHUB_REPOSITORY"               --title "epnd — Latest Build (Rolling)"               --notes-file ../scripts/release-notes.md
+          if ! gh release view "$tag" --repo "$REPO" >/dev/null 2>&1; then
+            gh release create "$tag" --repo "$REPO" --title "epnd — Latest Build (Rolling)" --notes-file ../scripts/release-notes.md
           else
-            gh release edit "$tag" --repo "$GITHUB_REPOSITORY"               --title "epnd — Latest Build (Rolling)"               --notes-file ../scripts/release-notes.md
+            gh release edit "$tag" --repo "$REPO" --title "epnd — Latest Build (Rolling)" --notes-file ../scripts/release-notes.md
           fi
-          failed=""
-          for f in epnd-windows-amd64.exe epnd-linux-amd64 epnd-linux-arm64                    epnd-darwin-amd64 epnd-darwin-arm64                    epnd-android-arm64-v8a epnd-android-armeabi-v7a epnd-android-x86_64                    install.sh install.ps1 report-bootstrap-status.sh                    epnd-autoupdate.sh epnd-autoupdate.ps1                    epn.wasm wasm_exec.js epn-shell.js world-viewer.html checksums.txt epnd-commits.txt; do
-            ok=0
+          up() {
             for attempt in 1 2 3 4 5; do
-              if gh release upload "$tag" "$f" --repo "$GITHUB_REPOSITORY" --clobber; then
-                ok=1; break
-              fi
-              echo "::warning file=$f::upload attempt $attempt failed; retrying"
-              sleep $((attempt * 20))
+              gh release upload "$tag" "$1" --repo "$REPO" --clobber && return 0
+              echo "::warning file=$1::upload attempt $attempt failed; retrying"; sleep $((attempt * 20))
             done
-            if [ "$ok" != 1 ]; then failed="$failed $f"; fi
-          done
-          if [ -n "$failed" ]; then
-            echo "::error::assets not published after retries:$failed"
-            exit 1
+            echo "$1" >> ../upload-failed.txt; return 0
+          }
+          export -f up; export tag REPO
+          rm -f ../upload-failed.txt
+          # Everything but the checksums and the commit list, four at a time.
+          printf '%s\n' epnd-windows-amd64.exe epnd-linux-amd64 epnd-linux-arm64 epnd-darwin-amd64 epnd-darwin-arm64 \
+            epnd-android-arm64-v8a epnd-android-armeabi-v7a epnd-android-x86_64 \
+            install.sh install.ps1 report-bootstrap-status.sh epnd-autoupdate.sh epnd-autoupdate.ps1 \
+            epn.wasm wasm_exec.js epn-shell.js world-viewer.html \
+            | xargs -P 4 -I{} bash -c 'up "$1"' _ {}
+          if [ -s ../upload-failed.txt ]; then
+            echo "::error::assets not published after retries: $(tr '\n' ' ' < ../upload-failed.txt)"; exit 1
           fi
-
-      - name: Update built-marker
-        run: echo "${{ needs.check.outputs.marker }}" > epnd-last-built.txt
-
+          # Last, so a gram never reads checksums for files not yet replaced.
+          up checksums.txt; up epnd-commits.txt
+          if [ -s ../upload-failed.txt ]; then
+            echo "::error::assets not published after retries: $(tr '\n' ' ' < ../upload-failed.txt)"; exit 1
+          fi
       - name: Commit marker
-        # eapp-releases main is pushed by several scheduled workflows on
-        # overlapping crons, so a bare push races ("fetch first" rejection).
-        # Re-sync to origin, re-write the marker, retry; give up gracefully —
-        # the release already published, and the next run catches up. Mirrors
-        # aggregate-founders.yml's conflict-free pattern.
         run: |
           git config user.name "eutopia-ci"
           git config user.email "ci@50gramx.com"
           for i in $(seq 1 6); do
-            git fetch -q origin main
+            git fetch -q --depth=1 origin main
             git reset -q --hard origin/main
             echo "${{ needs.check.outputs.marker }}" > epnd-last-built.txt
             if git diff --quiet -- epnd-last-built.txt; then
@@ -405,7 +436,6 @@ jobs:
             echo "push raced (attempt $i) — re-syncing"; sleep $((RANDOM % 4 + 2))
           done
           echo "gave up after retries — next run will catch up (not a failure)"; exit 0
-
       - name: Refresh bundled-epnd app builds (manual cascade for critical updates)
         if: github.event_name == 'workflow_dispatch' && inputs.cascade_app_builds == 'true'
         # When manually triggered with cascade_app_builds=true: rebuild every
@@ -463,7 +493,7 @@ jobs:
   # Android takes its .so. A separate job so a slow macOS queue never holds
   # back Linux, Windows and Android.
   ios-lib:
-    needs: [check, build]
+    needs: [check, publish]
     if: needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
     steps:
