@@ -243,6 +243,10 @@ jobs:
             /usr/libexec/PlistBuddy -c "Set :CFBundleDisplayName $BRAND_PRODUCT_NAME" "$PLIST" 2>/dev/null \
               || /usr/libexec/PlistBuddy -c "Add :CFBundleDisplayName string $BRAND_PRODUCT_NAME" "$PLIST"
             echo "Branded macOS bundle display name -> $BRAND_PRODUCT_NAME"
+            # The menu bar and Finder read CFBundleName, not the display name:
+            # without this a downloaded app said "eapp_live" (tester, 13 Nov).
+            /usr/libexec/PlistBuddy -c "Set :CFBundleName $BRAND_PRODUCT_NAME" "$PLIST" 2>/dev/null \
+              || /usr/libexec/PlistBuddy -c "Add :CFBundleName string $BRAND_PRODUCT_NAME" "$PLIST"
           else
             echo "No brand_product_name resolved — leaving default bundle name."
           fi
@@ -255,10 +259,17 @@ jobs:
           else
             echo "No macos_bundle_id resolved — leaving default identifier."
           fi
+          # The bundled gram is built for macOS 12 and later (Go's floor), so the
+          # app must not claim 10.15: on 10.15 or 11 it would open and its gram
+          # would never start.
+          sed -i '' 's/^MACOSX_DEPLOYMENT_TARGET = .*/MACOSX_DEPLOYMENT_TARGET = 12.0/' macos/Runner/Configs/AppInfo.xcconfig
+          sed -i '' 's/MACOSX_DEPLOYMENT_TARGET = 10.15;/MACOSX_DEPLOYMENT_TARGET = 12.0;/g' macos/Runner.xcodeproj/project.pbxproj
 
       - name: Build macOS App
         run: |
-          flutter build macos --release \
+          # The build number is the run number, so a person (and the updater)
+          # can tell one build from the next; every build said 1.0.0 (1).
+          flutter build macos --release --build-number=${{ github.run_number }} \
             --dart-define=BUILD_ID=${{ github.run_number }} \
             --dart-define=BRAND_ID=${{ steps.brand.outputs.brand_id }} \
             --dart-define=ENVIRONMENT="${{ steps.brand.outputs.brand_environment }}" \
@@ -442,6 +453,26 @@ jobs:
           security delete-keychain "$KC"
           echo "signing=developer-id" >> "$GITHUB_OUTPUT"
 
+      # NOT DEVELOPER ID SIGNED: SEAL IT AGAIN, OR MACOS CALLS IT DAMAGED. The
+      # gram binaries were copied in after flutter sealed the app. The signing
+      # steps above re-seal only the copy they sign, so when they fail the
+      # original, with a broken seal, was shipped: build 655 opened as
+      # "eapp_live is damaged and can't be opened" with only Move to Bin
+      # (tester, 13 Nov). Sealed ad hoc, macOS says instead that it cannot
+      # check the developer, and the person can choose to open it.
+      - name: Seal ad hoc when not Developer ID signed
+        id: adhoc
+        if: steps.cloudsign.outputs.signing != 'developer-id' && steps.sign.outputs.signing != 'developer-id'
+        run: |
+          set -euo pipefail
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          for b in "$APP"/Contents/MacOS/epnd-darwin-*; do
+            [ -f "$b" ] && codesign --force --options runtime --sign - "$b"
+          done
+          codesign --force --options runtime --entitlements macos/Runner/Release.entitlements --sign - "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          echo "signing=ad-hoc" >> "$GITHUB_OUTPUT"
+
       - name: Resolve App Version
         id: version
         run: |
@@ -452,7 +483,13 @@ jobs:
         run: |
           set -euo pipefail
           APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
-          ditto -c -k --keepParent "$APP" "$GITHUB_WORKSPACE/${{ steps.brand.outputs.artifact_name }}"
+          # The app carries the brand's name in Finder ("50GRAMx Gram.app"), not
+          # the project's (eapp_live.app). Renaming the folder keeps the seal.
+          NAME="${{ steps.brand.outputs.brand_product_name }}"
+          PKG="$RUNNER_TEMP/pkg"; rm -rf "$PKG"; mkdir -p "$PKG"
+          ditto "$APP" "$PKG/${NAME:-$(basename "$APP" .app)}.app"
+          codesign --verify --deep --strict "$PKG"/*.app
+          ditto -c -k --keepParent "$PKG"/*.app "$GITHUB_WORKSPACE/${{ steps.brand.outputs.artifact_name }}"
 
       - name: Write Release Metadata
         env:
