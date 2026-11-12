@@ -154,6 +154,9 @@ jobs:
         # in pubspec.yaml, the token above applies.
         run: |
           rm -rf "$PUB_CACHE"/git/cache/bharatsphere-app-*
+          # Swift Package Manager off: the plugins build through CocoaPods, and
+          # with it on every run first migrates the project again (13 Nov).
+          flutter config --no-enable-swift-package-manager
           flutter pub get
 
       # WHO THE APP IS comes from the brand contract, never from this file: the
@@ -243,10 +246,19 @@ jobs:
           rm libepnd-ios-arm64.sha256
           echo "in-app gram: $(cat EPND_VERSION), $(du -h libepnd.a | cut -f1)"
 
+      # Pods cached by lockfile, and the spec repo refreshed only when the
+      # install needs it: `--repo-update` on every run was most of 4 min 19 s.
+      - name: Cache Pods
+        uses: actions/cache@v4
+        with:
+          path: ios/Pods
+          key: ios-pods-${{ hashFiles('pubspec.lock', 'ios/Podfile', 'ios/Podfile.lock') }}
+          restore-keys: ios-pods-
+
       - name: Pods
         run: |
           cd ios
-          pod install --repo-update
+          pod install || pod install --repo-update
 
       # THE APP IS THE BRAND'S: the same contract-resolved defines the Android
       # build passes. Without them every iOS build came out as the default brand
@@ -282,7 +294,16 @@ jobs:
             --dart-define=BRAND_NAVIGATION_JSON_B64="${{ steps.brand.outputs.brand_navigation_json_b64 }}"
           )
           # Version is the date, the build number the run: both always increase.
-          flutter build ios --release --no-codesign --dart-define=BUILD_ID=${{ github.run_number }} "${DEFINES[@]}" \
+          # COMPILED ONCE (13 Nov). When the archive below runs, it compiles the
+          # app itself, so this step only writes Flutter's configuration (the
+          # defines, version and build number) for it: a full build here was a
+          # second 12-minute compile of the same app. Without the TestFlight
+          # key there is no archive, and this is the build.
+          ONLY=()
+          if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -n "${ASC_KEY_P8:-}" ]; then
+            ONLY=(--config-only)
+          fi
+          flutter build ios --release --no-codesign "${ONLY[@]}" --dart-define=BUILD_ID=${{ github.run_number }} "${DEFINES[@]}" \
             --build-name "$(date -u +%y.%-m.%-d)" --build-number "$((1000 + ${{ github.run_number }}))"
 
       # SIGNED, TO TESTFLIGHT. Xcode signs with the team's own certificate and
@@ -338,7 +359,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p Payload
-          cp -R build/ios/iphoneos/Runner.app Payload/
+          # The archive's app when there is one (built once, ad hoc sealed),
+          # else the unsigned build's.
+          APP="$RUNNER_TEMP/Runner.xcarchive/Products/Applications/Runner.app"
+          [ -d "$APP" ] || APP=build/ios/iphoneos/Runner.app
+          cp -R "$APP" Payload/
           zip -qry "$BRAND_ID-ios-unsigned.ipa" Payload
           ls -la "$BRAND_ID-ios-unsigned.ipa"
 

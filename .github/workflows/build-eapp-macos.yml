@@ -184,8 +184,14 @@ jobs:
           channel: stable
           cache: true
 
+      # SWIFT PACKAGE MANAGER OFF FOR THIS BUILD. With it on, every run spent
+      # 2 min 18 s "Adding Swift Package Manager integration" (the migrated
+      # project is never kept) and ~3 min resolving packages before compiling
+      # (run 43292342069), while the plugins build through CocoaPods anyway.
       - name: Enable macOS Desktop
-        run: flutter config --enable-macos-desktop
+        run: |
+          flutter config --enable-macos-desktop
+          flutter config --no-enable-swift-package-manager
 
       - name: Configure git for private dependencies
         # THE TOKEN MUST SURVIVE A REDIRECT. On the macOS runners GitHub answers
@@ -340,18 +346,46 @@ jobs:
           KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
           printf '%s\n' "$ASC_KEY_P8" > "$KEY"
           AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
-          xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner -configuration Release \
-            -destination 'generic/platform=macOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive \
-            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO \
-            ENABLE_HARDENED_RUNTIME=YES DEVELOPMENT_TEAM="$TEAM_ID" PROVISIONING_PROFILE_SPECIFIER="" | tail -30
-          ARC_APP=$(find "$RUNNER_TEMP/Runner.xcarchive/Products/Applications" -maxdepth 1 -name "*.app" | head -1)
+          # THE APP ALREADY BUILT, NOT A SECOND COMPILE (13 Nov). This step used
+          # to run `xcodebuild archive` -- 9 more minutes compiling the same app
+          # -- and that archive failed every time: CODE_SIGNING_REQUIRED=NO made
+          # the pods' embed phase leave tflite_flutter.framework unsigned, and
+          # signing the app around it then refused ("code object is not signed
+          # at all"). An .xcarchive is a folder: the app and an Info.plist. So
+          # the app flutter built (signed consistently, gram binaries already
+          # in) is wrapped in one, and the export re-signs all of it with the
+          # Developer ID certificate Apple keeps.
           BUILT=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
-          for b in "$BUILT"/Contents/MacOS/epnd-darwin-*; do
-            [ -f "$b" ] || continue
-            cp "$b" "$ARC_APP/Contents/MacOS/"
-            codesign --force --options runtime --sign - "$ARC_APP/Contents/MacOS/$(basename "$b")"
+          ARC="$RUNNER_TEMP/Runner.xcarchive"
+          rm -rf "$ARC"; mkdir -p "$ARC/Products/Applications"
+          ditto "$BUILT" "$ARC/Products/Applications/$(basename "$BUILT")"
+          ARC_APP="$ARC/Products/Applications/$(basename "$BUILT")"
+          # The gram binaries were added after flutter sealed the app: seal again.
+          for b in "$ARC_APP"/Contents/MacOS/epnd-darwin-*; do
+            [ -f "$b" ] && codesign --force --options runtime --sign - "$b"
           done
           codesign --force --options runtime --entitlements macos/Runner/Release.entitlements --sign - "$ARC_APP"
+          IP="$ARC_APP/Contents/Info.plist"
+          BID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$IP")
+          VER=$(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$IP" 2>/dev/null || echo 1.0)
+          BLD=$(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$IP" 2>/dev/null || echo 1)
+          cat > "$ARC/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>ApplicationProperties</key><dict>
+              <key>ApplicationPath</key><string>Applications/$(basename "$BUILT")</string>
+              <key>CFBundleIdentifier</key><string>$BID</string>
+              <key>CFBundleShortVersionString</key><string>$VER</string>
+              <key>CFBundleVersion</key><string>$BLD</string>
+              <key>Team</key><string>$TEAM_ID</string>
+            </dict>
+            <key>ArchiveVersion</key><integer>2</integer>
+            <key>CreationDate</key><date>$(date -u +%Y-%m-%dT%H:%M:%SZ)</date>
+            <key>Name</key><string>Runner</string>
+            <key>SchemeName</key><string>Runner</string>
+          </dict></plist>
+          PLIST
           cat > "$RUNNER_TEMP/export.plist" <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
