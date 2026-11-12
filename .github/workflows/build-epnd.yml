@@ -32,12 +32,11 @@ permissions:
   actions: write   # to dispatch app rebuilds when manually requested
 
 # A push to epn-daemon now starts this at once (epn-daemon's
-# trigger-gram-build.yml); the schedule above stays as the backstop. One run
-# at a time, queued not cancelled, so the push and the schedule never build
-# the same commit side by side and a finished build is never thrown away.
-concurrency:
-  group: build-epnd
-  cancel-in-progress: false
+# trigger-gram-build.yml); the schedule above stays as the backstop.
+#
+# NO LOCK ON THE WHOLE RUN. One was tried (13 Nov) and made every new build
+# wait for the previous run's iOS job, which sits in GitHub's macOS queue for
+# minutes. Only `publish` is serialized, and ios-lib yields to newer runs.
 
 jobs:
   check:
@@ -234,8 +233,20 @@ jobs:
             echo "module download failed (attempt $i) — retrying"; sleep 15
           done
           exit 1
-      - name: Setup Android NDK
+      # The runner image ships NDK r26d (26.3.11579264); downloading it again
+      # was half of each Android job. Downloaded only if the image lacks it.
+      - name: Find the runner's NDK r26d
         if: matrix.goos == 'android'
+        id: ndkpre
+        run: |
+          d="${ANDROID_SDK_ROOT:-/usr/local/lib/android/sdk}/ndk/26.3.11579264"
+          if [ -x "$d/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" ]; then
+            echo "path=$d" >> "$GITHUB_OUTPUT"; echo "using the image's NDK at $d"
+          else
+            echo "the image has no NDK r26d; it will be downloaded"
+          fi
+      - name: Setup Android NDK
+        if: matrix.goos == 'android' && steps.ndkpre.outputs.path == ''
         id: ndk
         uses: nttld/setup-ndk@v1
         with:
@@ -246,7 +257,7 @@ jobs:
       - name: Build ${{ matrix.out }}
         working-directory: epn-daemon
         env:
-          NDK: ${{ steps.ndk.outputs.ndk-path }}
+          NDK: ${{ steps.ndkpre.outputs.path || steps.ndk.outputs.ndk-path }}
         run: |
           set -euo pipefail
           SHA="${{ needs.check.outputs.sha }}"
@@ -331,6 +342,10 @@ jobs:
     needs: [check, vet, bin, viewer]
     if: needs.check.outputs.should_build == 'true'
     runs-on: ubuntu-latest
+    # One release written at a time, queued not cancelled.
+    concurrency:
+      group: epnd-publish
+      cancel-in-progress: false
     steps:
       # This repo's history is ~2 GB of status commits; only the tip is needed
       # (the marker commit re-fetches and resets to origin/main itself).
@@ -496,6 +511,11 @@ jobs:
     needs: [check, vet]
     if: needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
+    # A newer run's iOS job replaces this one while it waits in the macOS
+    # queue: only the newest library is worth building.
+    concurrency:
+      group: epnd-ios-lib
+      cancel-in-progress: true
     steps:
       - name: Checkout epn-daemon source (private, read-only token)
         uses: actions/checkout@v4
@@ -538,6 +558,21 @@ jobs:
         working-directory: epn-daemon/dist
         run: |
           set -euo pipefail
+          # NEVER OVER A NEWER ONE. This job can finish long after its run's
+          # publish (the macOS queue), and a newer run may have published by
+          # then; or before its own run's publish, when the marker still names
+          # the previous build. So: upload unless the release is on a commit
+          # that comes AFTER this one in epn-daemon's history.
+          ours="${{ needs.check.outputs.sha }}"
+          current=$(curl -fsSL "https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/main/epnd-last-built.txt" | cut -d' ' -f1 || true)
+          if [ -n "$current" ] && [ "$current" != "$ours" ]; then
+            # "ahead": ours has commits current lacks (ours is newer) -> upload.
+            st=$(GH_TOKEN="${{ secrets.CI_READ_TOKEN }}" gh api "repos/50gramx/epn-daemon/compare/$current...$ours" --jq .status 2>/dev/null || echo unknown)
+            if [ "$st" != ahead ]; then
+              echo "::notice::the release is on ${current::8} and this library is ${ours::8} ($st): not uploading over it"
+              exit 0
+            fi
+          fi
           for f in libepnd-ios-arm64.a libepnd-ios-arm64.version libepnd-ios-arm64.sha256; do
             ok=0
             for attempt in 1 2 3 4 5; do
