@@ -154,9 +154,8 @@ jobs:
         # in pubspec.yaml, the token above applies.
         run: |
           rm -rf "$PUB_CACHE"/git/cache/bharatsphere-app-*
-          # Swift Package Manager off: the plugins build through CocoaPods, and
-          # with it on every run first migrates the project again (13 Nov).
-          flutter config --no-enable-swift-package-manager
+          # Swift Package Manager stays on: off, the archive's compile took
+          # 18.5 min against 12.1 (run 43317793683), measured then reverted.
           flutter pub get
 
       # WHO THE APP IS comes from the brand contract, never from this file: the

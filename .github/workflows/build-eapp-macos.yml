@@ -184,14 +184,12 @@ jobs:
           channel: stable
           cache: true
 
-      # SWIFT PACKAGE MANAGER OFF FOR THIS BUILD. With it on, every run spent
-      # 2 min 18 s "Adding Swift Package Manager integration" (the migrated
-      # project is never kept) and ~3 min resolving packages before compiling
-      # (run 43292342069), while the plugins build through CocoaPods anyway.
+      # SWIFT PACKAGE MANAGER STAYS ON. Turning it off (13 Nov) to skip its
+      # 2 min 18 s project migration made the compile far slower: with
+      # CocoaPods the large dependencies build from source (Build macOS App
+      # 12.5 min -> over 28 min, run 43317787885). Measured, then reverted.
       - name: Enable macOS Desktop
-        run: |
-          flutter config --enable-macos-desktop
-          flutter config --no-enable-swift-package-manager
+        run: flutter config --enable-macos-desktop
 
       - name: Configure git for private dependencies
         # THE TOKEN MUST SURVIVE A REDIRECT. On the macOS runners GitHub answers
