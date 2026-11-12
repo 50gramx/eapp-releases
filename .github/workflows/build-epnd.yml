@@ -493,7 +493,7 @@ jobs:
   # Android takes its .so. A separate job so a slow macOS queue never holds
   # back Linux, Windows and Android.
   ios-lib:
-    needs: [check, publish]
+    needs: [check, vet]
     if: needs.check.outputs.should_build == 'true'
     runs-on: macos-latest
     steps:
