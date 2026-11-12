@@ -132,6 +132,14 @@ jobs:
       PLATFORM_ID: macos
       BRAND_ID: ${{ inputs.brand_id }}
       RELEASE_CHANNEL: ${{ inputs.release_channel }}
+      # SIGNED AND NOTARIZED WHEN THE CERTIFICATE IS HERE (see the step below).
+      # The App Store Connect key is the same one the iOS build uses; the
+      # Developer ID certificate is the account holder's, exported as .p12.
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      MACOS_DEVID_P12: ${{ secrets.MACOS_DEVID_P12 }}
+      MACOS_DEVID_P12_PASSWORD: ${{ secrets.MACOS_DEVID_P12_PASSWORD }}
 
     steps:
       - name: Checkout eapp-live source (private, read-only token)
@@ -301,6 +309,52 @@ jobs:
             fi
           done
 
+      # DEVELOPER ID, NOT THE MAC APP STORE (2026-11-12). The Mac app runs the
+      # full gram as a child process and installs its updater, so it is built
+      # without the App Sandbox -- and the Mac App Store and TestFlight for Mac
+      # accept only sandboxed apps. The standard route for such an app is
+      # Developer ID signing plus Apple's notarization: it opens on any Mac
+      # with no warning and keeps the full gram. Until the certificate secret
+      # exists the build stays ad hoc, exactly as before.
+      #
+      # Signed here, AFTER the gram binaries are added: adding files to an
+      # already-sealed app broke its seal, which is one reason a downloaded
+      # build showed as damaged. Inside out: frameworks and libraries, the
+      # bundled gram, then the app, all with the hardened runtime.
+      - name: Sign with Developer ID and notarize
+        id: sign
+        if: env.MACOS_DEVID_P12 != '' && env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
+        run: |
+          set -euo pipefail
+          APP=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          KC="$RUNNER_TEMP/signing.keychain-db"; KCPW=$(uuidgen)
+          printf '%s' "$MACOS_DEVID_P12" | base64 --decode > "$RUNNER_TEMP/devid.p12"
+          security create-keychain -p "$KCPW" "$KC"
+          security set-keychain-settings -lut 3600 "$KC"
+          security unlock-keychain -p "$KCPW" "$KC"
+          security import "$RUNNER_TEMP/devid.p12" -k "$KC" -P "$MACOS_DEVID_P12_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KCPW" "$KC" >/dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/devid.p12"
+          ID=$(security find-identity -v -p codesigning "$KC" | grep "Developer ID Application" | head -1 | awk '{print $2}')
+          test -n "$ID" || { echo "the .p12 holds no Developer ID Application identity"; exit 1; }
+          SIGN=(codesign --force --timestamp --options runtime --sign "$ID")
+          find "$APP/Contents/Frameworks" -depth \( -name "*.dylib" -o -name "*.framework" \) -print0 | xargs -0 -n1 "${SIGN[@]}"
+          for b in "$APP"/Contents/MacOS/epnd-darwin-*; do
+            [ -f "$b" ] && "${SIGN[@]}" "$b"
+          done
+          "${SIGN[@]}" --entitlements macos/Runner/Release.entitlements "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY"
+          ditto -c -k --keepParent "$APP" "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" --key "$KEY" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 30m
+          xcrun stapler staple "$APP"
+          spctl --assess --type execute --verbose "$APP"
+          rm -f "$KEY"
+          security delete-keychain "$KC"
+          echo "signing=developer-id" >> "$GITHUB_OUTPUT"
+
       - name: Resolve App Version
         id: version
         run: |
@@ -323,7 +377,7 @@ jobs:
             --product "${{ steps.brand.outputs.product_id }}" \
             --brand-id "${{ steps.brand.outputs.brand_id }}" \
             --platform "$PLATFORM_ID" \
-            --signing ad-hoc \
+            --signing "${{ steps.sign.outputs.signing || 'ad-hoc' }}" \
             --channel "$RELEASE_CHANNEL" \
             --version "${{ steps.version.outputs.version }}" \
             --build-id "${{ github.run_number }}" \
