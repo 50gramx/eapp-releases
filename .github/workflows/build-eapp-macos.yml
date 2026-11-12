@@ -321,6 +321,61 @@ jobs:
       # already-sealed app broke its seal, which is one reason a downloaded
       # build showed as damaged. Inside out: frameworks and libraries, the
       # bundled gram, then the app, all with the hardened runtime.
+      # FIRST TRY: APPLE'S CLOUD-MANAGED DEVELOPER ID, with the App Store
+      # Connect key the iOS build already has -- no certificate stored here. The
+      # app is archived unsigned-ad-hoc (like iOS, so no development certificate
+      # is minted per run), the gram binaries are put in, and the export signs
+      # everything with the Developer ID certificate Apple keeps. Then notarized
+      # and stapled. If Apple refuses (the key's role, or the account holder has
+      # not allowed cloud-managed Developer ID), this step fails without failing
+      # the build, its log says why, and the .p12 step below is the fallback.
+      - name: Sign with Developer ID (Apple cloud-managed) and notarize
+        id: cloudsign
+        if: env.MACOS_DEVID_P12 == '' && env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
+        continue-on-error: true
+        env:
+          TEAM_ID: ${{ steps.brand.outputs.ios_team_id }}
+        run: |
+          set -euo pipefail
+          KEY="$RUNNER_TEMP/AuthKey_$ASC_KEY_ID.p8"
+          printf '%s\n' "$ASC_KEY_P8" > "$KEY"
+          AUTH=(-allowProvisioningUpdates -authenticationKeyPath "$KEY" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")
+          xcodebuild -workspace macos/Runner.xcworkspace -scheme Runner -configuration Release \
+            -destination 'generic/platform=macOS' -archivePath "$RUNNER_TEMP/Runner.xcarchive" archive \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES CODE_SIGNING_REQUIRED=NO \
+            ENABLE_HARDENED_RUNTIME=YES DEVELOPMENT_TEAM="$TEAM_ID" PROVISIONING_PROFILE_SPECIFIER="" | tail -30
+          ARC_APP=$(find "$RUNNER_TEMP/Runner.xcarchive/Products/Applications" -maxdepth 1 -name "*.app" | head -1)
+          BUILT=$(find build/macos/Build/Products/Release -maxdepth 1 -name "*.app" | head -1)
+          for b in "$BUILT"/Contents/MacOS/epnd-darwin-*; do
+            [ -f "$b" ] || continue
+            cp "$b" "$ARC_APP/Contents/MacOS/"
+            codesign --force --options runtime --sign - "$ARC_APP/Contents/MacOS/$(basename "$b")"
+          done
+          codesign --force --options runtime --entitlements macos/Runner/Release.entitlements --sign - "$ARC_APP"
+          cat > "$RUNNER_TEMP/export.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>developer-id</string>
+            <key>teamID</key><string>$TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/Runner.xcarchive" \
+            -exportOptionsPlist "$RUNNER_TEMP/export.plist" -exportPath "$RUNNER_TEMP/export" "${AUTH[@]}" | tail -30
+          OUT=$(find "$RUNNER_TEMP/export" -maxdepth 1 -name "*.app" | head -1)
+          codesign --verify --deep --strict --verbose=2 "$OUT"
+          codesign -dvv "$OUT/Contents/MacOS/epnd-darwin-arm64" 2>&1 | grep -E "Authority|TeamIdentifier" || true
+          ditto -c -k --keepParent "$OUT" "$RUNNER_TEMP/notarize.zip"
+          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" --key "$KEY" --key-id "$ASC_KEY_ID" --issuer "$ASC_ISSUER_ID" --wait --timeout 30m
+          xcrun stapler staple "$OUT"
+          spctl --assess --type execute --verbose "$OUT"
+          rm -f "$KEY"
+          # The signed app replaces the ad hoc one the rest of the job packages.
+          rm -rf "$BUILT"
+          ditto "$OUT" "$BUILT"
+          echo "signing=developer-id" >> "$GITHUB_OUTPUT"
+
       - name: Sign with Developer ID and notarize
         id: sign
         if: env.MACOS_DEVID_P12 != '' && env.ASC_KEY_ID != '' && env.ASC_ISSUER_ID != '' && env.ASC_KEY_P8 != ''
@@ -377,7 +432,7 @@ jobs:
             --product "${{ steps.brand.outputs.product_id }}" \
             --brand-id "${{ steps.brand.outputs.brand_id }}" \
             --platform "$PLATFORM_ID" \
-            --signing "${{ steps.sign.outputs.signing || 'ad-hoc' }}" \
+            --signing "${{ steps.cloudsign.outputs.signing || steps.sign.outputs.signing || 'ad-hoc' }}" \
             --channel "$RELEASE_CHANNEL" \
             --version "${{ steps.version.outputs.version }}" \
             --build-id "${{ github.run_number }}" \
