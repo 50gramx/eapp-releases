@@ -145,6 +145,14 @@ jobs:
           echo "https://x-access-token:${CI_READ_TOKEN}@github.com" > "$HOME/.git-credentials"
           chmod 600 "$HOME/.git-credentials"
 
+      # THE GENERATED MESH CODE FOLLOWS THE CONTRACTS (founder, 13 Nov): never
+      # pinned by hand; each build takes its newest commit (eapp-live
+      # tool/ci/follow_mesh_code.mjs). The engine stays pinned in eapp-live.
+      - name: Generated mesh code follows the contracts
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: node tool/ci/follow_mesh_code.mjs pubspec.yaml
+
       - name: Dependencies
         # A CACHED CLONE OF A PRIVATE PACKAGE IS NOT REUSED. The pub cache kept a
         # clone of bharatsphere-app whose remote had no ".git"; GitHub redirects
@@ -167,6 +175,11 @@ jobs:
           repository: 50gramx/eapp-interaction-contracts
           token: ${{ secrets.CI_READ_TOKEN }}
           path: .ci/eapp-interaction-contracts
+
+      # Every door in the contracts is in the app, or the build stops
+      # (659 shipped without 11 of 38: Sites read "Nothing here yet").
+      - name: Every mesh door in the contracts is in the app
+        run: node tool/ci/check_mesh_doors.mjs .ci/eapp-interaction-contracts
 
       # The app starts from this snapshot instead of fetching every contract
       # at launch (eapp-live lib/services/contract_snapshot.dart).

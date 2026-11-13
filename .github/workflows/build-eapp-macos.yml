@@ -207,8 +207,21 @@ jobs:
           echo "https://x-access-token:${CI_READ_TOKEN}@github.com" > "$HOME/.git-credentials"
           chmod 600 "$HOME/.git-credentials"
 
+      # THE GENERATED MESH CODE FOLLOWS THE CONTRACTS (founder, 13 Nov): never
+      # pinned by hand; each build takes its newest commit (eapp-live
+      # tool/ci/follow_mesh_code.mjs). The engine stays pinned in eapp-live.
+      - name: Generated mesh code follows the contracts
+        env:
+          GH_TOKEN: ${{ secrets.CI_READ_TOKEN }}
+        run: node tool/ci/follow_mesh_code.mjs pubspec.yaml
+
       - name: Get Dependencies
         run: flutter pub get
+
+      # Every door in the contracts is in the app, or the build stops
+      # (659 shipped without 11 of 38: Sites read "Nothing here yet").
+      - name: Every mesh door in the contracts is in the app
+        run: node tool/ci/check_mesh_doors.mjs .ci/eapp-interaction-contracts
 
       - name: Cache CocoaPods Pods
         uses: actions/cache@v4
