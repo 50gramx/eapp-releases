@@ -152,7 +152,35 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://50gramx.com
         run: npm run build
 
+      # 50gramx.com is the company gramx's site (gramx DG1h70GzVONqlxjluvnM,
+      # site "www"), served by the network's edges. Any member gram with the
+      # deployer rank takes the deploy; the first one reachable in the list
+      # does and shares it with the rest. No account, cloud key or open port.
+      # The token comes from an admin gram:
+      #   epnd site token --gramx DG1h70GzVONqlxjluvnM --name www --label eapp-releases-ci
+      # and is the secret EPN_SITE_TOKEN. Until it exists this step says so and
+      # does nothing. EPN_SITE_MEMBERS (a repository variable) lists member
+      # gram DIDs, comma-separated; the founder's Mac gram is the default.
+      - name: Deploy to the company gramx on the network
+        env:
+          EPN_SITE_TOKEN: ${{ secrets.EPN_SITE_TOKEN }}
+          MEMBERS: ${{ vars.EPN_SITE_MEMBERS || 'did:epn:002408011220841464a4a6d45a8bd729e032b4c1b03d9ad69a58c76e0a5c51bd024bfdd68672' }}
+        run: |
+          if [ -z "$EPN_SITE_TOKEN" ]; then
+            echo "::notice::EPN_SITE_TOKEN is not set yet: the network deploy is skipped"
+            exit 0
+          fi
+          curl -fsSL --retry 3 --retry-delay 5 -o "$RUNNER_TEMP/epnd" \
+            https://github.com/50gramx/eapp-releases/releases/download/epnd-latest/epnd-linux-amd64
+          chmod +x "$RUNNER_TEMP/epnd"
+          "$RUNNER_TEMP/epnd" site deploy out --gramx DG1h70GzVONqlxjluvnM --name www --to "$MEMBERS"
+
+      # Kept while the network serves 50gramx.com; it can no longer fail the
+      # job (billing is past due). Remove once the network deploy has run
+      # cleanly for a few days.
       - name: Deploy to Firebase Hosting
+        if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
