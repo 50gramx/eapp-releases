@@ -175,10 +175,14 @@ jobs:
           # were byte-identical apart from a random build ID. The comparison is
           # published beside the archive (site-changes.json) and in this job's
           # summary, so how much each build really changes is always visible.
-          prev="$RUNNER_TEMP/prev"; mkdir -p "$prev"
-          base="https://github.com/$REPO/releases/download/site-latest"
-          if curl -fsSL --retry 3 -o "$RUNNER_TEMP/prev.tar.gz" "$base/site.tar.gz"; then
-            tar -xzf "$RUNNER_TEMP/prev.tar.gz" -C "$prev"
+          prev="$RUNNER_TEMP/prev"; mkdir -p "$prev" "$RUNNER_TEMP/prevdl"
+          # Through the API, not the download link: that link is cached and
+          # once served an older build, and a delta must start from exactly
+          # the archive the member grams have.
+          prev_sha=""
+          if gh release download site-latest --repo "$REPO" -p site.tar.gz -p site.tar.gz.sha256 -D "$RUNNER_TEMP/prevdl" 2>/dev/null; then
+            tar -xzf "$RUNNER_TEMP/prevdl/site.tar.gz" -C "$prev"
+            prev_sha=$( cd "$RUNNER_TEMP/prevdl" && sha256sum site.tar.gz | cut -d' ' -f1 )
           fi
           sums() { ( cd "$1" 2>/dev/null && find . -type f -print0 | sort -z | xargs -0 -r sha256sum ) || true; }
           sums out > "$RUNNER_TEMP/new.sums"
@@ -206,6 +210,9 @@ jobs:
             first_build: a.size === 0,
           };
           fs.writeFileSync(outPath, JSON.stringify(report, null, 2) + '\n');
+          // What a member gram needs to take this build as its changes.
+          fs.writeFileSync(outPath + '.list', [...changed, ...added].sort().map((f) => 'out/' + f.replace(/^\.\//, '')).join('\n') + ([...changed, ...added].length ? '\n' : ''));
+          fs.writeFileSync(outPath + '.removed', JSON.stringify(removed.sort()));
           console.log(JSON.stringify(report));
           JS
           changes=$(node -p "const r=require('$RUNNER_TEMP/site-changes.json'); r.changed + r.added + r.removed")
@@ -223,11 +230,31 @@ jobs:
           # member grams' checksum check is what decides there is nothing new.
           tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - out | gzip -n -9 > "$RUNNER_TEMP/site.tar.gz"
           ( cd "$RUNNER_TEMP" && sha256sum site.tar.gz > site.tar.gz.sha256 )
+          # THE CHANGES, AS THEIR OWN ARCHIVE (15 Nov 2026). A member gram that
+          # has the previous build (prev_sha) fetches only these, not the whole
+          # site; one that does not takes the whole archive as before.
+          extra=()
+          if [ -n "$prev_sha" ]; then
+            tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - -T "$RUNNER_TEMP/site-changes.json.list" | gzip -n -9 > "$RUNNER_TEMP/site.tar.gz.delta.tar.gz"
+            node -e '
+              const fs = require("fs"); const t = process.env.RUNNER_TEMP;
+              const sha = (f) => require("crypto").createHash("sha256").update(fs.readFileSync(f)).digest("hex");
+              fs.writeFileSync(t + "/site.tar.gz.delta.json", JSON.stringify({
+                base: process.argv[1], sha: sha(t + "/site.tar.gz"),
+                delta_sha256: sha(t + "/site.tar.gz.delta.tar.gz"),
+                removed: JSON.parse(fs.readFileSync(t + "/site-changes.json.removed", "utf8")),
+              }) + "\n");' "$prev_sha"
+            extra=("$RUNNER_TEMP/site.tar.gz.delta.tar.gz" "$RUNNER_TEMP/site.tar.gz.delta.json")
+            echo "changes archive: $(du -h "$RUNNER_TEMP/site.tar.gz.delta.tar.gz" | cut -f1)" >> "$GITHUB_STEP_SUMMARY"
+          fi
           if ! gh release view site-latest --repo "$REPO" >/dev/null 2>&1; then
             gh release create site-latest --repo "$REPO" --title "50gramx.com — latest build (rolling)" \
               --notes "The built 50gramx.com, followed by the company gramx's site. Replaced on every build." --latest=false
           fi
-          gh release upload site-latest --repo "$REPO" --clobber "$RUNNER_TEMP/site.tar.gz" "$RUNNER_TEMP/site.tar.gz.sha256" "$RUNNER_TEMP/site-changes.json"
+          # The checksum LAST: a member gram looks at it first, and only once it
+          # moves does it read the changes and the archive, which are up by then.
+          gh release upload site-latest --repo "$REPO" --clobber "$RUNNER_TEMP/site.tar.gz" "$RUNNER_TEMP/site-changes.json" "${extra[@]}"
+          gh release upload site-latest --repo "$REPO" --clobber "$RUNNER_TEMP/site.tar.gz.sha256"
 
       # NO FIREBASE DEPLOY (founder, 15 Nov 2026). 50gramx.com is served by the
       # company gramx from the archive above; Firebase Hosting is no longer a
