@@ -67,6 +67,18 @@ import { mergePeerTrend, buildGramxRooms, meshViewOrLast, MESH_CARRY_MS } from '
   assert.equal(meshViewOrLast({}, last, now).view.carried_from, last.generated_at, 'empty: the last good view stands in');
   assert.equal(meshViewOrLast({ nodes: [{ did: 'b' }] }, last, now).keep, true, 'a real view replaces it');
   assert.equal(meshViewOrLast({}, last, now + MESH_CARRY_MS).view.carried_from, undefined, 'too old: nothing assumed');
+
+  // A partial report: the same grams, their DHT parts missing.
+  const full = { generated_at: '2026-11-15T08:00:00Z', nodes: [{ did: 'a', online: true, proof_snapshot: { x: 1 }, models: ['m'] }] };
+  const partial = { generated_at: '2026-11-15T08:15:00Z', nodes: [{ did: 'a', online: false }, { did: 'b' }] };
+  const m = meshViewOrLast(partial, full, now).view;
+  assert.deepEqual(m.nodes[0].proof_snapshot, { x: 1 }, 'the missing part is filled in');
+  assert.equal(m.nodes[0].online, false, 'what the report does say stands');
+  assert.equal(m.nodes[0].carried_from.models, full.generated_at, 'and says when it was seen');
+  assert.equal(m.nodes.length, 2, 'no gram is added or dropped');
+  // Carried again from the merged view, it keeps its first time and expires.
+  const later = meshViewOrLast({ generated_at: 'x', nodes: [{ did: 'a' }] }, m, Date.parse(full.generated_at) + MESH_CARRY_MS + 1).view;
+  assert.equal(later.nodes[0].proof_snapshot, undefined, 'a carried part expires on its own clock');
 }
 
 console.log('ok - stable data');

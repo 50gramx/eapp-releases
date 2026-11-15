@@ -3030,14 +3030,40 @@ function median(nums) {
 const MESH_LAST_DIR = 'data/mesh-last';
 export const MESH_CARRY_MS = 2 * 3600e3;
 
+// A PARTIAL REPORT IS NOT A SMALLER NETWORK EITHER. Since the reporter stopped
+// pushing '{}', every other report still came back with the same grams but
+// without what it reads from the DHT for them (proof snapshot, models, agent
+// turns): the lookups had not answered in time. Those parts are filled in, gram
+// by gram, from the last report that had them, each marked with when it was
+// seen (carried_from) and never past MESH_CARRY_MS. A gram missing from the
+// report is not added back: presence is what the report says.
+const MESH_CARRY_KEYS = ['proof_snapshot', 'models', 'agent_turns'];
+
 export function meshViewOrLast(view, last, now = Date.now()) {
   const has = (v) => v && Array.isArray(v.nodes) && v.nodes.length > 0;
-  if (has(view)) return { view, keep: true };
-  const at = Date.parse(last?.generated_at || '');
-  if (has(last) && Number.isFinite(at) && now - at <= MESH_CARRY_MS) {
-    return { view: { ...last, carried_from: last.generated_at }, keep: false };
+  const lastAt = Date.parse(last?.generated_at || '');
+  const fresh = (t) => Number.isFinite(t) && now - t <= MESH_CARRY_MS;
+  if (!has(view)) {
+    if (has(last) && fresh(lastAt)) return { view: { ...last, carried_from: last.generated_at }, keep: false };
+    return { view, keep: false };
   }
-  return { view, keep: false };
+  if (!has(last)) return { view, keep: true };
+  const before = new Map(last.nodes.map((n) => [n.did, n]));
+  const nodes = view.nodes.map((n) => {
+    const l = before.get(n.did);
+    if (!l) return n;
+    let out = n;
+    for (const k of MESH_CARRY_KEYS) {
+      if (n[k] != null || l[k] == null) continue;
+      const seen = (l.carried_from && l.carried_from[k]) || last.generated_at;
+      if (!fresh(Date.parse(seen))) continue;
+      if (out === n) out = { ...n, carried_from: {} };
+      out[k] = l[k];
+      out.carried_from[k] = seen;
+    }
+    return out;
+  });
+  return { view: { ...view, nodes }, keep: true, merged: true };
 }
 
 function loadMeshViews() {
@@ -3061,7 +3087,9 @@ function loadMeshViews() {
     const r = meshViewOrLast(view, last);
     if (r.keep) {
       mkdirSync(MESH_LAST_DIR, { recursive: true });
-      writeFileSync(`${MESH_LAST_DIR}/${f}`, readFileSync(`${NODES_DIR}/${f}`));
+      // The merged view, so a part carried once keeps its own carried_from and
+      // expires on its own clock rather than being renewed by each report.
+      writeFileSync(`${MESH_LAST_DIR}/${f}`, JSON.stringify(r.view));
     } else if (r.view && r.view.carried_from) {
       console.log(`[mesh] ${f}: empty report; the view from ${r.view.carried_from} stands in`);
     }
