@@ -1,4 +1,4 @@
-name: Deploy site to Firebase Hosting
+name: Build 50gramx.com
 
 # The brand site is a static export: every number on /, /regions and /region/<pincode>
 # is fetched at BUILD time and baked into HTML. So a deploy is not only how code
@@ -172,25 +172,6 @@ jobs:
           fi
           gh release upload site-latest --repo "$REPO" --clobber "$RUNNER_TEMP/site.tar.gz" "$RUNNER_TEMP/site.tar.gz.sha256"
 
-      # Kept while the network serves 50gramx.com; it can no longer fail the
-      # job (billing is past due). Remove once the network deploy has run
-      # cleanly for a few days.
-      - name: Deploy to Firebase Hosting
-        if: ${{ !cancelled() }}
-        continue-on-error: true
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_CLOUD_50GRAMX }}
-          channelId: live
-          projectId: cloud-50gramx
-          expires: 7d
-          # PINNED, NOT `latest`. firebase-tools 15.34.1 (published
-          # 2026-10-21 22:18 UTC) checks the Hosting API through
-          # serviceusage.googleapis.com before deploying, which the deploy
-          # service account has no permission for: every deploy from 22:19 UTC
-          # on failed with "403, Permission denied to get service
-          # [firebasehosting.googleapis.com]". 15.34.0 deployed this site
-          # at 22:03. Move the pin deliberately, after granting the account
-          # roles/serviceusage.serviceUsageConsumer if the new CLI needs it.
-          firebaseToolsVersion: 15.34.0
+      # NO FIREBASE DEPLOY (founder, 15 Nov 2026). 50gramx.com is served by the
+      # company gramx from the archive above; Firebase Hosting is no longer a
+      # host of this site, and its billing is past due.
