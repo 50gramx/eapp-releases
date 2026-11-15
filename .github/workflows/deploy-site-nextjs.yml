@@ -152,7 +152,11 @@ jobs:
       - name: Build static export (includes sitemap with real data)
         env:
           NEXT_PUBLIC_SITE_URL: https://50gramx.com
-        run: npm run build
+        run: |
+          # The site's commit is its build ID (next.config.mjs), and the change
+          # report below names it.
+          echo "SITE_COMMIT=$(git rev-parse HEAD)" >> "$GITHUB_ENV"
+          npm run build
 
       # 50gramx.com is the company gramx's site (gramx DG1h70GzVONqlxjluvnM,
       # site "www"). It FOLLOWS ITS SOURCE: this job publishes the built site as
@@ -164,13 +168,66 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: |
-          tar -czf "$RUNNER_TEMP/site.tar.gz" out
+          set -euo pipefail
+          # WHAT THIS BUILD CHANGED, against the build the gramx serves now
+          # (15 Nov 2026). Every build used to publish ~8,000 files that the
+          # member grams then fetched, hashed and announced, though almost all
+          # were byte-identical apart from a random build ID. The comparison is
+          # published beside the archive (site-changes.json) and in this job's
+          # summary, so how much each build really changes is always visible.
+          prev="$RUNNER_TEMP/prev"; mkdir -p "$prev"
+          base="https://github.com/$REPO/releases/download/site-latest"
+          if curl -fsSL --retry 3 -o "$RUNNER_TEMP/prev.tar.gz" "$base/site.tar.gz"; then
+            tar -xzf "$RUNNER_TEMP/prev.tar.gz" -C "$prev"
+          fi
+          sums() { ( cd "$1" 2>/dev/null && find . -type f -print0 | sort -z | xargs -0 -r sha256sum ) || true; }
+          sums out > "$RUNNER_TEMP/new.sums"
+          sums "$prev/out" > "$RUNNER_TEMP/prev.sums"
+          node - "$RUNNER_TEMP/prev.sums" "$RUNNER_TEMP/new.sums" "$RUNNER_TEMP/site-changes.json" <<'JS'
+          const fs = require('fs');
+          const [prevPath, nextPath, outPath] = process.argv.slice(2);
+          const read = (p) => new Map(fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => [l.slice(66), l.slice(0, 64)]));
+          const a = read(prevPath), b = read(nextPath);
+          const changed = [], added = [], removed = [];
+          for (const [f, h] of b) { if (!a.has(f)) added.push(f); else if (a.get(f) !== h) changed.push(f); }
+          for (const f of a.keys()) if (!b.has(f)) removed.push(f);
+          const size = (f) => { try { return fs.statSync('out/' + f.replace(/^\.\//, '')).size; } catch { return 0; } };
+          const bytes = [...changed, ...added].reduce((n, f) => n + size(f), 0);
+          const section = (f) => f.replace(/^\.\//, '').split('/')[0];
+          const bySection = {};
+          for (const f of [...changed, ...added]) bySection[section(f)] = (bySection[section(f)] || 0) + 1;
+          const report = {
+            built_at: new Date().toISOString(),
+            site_commit: process.env.SITE_COMMIT || null,
+            files: b.size, changed: changed.length, added: added.length, removed: removed.length,
+            changed_mb: Math.round(bytes / 1e5) / 10,
+            by_section: Object.fromEntries(Object.entries(bySection).sort((x, y) => y[1] - x[1])),
+            sample: [...changed, ...added].slice(0, 40),
+            first_build: a.size === 0,
+          };
+          fs.writeFileSync(outPath, JSON.stringify(report, null, 2) + '\n');
+          console.log(JSON.stringify(report));
+          JS
+          changes=$(node -p "const r=require('$RUNNER_TEMP/site-changes.json'); r.changed + r.added + r.removed")
+          {
+            echo "### What this build changed"
+            node -p "const r=require('$RUNNER_TEMP/site-changes.json'); \`\${r.changed} changed, \${r.added} added, \${r.removed} removed of \${r.files} files (\${r.changed_mb} MB)\`"
+            echo; echo '```'; node -p "JSON.stringify(require('$RUNNER_TEMP/site-changes.json').by_section, null, 1)"; echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ -s "$RUNNER_TEMP/prev.sums" ] && [ "$changes" = "0" ]; then
+            echo "The build is identical to the one the gramx serves: nothing to publish."
+            exit 0
+          fi
+          # A REPRODUCIBLE ARCHIVE: names sorted, times and owners fixed, gzip
+          # without its own timestamp. The same files make the same bytes, so the
+          # member grams' checksum check is what decides there is nothing new.
+          tar --sort=name --mtime='@0' --owner=0 --group=0 --numeric-owner -cf - out | gzip -n -9 > "$RUNNER_TEMP/site.tar.gz"
           ( cd "$RUNNER_TEMP" && sha256sum site.tar.gz > site.tar.gz.sha256 )
           if ! gh release view site-latest --repo "$REPO" >/dev/null 2>&1; then
             gh release create site-latest --repo "$REPO" --title "50gramx.com — latest build (rolling)" \
               --notes "The built 50gramx.com, followed by the company gramx's site. Replaced on every build." --latest=false
           fi
-          gh release upload site-latest --repo "$REPO" --clobber "$RUNNER_TEMP/site.tar.gz" "$RUNNER_TEMP/site.tar.gz.sha256"
+          gh release upload site-latest --repo "$REPO" --clobber "$RUNNER_TEMP/site.tar.gz" "$RUNNER_TEMP/site.tar.gz.sha256" "$RUNNER_TEMP/site-changes.json"
 
       # NO FIREBASE DEPLOY (founder, 15 Nov 2026). 50gramx.com is served by the
       # company gramx from the archive above; Firebase Hosting is no longer a

@@ -12,6 +12,7 @@
 // no independent verification — and every card on the page must say so.
 import { buildMachines, MACHINES_PATH, readMachines } from './machines.mjs';
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { writeJsonStable } from './stable-write.mjs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons, readSeasons, readCurrent } from './seasons.mjs';
 import { buildValueTable, TABLE_PATH } from './value-table.mjs';
@@ -258,13 +259,25 @@ export function mergePeerTrend(nodeHistories, maxPoints = 60) {
   }
 
   if (trend.length <= maxPoints) return trend;
-  const step = trend.length / maxPoints;
-  const sampled = [];
-  for (let i = 0; i < maxPoints; i++) {
-    sampled.push(trend[Math.floor(i * step)]);
+  // FIXED TIME BUCKETS, NOT EVEN STEPS. Sampling every (length / maxPoints)-th
+  // event moved every past point each time one event was added: the history
+  // rewrote itself every 15 minutes (15 Nov 2026: a point dated 2026-10-19 13:46
+  // became 14:01 on the next run). Each bucket on a fixed clock grid keeps its
+  // last event, so a past bucket never changes; only the newest one moves. The
+  // bucket is the smallest step on a fixed ladder that fits maxPoints, so it
+  // changes only when the history crosses a whole rung.
+  const firstAt = Date.parse(trend[0].t);
+  const lastAt = Date.parse(trend[trend.length - 1].t);
+  const HOUR = 3600e3;
+  const ladder = [HOUR, 3 * HOUR, 6 * HOUR, 12 * HOUR, 24 * HOUR, 48 * HOUR, 7 * 24 * HOUR, 14 * 24 * HOUR, 28 * 24 * HOUR];
+  const bucket = ladder.find((b) => Math.floor(lastAt / b) - Math.floor(firstAt / b) + 1 <= maxPoints) || ladder[ladder.length - 1];
+  const byBucket = new Map();
+  for (const p of trend) {
+    const at = Date.parse(p.t);
+    if (!Number.isFinite(at)) continue;
+    byBucket.set(Math.floor(at / bucket), p); // events are sorted: the last one wins
   }
-  sampled.push(trend[trend.length - 1]);
-  return sampled;
+  return [...byBucket.values()];
 }
 
 function marker(resourceType) {
@@ -674,6 +687,9 @@ function readPublished(path) {
     return null;
   }
 }
+
+/** Where every verified public room statement is kept. See buildGramxRooms. */
+const GRAMX_ARCHIVE_PATH = 'data/gramx-archive.jsonl';
 
 /** Where every signed turn statement is kept. See mergeTurnArchive. */
 const TURN_ARCHIVE_PATH = 'data/turns-archive.jsonl';
@@ -1155,7 +1171,7 @@ export function verifyEpochStatement(statement, fromDID) {
 }
 
 /** Rolls verified statements into per-room, per-resource totals with coverage. */
-export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
+export function buildGramxRooms(nodes, generatedAt, meshViews = [], archived = []) {
   const collected = [];
   const addFrom = (source) => {
     const epochs = source && source.gramx_epochs;
@@ -1171,9 +1187,20 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
   for (const view of meshViews || []) {
     for (const n of (view && view.nodes) || []) addFrom(n);
   }
+  // THE ARCHIVE AFTER WHAT ARRIVED TODAY. A reporter carries only the hours it
+  // still holds, so a room used to leave the page when its gram slept, and
+  // room_count swung between 0 and 14 from one run to the next (15 Nov 2026).
+  // Every statement that verified is kept (data/gramx-archive.jsonl) and re-
+  // verified here each run, so the totals are a function of every signed hour,
+  // not of whichever hours one reporter still had. Today's copies come first,
+  // so a room's `signed` sample is its freshest evidence.
+  for (const a of archived || []) {
+    if (a && a.room && a.statement) collected.push({ room: a.room, fromDID: a.statement.node_did, statement: a.statement });
+  }
 
   const rooms = new Map();
   const seen = new Set();
+  const kept = [];
   let rejected = 0;
 
   let withheld = 0;
@@ -1208,6 +1235,7 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
       (statement.late === true ? '|late|' + statement.generated_at + '|' + statement.receipt_count : '');
     if (seen.has(dedupe)) continue;
     seen.add(dedupe);
+    kept.push({ room, statement });
 
     let entry = rooms.get(room);
     if (!entry) {
@@ -1286,7 +1314,7 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
   }
   out.sort((a, b) => a.gramx_id.localeCompare(b.gramx_id));
 
-  return {
+  const result = {
     generated_at: generatedAt,
     room_count: out.length,
     rejected,
@@ -1301,6 +1329,9 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = []) {
     coverage_note: 'totals are summed from verified provider-side statements by the listed contributors; grams that did not publish are invisible, so these are a verified floor, not a complete account',
     rooms: out,
   };
+  // What to keep for the next run; not part of the published file.
+  Object.defineProperty(result, 'archive', { value: kept, enumerable: false });
+  return result;
 }
 
 // WHAT THE AGENTS DID, from the digest each gram signed about its own.
@@ -2687,14 +2718,31 @@ function communitySlug(c) {
   return slugify(`${c.state || ''}-${c.city || c.id || ''}`);
 }
 
+// When a node was really seen (its report, or a mesh sighting), else this run.
+// last_seen_at used to be the run's own clock, so every region "was seen" every
+// 15 minutes whether or not anything had reported (15 Nov 2026).
+function seenAt(n, now) {
+  const t = Date.parse(n?.last_seen || '');
+  return Number.isFinite(t) ? new Date(t).toISOString() : now;
+}
+
+function newestSeen(nodes, now) {
+  let best = '';
+  for (const n of nodes || []) {
+    const t = seenAt(n, '');
+    if (t && t > best) best = t;
+  }
+  return best || now;
+}
+
 function mergeOne(prev, cur, now) {
   if (!prev) {
     return {
       ...cur,
       first_seen_at: now,
-      last_seen_at: now,
+      last_seen_at: newestSeen(cur.nodes, now),
       url_slug: communitySlug(cur),
-      nodes: cur.nodes.map((n) => ({ ...n, first_seen_at: now, last_seen_at: now, visible: true })),
+      nodes: cur.nodes.map((n) => ({ ...n, first_seen_at: now, last_seen_at: seenAt(n, now), visible: true })),
       bests: Object.fromEntries(Object.entries(cur.bests).map(([k, b]) => [k, { ...b, first_proved_at: now }])),
     };
   }
@@ -2705,7 +2753,7 @@ function mergeOne(prev, cur, now) {
   for (const n of cur.nodes) {
     seenDids.add(n.node_did);
     const p = prevNodes.get(n.node_did);
-    nodes.push({ ...n, first_seen_at: p?.first_seen_at || now, last_seen_at: now, visible: true });
+    nodes.push({ ...n, first_seen_at: p?.first_seen_at || now, last_seen_at: seenAt(n, now), visible: true });
   }
   for (const p of prevNodes.values()) {
     if (seenDids.has(p.node_did)) continue;
@@ -2744,7 +2792,7 @@ function mergeOne(prev, cur, now) {
     state: cur.state || prev.state || '',
     country: cur.country || prev.country || '',
     first_seen_at: prev.first_seen_at || now,
-    last_seen_at: cur.nodes.length ? now : prev.last_seen_at || now,
+    last_seen_at: cur.nodes.length ? newestSeen(cur.nodes, now) : prev.last_seen_at || now,
     // The address this region is reachable at, fixed the first time we saw it.
     //
     // A node's city is ESTIMATED (two IP-geolocation providers, majority vote —
@@ -2816,7 +2864,9 @@ export function buildCommunities(nodes, generatedAt = new Date().toISOString(), 
       did,
       name: entry.name || null,
       online: isReporter ? entry.online === true : meshKnows ? entry.online !== false : null,
-      last_seen: entry.last_seen || null,
+      // WHEN IT WAS SEEN, not when this run happened: a reporter's own report
+      // time (checked_at), a mesh sighting's last_seen.
+      last_seen: entry.last_seen || (isReporter ? entry.checked_at || null : null),
       reporter: isReporter,
       region,
       last_absence: fleet?.env?.absence?.kind || null,
@@ -3448,6 +3498,7 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
     for (const n of view?.nodes || []) {
       if (!Array.isArray(n?.holds_regions) || n.holds_regions.length === 0) continue;
       fromMesh.push({
+        checked_at: n?.last_seen || null,
         name: n.name || null,
         proof_snapshot: { node_did: n.did || null },
         region_peers: browserDialable(n.addrs),
@@ -3481,6 +3532,7 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
       const pin = String(r?.community_id || '').replace(/^[A-Z]{2}_/, '').trim();
       if (!pin) continue;
       fromMesh.push({
+        checked_at: n?.last_seen || null,
         regions: [{
           pincode: pin,
           label: [r.city, r.region].filter(Boolean).join(', ') || null,
@@ -3501,6 +3553,7 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
       // holder/geography block below needs a scene; the entry itself does not.
       const hasScene = cid.startsWith('sha256:');
       if (!pincode) continue;
+      const seen = seenAt({ last_seen: n?.checked_at || n?.last_seen }, generatedAt);
       let e = byPincode.get(pincode);
       if (!e) {
         e = {
@@ -3511,11 +3564,11 @@ export function buildRegions(nodes, generatedAt = new Date().toISOString(), mesh
           root_cid: null,
           holders: [],
           first_seen_at: generatedAt,
-          last_seen_at: generatedAt,
+          last_seen_at: seen,
         };
         byPincode.set(pincode, e);
       }
-      e.last_seen_at = generatedAt;
+      if (seen > e.last_seen_at || e.last_seen_at === generatedAt) e.last_seen_at = seen;
       // A NAME IS NOT GEOGRAPHY. The block below is guarded because centre,
       // bbox and root_cid may only come from a holder's own read of the scene.
       // A label is different: "Hyderabad, Telangana" is the gram's own signed
@@ -3569,8 +3622,8 @@ function main() {
   const meshViews = loadMeshViews();
   const out = buildAggregate(nodes, nodeHistories);
   const proof = buildProofOutputs(nodes, out.generated_at, meshViews);
-  writeFileSync('data/founders.json', JSON.stringify(out, null, 2) + '\n');
-  writeFileSync('data/network.json', JSON.stringify(proof.network, null, 2) + '\n');
+  writeJsonStable('data/founders.json', out, out.generated_at);
+  writeJsonStable('data/network.json', proof.network, out.generated_at);
   // Network-wide bests are MERGED with what was last published, not
   // regenerated: a signed measurement that verified is not un-measured when the
   // machine that made it goes to sleep.
@@ -3578,11 +3631,11 @@ function main() {
     backfillBests(readPublished('data/bests.json'), readPublishedExact('data/bests.json')),
     proof.bests
   );
-  writeFileSync('data/bests.json', JSON.stringify(proof.bests, null, 2) + '\n');
+  writeJsonStable('data/bests.json', proof.bests, out.generated_at);
   const mesh = buildMeshView(meshViews, out.generated_at);
-  writeFileSync('data/mesh.json', JSON.stringify(mesh, null, 2) + '\n');
+  writeJsonStable('data/mesh.json', mesh, out.generated_at);
   // The last-resort entry point for a browser that was given no gram.
-  writeFileSync('data/peers.json', JSON.stringify(buildViewerPeers(mesh, out.generated_at), null, 2) + '\n');
+  writeJsonStable('data/peers.json', buildViewerPeers(mesh, out.generated_at), out.generated_at);
   // Same for the community ledger. See mergeCommunityLedger: a region that a
   // node signed itself into happened, and it cannot un-happen because one
   // reporter stopped seeing it on the DHT.
@@ -3595,14 +3648,14 @@ function main() {
     buildCommunities(out.nodes, out.generated_at, meshViews, proof.verified, proof.rejected),
     loadDirectory()
   );
-  writeFileSync('data/communities.json', JSON.stringify(communities, null, 2) + '\n');
+  writeJsonStable('data/communities.json', communities, out.generated_at);
 
   // Which of those regions can actually be opened in 3D, and who to ask.
   const regions = mergeRegions(
     readPublished('data/regions.json'),
     buildRegions(nodes, out.generated_at, meshViews)
   );
-  writeFileSync('data/regions.json', JSON.stringify(regions, null, 2) + '\n');
+  writeJsonStable('data/regions.json', regions, out.generated_at);
 
   // The model matrix: what a model PROVED on real hardware, signature by signature.
   // Merge, never regenerate — a signed probe does not un-happen when its prober sleeps
@@ -3619,7 +3672,7 @@ function main() {
   const filing = fileModelsByCatalog(models.models, models.families, previousBuilds);
   console.log(`[models] ${filing.filed} model(s) filed by the current catalog, ${filing.refiled} re-filed from where their gram signed them`);
   models.unplaced_models = models.models.filter((m) => !m.family).map((m) => m.name);
-  writeFileSync('data/models.json', JSON.stringify(models, null, 2) + '\n');
+  writeJsonStable('data/models.json', models, out.generated_at);
 
   // The catalog's SEASONS: what the network proved, per artifact and hardware
   // class, this window and every window before it, with contributor counts.
@@ -3643,7 +3696,7 @@ function main() {
   const machineResults = [...collectSignedResults(nodes), ...collectMeshSignedResults(meshViews)]
     .filter((v) => verifySignedResult(v.signed_result, v.payload_b64).ok);
   const machines = buildMachines(machineResults, readMachines(), out.generated_at);
-  writeFileSync(MACHINES_PATH, JSON.stringify(machines, null, 2) + '\n');
+  writeJsonStable(MACHINES_PATH, machines, out.generated_at);
   // Every signed run, kept: the history behind each provider's activity.
   const runArchive = mergeRunArchive(readRunArchive(), models.models);
   writeFileSync(RUN_ARCHIVE_PATH, runArchive.map((r) => JSON.stringify(r)).join('\n') + (runArchive.length ? '\n' : ''));
@@ -3655,12 +3708,16 @@ function main() {
     // The rooms each gram works in, from the last published gramx.json (built just below; one run behind).
     rooms: (() => { try { return JSON.parse(readFileSync('data/gramx.json', 'utf8')).rooms || []; } catch { return []; } })(),
   });
-  writeFileSync(TABLE_PATH, JSON.stringify(valueTable, null, 2) + '\n');
+  writeJsonStable(TABLE_PATH, valueTable, out.generated_at);
   console.log('[value table]', JSON.stringify(valueTable.counts));
 
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.
-  const gramx = buildGramxRooms(out.nodes, out.generated_at, meshViews);
+  const gramx = buildGramxRooms(out.nodes, out.generated_at, meshViews, readTurnArchive(GRAMX_ARCHIVE_PATH));
+  writeFileSync(
+    GRAMX_ARCHIVE_PATH,
+    gramx.archive.length ? gramx.archive.map((a) => JSON.stringify(a)).join('\n') + '\n' : ''
+  );
 
   // What each AGENT did, from the digest each gram signed about its own. A separate
   // file from gramx.json because it answers a different question - what an agent did,
@@ -3687,13 +3744,13 @@ function main() {
   // `rejected` is this run's, not the archive's: it describes what arrived today, and
   // an old rejection is not a standing accusation against a gram.
   const turns = rollAgentTurns([...turnArchive].reverse(), out.generated_at, turnsRejected);
-  writeFileSync('data/turns.json', JSON.stringify(turns, null, 2) + '\n');
+  writeJsonStable('data/turns.json', turns, out.generated_at);
 
   // Private work, counted and context-free. Folded INTO gramx.json rather than a file
   // of its own: a reader asking "what did this network do" must see both halves at
   // once, or the public rooms read as the whole of it.
   gramx.private_work = buildPrivateWork(out.nodes, out.generated_at, meshViews);
-  writeFileSync('data/gramx.json', JSON.stringify(gramx, null, 2) + '\n');
+  writeJsonStable('data/gramx.json', gramx, out.generated_at);
   console.log('private work: grams', gramx.private_work.gram_count,
     'resources', gramx.private_work.resources.length,
     'rejected', gramx.private_work.rejected);

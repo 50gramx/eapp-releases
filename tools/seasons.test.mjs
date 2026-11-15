@@ -99,7 +99,19 @@ for (let i = 1; i < CLASS_VARIANCE_WINDOW; i++) {
 }
 prior = classVarianceWithHistory(bimodal, prior, 'tK');
 assert.equal(prior[K].split.dimension, 'vram_gib', 'applied on the Kth consecutive aggregate');
-assert.equal(prior[K].history.length, CLASS_VARIANCE_WINDOW, 'history is bounded to the window');
+// A repeated proposal counts in the streak and is recorded once (15 Nov 2026), so a
+// settled class stops rewriting current.json every aggregate.
+assert.equal(prior[K].history.length, 1, 'the same proposal is recorded once, with when it was first made');
+assert.equal(prior[K].streak, CLASS_VARIANCE_WINDOW, 'and counted up to the window');
+{
+  // Once applied, the class proposes "hold" (a change of mind, recorded once);
+  // from then on the same aggregate leaves it exactly as it was.
+  let held = prior;
+  for (let i = 1; i <= CLASS_VARIANCE_WINDOW; i++) held = classVarianceWithHistory(bimodal, held, `tK+${i}`);
+  assert.equal(held[K].streak, CLASS_VARIANCE_WINDOW);
+  const again = classVarianceWithHistory(bimodal, held, 'tK+later');
+  assert.deepEqual(again[K], held[K], 'a settled class does not change on the next aggregate');
+}
 assert.equal(refinedClassOf(K, { vram_gib: 16 }, prior), `${K}/vram>=16`);
 assert.equal(refinedClassOf(K, { vram_gib: 8 }, prior), `${K}/vram<16`);
 
@@ -134,7 +146,7 @@ const bimodalModels = { models: [{ name: 'hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K
 let cur = null;
 for (let i = 1; i <= CLASS_VARIANCE_WINDOW; i++) {
   cur = buildSeasons(bimodalModels, families, new Date(W37 + i * 1000).toISOString(), new Map(), [], cur).current;
-  assert.equal(cur.class_variance[K].history.length, i, `aggregate ${i} carried ${i - 1} prior proposals`);
+  assert.equal(cur.class_variance[K].streak, i, `aggregate ${i} carried ${i - 1} prior proposals`);
 }
 assert.equal(cur.class_variance[K].split.at, 16, 'buildSeasons applies the split once the window is full');
 assert.ok(cur.coverage['hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M'][`${K}/vram>=16`], 'coverage is keyed by the refined class once applied');

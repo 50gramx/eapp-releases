@@ -25,6 +25,7 @@
 //   index.json     every season id with its counts, newest first
 
 import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'node:fs';
+import { writeJsonStable } from './stable-write.mjs';
 
 // One cadence, mirrored from builtin.SeasonCadence (epn-daemon). Weekly = ISO week.
 export const SEASON_CADENCE_DAYS = 7;
@@ -222,6 +223,47 @@ function mergeRows(prev, cur) {
   if (prev.first_at && (!out.first_at || prev.first_at < out.first_at)) out.first_at = prev.first_at;
   if (prev.last_at && (!out.last_at || prev.last_at > out.last_at)) out.last_at = prev.last_at;
   return out;
+}
+
+/** The newest last_at over a ref's class rows ('' when none). */
+function lastAtOf(byClass) {
+  let last = '';
+  for (const r of Object.values(byClass || {})) if (r && r.last_at && r.last_at > last) last = r.last_at;
+  return last;
+}
+
+/**
+ * A closed season, kept as published, plus any late evidence: a ref it does not
+ * have yet, or one whose newest probe in the window is newer than any it holds.
+ * Rows already there keep their lineage; counts never fall. Returns prev itself
+ * when nothing is late, so the file is not touched.
+ */
+export function settleClosed(prev, refs, idx, grams) {
+  const byRef = new Map((prev.artifacts || []).map((a) => [a.ref, a]));
+  let late = false;
+  for (const [ref, classes] of refs || []) {
+    const fresh = {};
+    for (const [k, row] of classes) fresh[k] = finishRow(row);
+    const held = byRef.get(ref);
+    if (held && lastAtOf(fresh) <= lastAtOf(held.by_class)) continue;
+    late = true;
+    const byClass = { ...(held?.by_class || {}) };
+    for (const [k, row] of Object.entries(fresh)) byClass[k] = mergeRows(byClass[k], row);
+    const sorted = Object.fromEntries(Object.entries(byClass).sort(([a], [b]) => a.localeCompare(b)));
+    byRef.set(ref, held ? { ...held, by_class: sorted } : { ...(idx.get(ref) || { ref, family: null, member: null }), by_class: sorted });
+  }
+  if (!late) return prev;
+  const artifacts = [...byRef.values()].sort((a, b) => a.ref.localeCompare(b.ref));
+  const cohorts = {};
+  for (const a of artifacts) if (Number.isInteger(a.cohort)) cohorts[a.cohort] = (cohorts[a.cohort] || 0) + 1;
+  const classes = new Set(prev.contributors?.classes || []);
+  for (const a of artifacts) for (const k of Object.keys(a.by_class || {})) classes.add(k);
+  return {
+    ...prev,
+    contributors: { grams: Math.max(prev.contributors?.grams || 0, grams?.size || 0), classes: [...classes].sort() },
+    counts: { ...(prev.counts || {}), artifacts: artifacts.length, by_cohort: cohorts },
+    artifacts,
+  };
 }
 
 /**
@@ -444,10 +486,25 @@ export function classVarianceWithHistory(obs, prior, at = new Date().toISOString
     } else {
       proposal = { at, proposal: 'hold' };
     }
-    const history = [...(Array.isArray(prev.history) ? prev.history : []), proposal].slice(-CLASS_VARIANCE_WINDOW);
     const same = (a, b) => a.proposal === b.proposal && (a.dimension || null) === (b.dimension || null) && (a.cut ?? null) === (b.cut ?? null);
+    // A REPEATED PROPOSAL COUNTS, IT IS NOT RE-RECORDED. Appending the same
+    // "hold" with this run's clock every 15 minutes rewrote current.json on every
+    // aggregate (15 Nov 2026). The history keeps each change of mind with the
+    // time it was first proposed; the streak counts consecutive runs agreeing,
+    // capped at the window, so a settled class stops changing the file.
+    const before = Array.isArray(prev.history) ? prev.history : [];
+    const lastProposal = before[before.length - 1];
+    let history;
     let streak = 0;
-    for (let i = history.length - 1; i >= 0 && same(history[i], proposal); i--) streak++;
+    if (lastProposal && same(lastProposal, proposal)) {
+      history = before;
+      let counted = Number.isInteger(prev.streak) ? prev.streak : 0;
+      if (!counted) for (let i = before.length - 1; i >= 0 && same(before[i], proposal); i--) counted++;
+      streak = Math.min(counted + 1, CLASS_VARIANCE_WINDOW);
+    } else {
+      history = [...before, proposal].slice(-CLASS_VARIANCE_WINDOW);
+      streak = 1;
+    }
     const held = streak >= CLASS_VARIANCE_WINDOW;
     let split = inForce ? (prev.split || inForce) : null;
     if (!inForce && proposal.proposal === 'split' && held) split = seen.split;
@@ -582,6 +639,20 @@ export function buildSeasons(models, families, generatedAt = new Date().toISOStr
   const indexEntries = [];
   for (const sid of ids) {
     const prev = previous.get(sid) || null;
+    // A CLOSED SEASON IS SETTLED (founder, 15 Nov 2026). It was rebuilt on every
+    // run from today's catalog and today's classes, so a finished week's rows
+    // were re-filed (member, quant, engine), its cohorts recounted and its
+    // published_at moved, every 15 minutes. Once a season has been published
+    // closed, it is kept exactly as it is; the only thing that may still enter
+    // it is LATE EVIDENCE, a signed probe from inside its window that arrived
+    // after it closed (a gram that slept through the end of the week), and that
+    // is added beside the rows already there without re-filing them.
+    if (prev && prev.open === false && sid !== now) {
+      files.set(`${SEASONS_DIR}/${sid}.json`, settleClosed(prev, bySeason.get(sid), idx, gramsBySeason.get(sid)));
+      const s = files.get(`${SEASONS_DIR}/${sid}.json`);
+      indexEntries.push({ id: sid, open: false, starts_at: s.starts_at, ends_at: s.ends_at, grams: s.contributors?.grams || 0, artifacts: s.artifacts?.length || 0, publishers: s.publishers?.length || 0 });
+      continue;
+    }
     const prevRows = new Map();
     for (const a of prev?.artifacts || []) prevRows.set(a.ref, a.by_class || {});
     const refs = bySeason.get(sid);
@@ -881,11 +952,14 @@ function presence(n, now = null) {
   else if (minutes >= 30) state = 'offline';
   else if (minutes >= 10) state = 'quiet';
 
+  // WHEN IT WENT AWAY, NOT FOR HOW LONG. A minutes-away counter (and the
+  // collector's own clock, as_of) changed on every aggregate while nothing about
+  // the gram did, so current.json and the page showing it were rewritten every
+  // 15 minutes (15 Nov 2026). The reader works out "how long" from away_since.
   return {
     state,
-    offline_minutes: state === 'online' ? 0 : minutes,
+    away_since: state === 'online' ? null : n?.last_seen || null,
     last_seen: n?.last_seen || null,
-    as_of: n?.snapshot_at || null,
     // What ENDED the previous session, from the gram's own record.
     last_absence: absence?.kind || null,
     last_absence_detail: absence?.detail || null,
@@ -988,7 +1062,8 @@ export function readCurrent(dir = SEASONS_DIR) {
 /** Write what buildSeasons returned. */
 export function writeSeasons({ files, current, index }, dir = SEASONS_DIR) {
   mkdirSync(dir, { recursive: true });
-  for (const [path, obj] of files) writeFileSync(path, JSON.stringify(obj, null, 2) + '\n');
-  writeFileSync(`${dir}/current.json`, JSON.stringify(current, null, 2) + '\n');
-  writeFileSync(`${dir}/index.json`, JSON.stringify(index, null, 2) + '\n');
+  // Only what changed is written: see tools/stable-write.mjs.
+  for (const [path, obj] of files) writeJsonStable(path, obj);
+  writeJsonStable(`${dir}/current.json`, current);
+  writeJsonStable(`${dir}/index.json`, index);
 }
