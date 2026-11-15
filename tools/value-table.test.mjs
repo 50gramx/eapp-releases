@@ -159,7 +159,7 @@ console.log('ok - value table');
   assert.ok(m, 'one entry per model, not per build per class');
   assert.equal(m.fastest.machine, 'Linux PC with no GPU, 32 GB');
   assert.equal(m.fastest.tokens_per_sec, 12);
-  assert.equal(m.fastest.build, '4-bit by unsloth');
+  assert.equal(m.fastest.build, 'Q4_K_M (4-bit) by unsloth');
   assert.deepEqual(m.weeks_measured, ['2026-W43', '2026-W44']);
   assert.equal(m.hosted_api.output_usd_per_million, 0.04);
   assert.equal(m.licence.you_may_serve, "Only your own machines and your company's");

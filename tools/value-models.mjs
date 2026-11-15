@@ -54,6 +54,16 @@ export function machineMemoryGB(klass) {
   return m ? Number(m[1]) : null;
 }
 
+/** "Q4_K_M" -> "Q4_K_M (4-bit)", "BF16" -> "BF16 (16-bit, full precision)", "4bit" -> "4-bit". */
+export function quantLabel(quant) {
+  const q = String(quant || '').trim();
+  if (!q) return null;
+  const bits = precisionName(q);
+  if (!bits || bits.toUpperCase() === q.toUpperCase()) return q;
+  if (/^\d+-bit$/i.test(q.replace(/\s/g, '')) || /^\d+bit$/i.test(q)) return bits;
+  return `${q} (${bits.replace(' (full precision)', ', full precision')})`;
+}
+
 /** "Q4_K_M" -> "4-bit", "BF16" -> "16-bit (full precision)", "FP8" -> "8-bit". */
 export function precisionName(quant) {
   const q = String(quant || '').toUpperCase();
@@ -432,7 +442,10 @@ export function modelView(rows, { families = [], largestMachineGB = null, eviden
       const real = !(r.disk_mib > 0 && r.disk_mib < MIN_REAL_BUILD_MIB);
       for (const c of Object.values(r.classes)) for (const k of c.caps || []) caps.add(k);
       if (!real) continue;
-      const build = [precisionName(r.quant), r.publisher ? `by ${r.publisher}` : null].filter(Boolean).join(' ') || null;
+      // THE EXACT QUANTIZATION, NOT ONLY ITS BITS. "4-bit by unsloth" was Q4_K_M,
+      // IQ4_XS, Q4_0 and IQ4_NL alike, so a reader could not tell those builds
+      // apart (founder, 16 Nov 2026). The name comes first, the bits after it.
+      const build = [quantLabel(r.quant), r.publisher ? `by ${r.publisher}` : null].filter(Boolean).join(' ') || null;
       const signed = byRef.get(r.ref) || [];
       for (const e of signed) {
         const page = e.family && e.member && e.build ? `/inferences/${e.family}/${e.member}/${e.build}` : null;

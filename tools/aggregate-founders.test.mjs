@@ -1926,3 +1926,17 @@ test('an alias files a bare engine tag under its family', () => {
   assert.equal(out.models[0].member, '1b');
   assert.equal(out.models[0].family_source, 'catalog_ref');
 });
+
+// ONE FILE, ONE RECORD: refs differing only in case merge into the one whose
+// published build address carries no digest suffix.
+{
+  const { collapseSameSlug } = await import('./aggregate-founders.mjs');
+  const a = { name: 'hf.co/u/m-GGUF:q4_k_m', slug: 'hf.co-u-m-gguf-q4_k_m', provider_count: 1, nodes: [{ node_did: 'd1', tokens_per_sec: 5 }], capabilities: {}, variants: [] };
+  const b = { name: 'hf.co/u/m-GGUF:Q4_K_M', slug: 'hf.co-u-m-gguf-q4_k_m', provider_count: 1, nodes: [{ node_did: 'd2', tokens_per_sec: 9 }], capabilities: {}, variants: [] };
+  const prev = [{ name: a.name, build: 'u-q4_k_m-ollama-b069fe63' }, { name: b.name, build: 'u-q4_k_m-ollama' }];
+  const out = collapseSameSlug([a, b], prev);
+  assert.equal(out.length, 1);
+  assert.equal(out[0].name, b.name);
+  assert.equal(out[0].nodes.length, 2);
+  console.log('ok - one file, one record');
+}

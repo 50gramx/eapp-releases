@@ -1012,11 +1012,41 @@ export function mergeModels(previous, current) {
     out.push(prev);
   }
 
-  out.sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
+  const merged = collapseSameSlug(out, previous.models);
+  merged.sort((a, b) => b.provider_count - a.provider_count || a.name.localeCompare(b.name));
   // A run where no reporting node published its catalog must not erase the
   // catalog every model is filed by; the last one stands until a newer arrives.
   const families = current.families && current.families.length ? current.families : previous.families || current.families;
-  return { ...current, families, model_count: out.length, models: out };
+  return { ...current, families, model_count: merged.length, models: merged };
+}
+
+// ONE FILE, ONE RECORD. Two refs that differ only in case
+// (hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m and ...:Q4_K_M) are the same file:
+// the Hub matches a quant tag without regard to case, and both carry the same
+// slug. They were published as two builds with the same nodes and numbers, so
+// every row of that model's page appeared twice (founder, 16 Nov 2026). Records
+// sharing a slug are merged into the one whose published build address has no
+// digest suffix, so the address people already link to is the one that stays.
+export function collapseSameSlug(models, previousModels = []) {
+  const prevBuild = new Map((previousModels || []).map((m) => [m.name, m.build || '']));
+  const bySlug = new Map();
+  for (const m of models) {
+    if (!bySlug.has(m.slug)) bySlug.set(m.slug, []);
+    bySlug.get(m.slug).push(m);
+  }
+  const out = [];
+  for (const group of bySlug.values()) {
+    if (group.length === 1) {
+      out.push(group[0]);
+      continue;
+    }
+    const plain = (m) => !/-[0-9a-f]{8}$/.test(prevBuild.get(m.name) || '');
+    const ordered = [...group].sort((a, b) => Number(plain(b)) - Number(plain(a)) || a.name.localeCompare(b.name));
+    let keep = ordered[0];
+    for (const other of ordered.slice(1)) keep = mergeOneModel(other, keep);
+    out.push(keep);
+  }
+  return out;
 }
 
 function readHistory(name) {
