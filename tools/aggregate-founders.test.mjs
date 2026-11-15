@@ -1938,5 +1938,6 @@ test('an alias files a bare engine tag under its family', () => {
   assert.equal(out.length, 1);
   assert.equal(out[0].name, b.name);
   assert.equal(out[0].nodes.length, 2);
+  assert.deepEqual(out[0].build_aliases, ['u-q4_k_m-ollama-b069fe63']);
   console.log('ok - one file, one record');
 }

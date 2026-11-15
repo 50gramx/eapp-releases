@@ -1044,6 +1044,13 @@ export function collapseSameSlug(models, previousModels = []) {
     const ordered = [...group].sort((a, b) => Number(plain(b)) - Number(plain(a)) || a.name.localeCompare(b.name));
     let keep = ordered[0];
     for (const other of ordered.slice(1)) keep = mergeOneModel(other, keep);
+    // The merged records' old addresses, so the site can redirect them.
+    const own = prevBuild.get(keep.name) || '';
+    const aliases = new Set([...(keep.build_aliases || [])]);
+    for (const m of ordered.slice(1)) {
+      for (const b of [prevBuild.get(m.name), m.build, ...(m.build_aliases || [])]) if (b && b !== own) aliases.add(b);
+    }
+    if (aliases.size) keep = { ...keep, build_aliases: [...aliases].sort() };
     out.push(keep);
   }
   return out;
