@@ -24,6 +24,7 @@
 // docs/CATALOG_VALUE_TABLE_PLAN_2026-10-27.md (epn-daemon), increments 3-4.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { writeJsonStable } from './stable-write.mjs';
 
 export const MARKET_PATH = 'data/catalog/market.json';
 const MODELS_PATH = 'data/models.json';
@@ -307,14 +308,15 @@ export async function refresh(now = Date.now()) {
   }
   console.log(`[market] logos: ${av} read this run, ${Object.keys(market.avatars).length} held`);
 
-  writeFileSync(MARKET_PATH, JSON.stringify({
+  // Unchanged facts leave the file as it was (tools/stable-write.mjs).
+  writeJsonStable(MARKET_PATH, {
     generated_at: new Date(now).toISOString(),
     note: 'Cited facts about models from their own sources -- prices and providers (OpenRouter), licences and logos (the Hugging Face hub). Not measured by this network; every row names its source and when it was read.',
     openrouter: market.openrouter,
     licences: Object.fromEntries(Object.entries(market.licences).sort()),
     endpoints: Object.fromEntries(Object.entries(market.endpoints).sort()),
     avatars: Object.fromEntries(Object.entries(market.avatars).sort()),
-  }, null, 2) + '\n');
+  });
 }
 
 const isMain = process.argv[1] && import.meta.url.endsWith(process.argv[1].replace(/\\/g, '/').split('/').pop());

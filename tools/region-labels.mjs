@@ -23,6 +23,7 @@
 // when it contradicts them: OpenStreetMap's postcode tags are crowd-sourced.
 
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { writeJsonStable } from './stable-write.mjs';
 
 export const DIRECTORY_PATH = 'data/pincode-directory.json';
 
@@ -216,7 +217,8 @@ export async function resolveDirectory(ids, path = DIRECTORY_PATH, now = Date.no
   dir.source = 'OpenStreetMap Nominatim postcode search (data © OpenStreetMap contributors, ODbL 1.0)';
   dir.updated_at = new Date(now).toISOString();
   dir.entries = Object.fromEntries(Object.entries(dir.entries).sort(([a], [b]) => a.localeCompare(b)));
-  writeFileSync(path, JSON.stringify(dir, null, 2) + '\n');
+  // Unchanged entries leave the file as it was (tools/stable-write.mjs).
+  writeJsonStable(path, dir);
   return dir;
 }
 
