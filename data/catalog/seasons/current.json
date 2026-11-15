@@ -4,7 +4,7 @@
   "starts_at": "2026-11-09T00:00:00.000Z",
   "ends_at": "2026-11-16T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-15T08:34:32.918Z",
+  "published_at": "2026-11-15T08:49:40.235Z",
   "contributors": {
     "grams": 6,
     "classes": [
@@ -21,7 +21,7 @@
       "0": 20,
       "1": 13,
       "2": 3,
-      "3": 4
+      "3": 3
     }
   },
   "artifacts": [
@@ -864,17 +864,8 @@
     },
     {
       "ref": "hf.co/mradermacher/OpenAI-gpt-oss-20B-Claude-4.5-Opus-Heretic-Uncensored-i1-GGUF:IQ1_M",
-      "family": "gpt-oss",
-      "member": "20b~davidau-openai-claude-4-5-opus-heretic-uncensored",
-      "engine": "ollama",
-      "quant": "IQ1_M",
-      "publisher": "mradermacher",
-      "attribution": "derivative",
-      "base": "DavidAU/OpenAI-gpt-oss-20B-Claude-4.5-Opus-Heretic-Uncensored",
-      "derivative": true,
-      "cohort": 3,
-      "rung": 5,
-      "disk_mib": 11460,
+      "family": null,
+      "member": null,
       "by_class": {
         "linux/amd64/none/32g": {
           "grams": 1,
@@ -10961,41 +10952,41 @@
       "gram": "2e5c02",
       "os": "windows",
       "class": "windows/amd64/intel/16g",
-      "state": "offline",
-      "away_since": "2026-11-14T22:16:51.157368124Z",
-      "last_seen": "2026-11-14T22:16:51.157368124Z",
+      "state": "online",
+      "away_since": null,
+      "last_seen": "2026-11-15T08:48:28.726742125Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "battery",
-      "awake_seconds": 62,
-      "slept_seconds": 189,
-      "likely": "this machine sleeps (3 min during its last session) and is on battery — most likely asleep",
+      "awake_seconds": 471,
+      "slept_seconds": 37556,
+      "likely": null,
       "engines": [
         "0",
         "1",
         "2",
         "3",
-        "4",
-        "5",
-        "6",
-        "7"
+        "4"
       ],
       "artifacts": 3789,
-      "measured": 25,
-      "failed": 38,
-      "queued": 1101,
-      "unreachable": 22,
+      "measured": 24,
+      "failed": 41,
+      "queued": 1091,
+      "unreachable": 37,
       "unreachable_by_engine": {
+        "audiogen": 2,
+        "diffusers": 10,
         "mlx": 3,
         "mlx-image": 1,
         "mlx-speech": 2,
         "speech-host": 4,
         "speech-pod": 8,
+        "vision-task": 3,
         "vllm": 4
       },
-      "expected_hours": 137.71666666666667,
+      "expected_hours": 135.75,
       "expected_basis": "own samples",
-      "eta_hours": 6606,
+      "eta_hours": 6546,
       "blocked": "engine"
     },
     {
@@ -11166,7 +11157,7 @@
       "gram": "9e3c79",
       "os": "windows",
       "class": "windows/amd64/intel/16g",
-      "state": "quiet",
+      "state": "offline",
       "away_since": "2026-11-15T08:13:46.053690983Z",
       "last_seen": "2026-11-15T08:13:46.053690983Z",
       "last_absence": "restart",
@@ -12070,11 +12061,11 @@
       "class": "darwin/amd64/apple/8g",
       "state": "online",
       "away_since": null,
-      "last_seen": "2026-11-15T08:32:56.564317007Z",
+      "last_seen": "2026-11-15T08:48:34.675962605Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
-      "awake_seconds": 39183,
+      "awake_seconds": 40101,
       "slept_seconds": null,
       "likely": null,
       "engines": [],
@@ -12231,8 +12222,8 @@
   "modalities": [
     {
       "engine": "ollama",
-      "proved_artifacts": 24,
-      "measured": 28,
+      "proved_artifacts": 23,
+      "measured": 27,
       "unreachable": 0,
       "capabilities": {
         "code.write": 13,
@@ -12276,7 +12267,7 @@
       "engine": "diffusers",
       "proved_artifacts": 3,
       "measured": 4,
-      "unreachable": 120,
+      "unreachable": 130,
       "capabilities": {
         "image.generate": 4
       },
@@ -12324,7 +12315,7 @@
       "engine": "vision-task",
       "proved_artifacts": 3,
       "measured": 6,
-      "unreachable": 36,
+      "unreachable": 39,
       "capabilities": {
         "vision.spatial": 4,
         "vision.count": 2
@@ -12345,7 +12336,7 @@
       "engine": "audiogen",
       "proved_artifacts": 1,
       "measured": 2,
-      "unreachable": 24,
+      "unreachable": 26,
       "capabilities": {
         "audio.music": 2
       },
@@ -12425,6 +12416,24 @@
   "modalities_note": "per engine: how many artifacts this season proved, on how many hardware classes, which capabilities came back, and how many artifact-slots the fleet currently cannot reach at all (no Apple Silicon for MLX, no schedulable card for vLLM, no cluster for the speech pods). An engine with zero proved and a large unreachable count has never been shown to work on this network -- a statement about the network, not about the models.",
   "proving_note": "proving is a LEASE, not a fact: what each gram said it was working on when it last reported. It expires on its own, confers nothing and is never coverage. It is here so the network can be watched working.",
   "refusals": {
+    "stabilityai/sd-turbo": {
+      "windows/amd64/intel/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "f3f806e61348824dc4d268c2cb99f91dec5501e7",
+        "first_at": "2026-11-06T10:22:38.9037181Z",
+        "last_at": "2026-11-06T10:22:38.9037181Z"
+      }
+    },
+    "ovedrive/ERNIE-Image-nf4": {
+      "windows/amd64/intel/16g": {
+        "cause": "unloadable",
+        "grams": 1,
+        "version": "f3f806e61348824dc4d268c2cb99f91dec5501e7",
+        "first_at": "2026-11-07T16:43:07.9699627Z",
+        "last_at": "2026-11-07T16:43:07.9699627Z"
+      }
+    },
     "bharatgenai/sooktam2": {
       "windows/amd64/intel/16g": {
         "cause": "unavailable",
@@ -12929,24 +12938,6 @@
         "last_at": "2026-11-09T12:15:41.576989433Z"
       }
     },
-    "stabilityai/sd-turbo": {
-      "windows/amd64/intel/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "f3f806e61348824dc4d268c2cb99f91dec5501e7",
-        "first_at": "2026-11-06T10:22:38.9037181Z",
-        "last_at": "2026-11-06T10:22:38.9037181Z"
-      }
-    },
-    "ovedrive/ERNIE-Image-nf4": {
-      "windows/amd64/intel/16g": {
-        "cause": "unloadable",
-        "grams": 1,
-        "version": "f3f806e61348824dc4d268c2cb99f91dec5501e7",
-        "first_at": "2026-11-07T16:43:07.9699627Z",
-        "last_at": "2026-11-07T16:43:07.9699627Z"
-      }
-    },
     "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ3_XXS": {
       "linux/amd64/none/32g": {
         "cause": "unavailable",
@@ -13432,7 +13423,7 @@
           "bandwidth_grams": 2,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         },
         "vision-task": {
           "probe_ms_median": 3175,
@@ -13463,7 +13454,7 @@
       "download_mib_per_sec_median": 4.3,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "token_prices": {
         "threads": 7,
         "vcpu_second_uusd": 10,
@@ -13480,7 +13471,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         },
         "ollama-host": {
           "probe_ms_median": 2804105,
@@ -13501,7 +13492,7 @@
       "download_mib_per_sec_median": 6.6,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "token_prices": {
         "threads": 15,
         "gpu_backed": true,
@@ -13518,7 +13509,7 @@
       "download_mib_per_sec_median": 3.5,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "token_prices": {
         "threads": 3,
         "vcpu_second_uusd": 10,
@@ -13555,12 +13546,12 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         }
       },
       "download_mib_per_sec_median": 590.1,
       "download_samples": 1,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null,
       "token_prices": {
         "threads": 7,
@@ -13583,7 +13574,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         },
         "speech-hf": {
           "probe_ms_median": 485399,
@@ -13593,7 +13584,7 @@
       },
       "download_mib_per_sec_median": 20.2,
       "download_samples": 1,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null,
       "token_prices": {
         "threads": 7,
@@ -13608,7 +13599,7 @@
       "engines": {},
       "download_mib_per_sec_median": 7.3,
       "download_samples": 1,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null
     },
     "windows/amd64/none/8g": {
@@ -13671,7 +13662,7 @@
           "bandwidth_grams": 2,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         },
         "vllm": {
           "probe_ms_median": 0,
@@ -13681,7 +13672,7 @@
       },
       "download_mib_per_sec_median": 105.9,
       "download_samples": 2,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -13709,12 +13700,12 @@
           "bandwidth_grams": 4,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         }
       },
       "download_mib_per_sec_median": 66.1,
       "download_samples": 3,
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -13735,7 +13726,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/256g": {
@@ -13745,7 +13736,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         }
       },
       "token_prices": {
@@ -13756,7 +13747,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/64g": {
@@ -13766,14 +13757,14 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         },
         "vllm": {
           "eff_bytes_per_sec": 528851753160,
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-15T08:34:32.918Z"
+          "at": "2026-11-15T08:49:40.235Z"
         },
         "speech-pod": {
           "probe_ms_median": 1648,
@@ -13794,7 +13785,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null,
       "download_mib_per_sec_median": 116.8,
       "download_samples": 1
@@ -13809,7 +13800,7 @@
         "tariff_basis": "bootstrap",
         "grams": 3
       },
-      "at": "2026-11-15T08:34:32.918Z",
+      "at": "2026-11-15T08:49:40.235Z",
       "carried_from": null
     }
   },
