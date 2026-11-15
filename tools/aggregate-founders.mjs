@@ -1198,6 +1198,20 @@ export function buildGramxRooms(nodes, generatedAt, meshViews = [], archived = [
     if (a && a.room && a.statement) collected.push({ room: a.room, fromDID: a.statement.node_did, statement: a.statement });
   }
 
+  // ONE ORDER, WHATEVER ORDER THE REPORTS ARRIVED IN: newest hour first, then a
+  // fixed key. The rollup keeps the first copy of a statement and the first 24 as
+  // a room's `signed` sample, so arrival order used to decide both, and the
+  // archive and gramx.json were rewritten whenever a reporter's window shifted.
+  const orderKey = (c) => [
+    c.room, c.fromDID || '', (c.statement && c.statement.resource_type) || '', (c.statement && c.statement.side) || '',
+    (c.statement && c.statement.late === true ? 'late|' + (c.statement.generated_at || '') : ''),
+    // A copy carrying its signed bytes sorts ahead of one that does not.
+    c.statement && c.statement.signing_payload_b64 ? '0' : '1',
+  ].join('|');
+  collected.sort((a, b) =>
+    (Number(b.statement && b.statement.epoch_start) || 0) - (Number(a.statement && a.statement.epoch_start) || 0) ||
+    orderKey(a).localeCompare(orderKey(b)));
+
   const rooms = new Map();
   const seen = new Set();
   const kept = [];
@@ -3714,9 +3728,11 @@ function main() {
   // What each ROOM did, from the hours its grams each signed. Verified here and
   // re-verifiable in the browser from the same carried bytes.
   const gramx = buildGramxRooms(out.nodes, out.generated_at, meshViews, readTurnArchive(GRAMX_ARCHIVE_PATH));
+  // Oldest hour first: a new hour is appended at the end rather than moving
+  // every line of a 15 MB file.
   writeFileSync(
     GRAMX_ARCHIVE_PATH,
-    gramx.archive.length ? gramx.archive.map((a) => JSON.stringify(a)).join('\n') + '\n' : ''
+    gramx.archive.length ? [...gramx.archive].reverse().map((a) => JSON.stringify(a)).join('\n') + '\n' : ''
   );
 
   // What each AGENT did, from the digest each gram signed about its own. A separate

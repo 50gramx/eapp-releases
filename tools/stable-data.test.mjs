@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeJsonStable } from './stable-write.mjs';
 import { settleClosed } from './seasons.mjs';
-import { mergePeerTrend } from './aggregate-founders.mjs';
+import { mergePeerTrend, buildGramxRooms } from './aggregate-founders.mjs';
 
 // A run that only moves its own clock leaves the file exactly as it was.
 {
@@ -49,6 +49,15 @@ import { mergePeerTrend } from './aggregate-founders.mjs';
   const b = mergePeerTrend({ n: h(3001) }, 60);
   assert.ok(a.length <= 61 && b.length <= 61, 'bounded');
   assert.deepEqual(a.slice(0, -1), b.slice(0, a.length - 1), 'every past point is the same point');
+}
+
+// The room rollup does not depend on the order reports arrived in.
+{
+  const rows = readFileSync(new URL('../data/gramx-archive.jsonl', import.meta.url), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)).slice(0, 400);
+  const a = buildGramxRooms([], 'now', [], rows);
+  const b = buildGramxRooms([], 'now', [], [...rows].reverse());
+  assert.equal(JSON.stringify(a), JSON.stringify(b), 'same rooms, same samples');
+  assert.deepEqual(a.archive, b.archive, 'same archive, line for line');
 }
 
 console.log('ok - stable data');
