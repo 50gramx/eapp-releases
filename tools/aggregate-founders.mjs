@@ -11,7 +11,7 @@
 // script emits is still a SELF-REPORT from the node's own daemon — there is
 // no independent verification — and every card on the page must say so.
 import { buildMachines, MACHINES_PATH, readMachines } from './machines.mjs';
-import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync, existsSync, statSync, mkdirSync } from 'node:fs';
 import { writeJsonStable } from './stable-write.mjs';
 import { createHash, createPublicKey, verify as verifySignature } from 'node:crypto';
 import { buildSeasons, writeSeasons, readSeasons, readCurrent } from './seasons.mjs';
@@ -3020,17 +3020,52 @@ function median(nums) {
 
 // loadMeshViews reads the per-reporter *.mesh.json files (each a node's DHT-known
 // view of the network: peers + resource capacity + model benchmarks).
+// AN EMPTY MESH REPORT IS A REPORT THAT DID NOT HAPPEN (15 Nov 2026). The
+// reporter fell back to '{}' whenever its mesh read was slow, and pushed it over
+// the last good view: every other report was empty, so the network's models,
+// regions and rooms vanished and came back each half hour, and the site lost and
+// regained ~500 pages with them. The last good view of each reporter is kept here
+// and stands in for an empty one, for MESH_CARRY_MS at most; past that, nothing
+// is assumed. A carried view says so (carried_from).
+const MESH_LAST_DIR = 'data/mesh-last';
+export const MESH_CARRY_MS = 2 * 3600e3;
+
+export function meshViewOrLast(view, last, now = Date.now()) {
+  const has = (v) => v && Array.isArray(v.nodes) && v.nodes.length > 0;
+  if (has(view)) return { view, keep: true };
+  const at = Date.parse(last?.generated_at || '');
+  if (has(last) && Number.isFinite(at) && now - at <= MESH_CARRY_MS) {
+    return { view: { ...last, carried_from: last.generated_at }, keep: false };
+  }
+  return { view, keep: false };
+}
+
 function loadMeshViews() {
   const files = existsSync(NODES_DIR)
     ? readdirSync(NODES_DIR).filter((f) => f.endsWith('.mesh.json'))
     : [];
   const out = [];
   for (const f of files) {
+    let view = null;
     try {
-      out.push(JSON.parse(readFileSync(`${NODES_DIR}/${f}`, 'utf8')));
+      view = JSON.parse(readFileSync(`${NODES_DIR}/${f}`, 'utf8'));
     } catch {
-      /* skip unreadable */
+      /* unreadable: treated like an empty report */
     }
+    let last = null;
+    try {
+      last = JSON.parse(readFileSync(`${MESH_LAST_DIR}/${f}`, 'utf8'));
+    } catch {
+      /* none kept yet */
+    }
+    const r = meshViewOrLast(view, last);
+    if (r.keep) {
+      mkdirSync(MESH_LAST_DIR, { recursive: true });
+      writeFileSync(`${MESH_LAST_DIR}/${f}`, readFileSync(`${NODES_DIR}/${f}`));
+    } else if (r.view && r.view.carried_from) {
+      console.log(`[mesh] ${f}: empty report; the view from ${r.view.carried_from} stands in`);
+    }
+    if (r.view) out.push(r.view);
   }
   return out;
 }

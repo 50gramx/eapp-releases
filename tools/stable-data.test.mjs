@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { writeJsonStable } from './stable-write.mjs';
 import { settleClosed } from './seasons.mjs';
-import { mergePeerTrend, buildGramxRooms } from './aggregate-founders.mjs';
+import { mergePeerTrend, buildGramxRooms, meshViewOrLast, MESH_CARRY_MS } from './aggregate-founders.mjs';
 
 // A run that only moves its own clock leaves the file exactly as it was.
 {
@@ -58,6 +58,15 @@ import { mergePeerTrend, buildGramxRooms } from './aggregate-founders.mjs';
   const b = buildGramxRooms([], 'now', [], [...rows].reverse());
   assert.equal(JSON.stringify(a), JSON.stringify(b), 'same rooms, same samples');
   assert.deepEqual(a.archive, b.archive, 'same archive, line for line');
+}
+
+// An empty mesh report does not empty the network; an old one is not assumed.
+{
+  const last = { generated_at: '2026-11-15T08:00:00Z', nodes: [{ did: 'a' }] };
+  const now = Date.parse('2026-11-15T08:30:00Z');
+  assert.equal(meshViewOrLast({}, last, now).view.carried_from, last.generated_at, 'empty: the last good view stands in');
+  assert.equal(meshViewOrLast({ nodes: [{ did: 'b' }] }, last, now).keep, true, 'a real view replaces it');
+  assert.equal(meshViewOrLast({}, last, now + MESH_CARRY_MS).view.carried_from, undefined, 'too old: nothing assumed');
 }
 
 console.log('ok - stable data');
