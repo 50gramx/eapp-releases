@@ -1689,12 +1689,19 @@ test('catalog aliases travel and place engine tags', () => {
 }
 
 {
-  // A name nobody holds is not yet a map, and must not appear as one.
+  // A name nobody holds is not yet a map, and must not appear as one. It IS a
+  // region (since 962073b0, 2026-09-07: a region a gram is in exists, whether or
+  // not anyone has baked its scene), so it is listed, with no map: no scene, no
+  // geography, nobody to dial.
   const out = buildRegions([{
     proof_snapshot: { node_did: 'did:epn:ccc' },
     regions: [{ pincode: '999999', root_cid: 'sha256:' + 'b'.repeat(64), held: false }],
   }]);
-  assert.equal(out.region_count, 0, 'named but unheld is not a region with a map');
+  assert.equal(out.region_count, 1, 'a region a gram is in is listed');
+  const r = out.regions[0];
+  assert.equal(r.root_cid, null, 'named but unheld is not a region with a map');
+  assert.equal(r.centre, null, 'and has no geography');
+  assert.deepEqual(r.holders, [], 'and nobody to dial');
 }
 
 {
