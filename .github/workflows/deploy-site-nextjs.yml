@@ -179,10 +179,19 @@ jobs:
           # Through the API, not the download link: that link is cached and
           # once served an older build, and a delta must start from exactly
           # the archive the member grams have.
+          # A MISSING OR BROKEN PREVIOUS ARCHIVE MEANS A FULL BUILD, NOT A FAILED
+          # ONE (16 Nov 2026). --clobber deletes the old asset before uploading
+          # the new one; at 10:28 UTC that upload did not land, the release kept
+          # only the checksum, and every build after it ran tar on a file that
+          # was not there (exit 2) until this check.
           prev_sha=""
-          if gh release download site-latest --repo "$REPO" -p site.tar.gz -p site.tar.gz.sha256 -D "$RUNNER_TEMP/prevdl" 2>/dev/null; then
-            tar -xzf "$RUNNER_TEMP/prevdl/site.tar.gz" -C "$prev"
+          if gh release download site-latest --repo "$REPO" -p site.tar.gz -p site.tar.gz.sha256 -D "$RUNNER_TEMP/prevdl" 2>/dev/null \
+            && [ -s "$RUNNER_TEMP/prevdl/site.tar.gz" ] \
+            && tar -xzf "$RUNNER_TEMP/prevdl/site.tar.gz" -C "$prev"; then
             prev_sha=$( cd "$RUNNER_TEMP/prevdl" && sha256sum site.tar.gz | cut -d' ' -f1 )
+          else
+            echo "No usable previous archive on site-latest: publishing the whole build." >> "$GITHUB_STEP_SUMMARY"
+            rm -rf "$prev"; mkdir -p "$prev"
           fi
           sums() { ( cd "$1" 2>/dev/null && find . -type f -print0 | sort -z | xargs -0 -r sha256sum ) || true; }
           sums out > "$RUNNER_TEMP/new.sums"
