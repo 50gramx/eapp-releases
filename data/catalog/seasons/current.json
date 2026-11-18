@@ -4,7 +4,7 @@
   "starts_at": "2026-11-16T00:00:00.000Z",
   "ends_at": "2026-11-23T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-18T09:53:39.287Z",
+  "published_at": "2026-11-18T10:08:17.368Z",
   "contributors": {
     "grams": 5,
     "classes": [
@@ -14,15 +14,50 @@
     ]
   },
   "counts": {
-    "artifacts": 10,
-    "publishers": 8,
+    "artifacts": 11,
+    "publishers": 9,
     "by_cohort": {
       "0": 6,
       "2": 2,
-      "3": 2
+      "3": 3
     }
   },
   "artifacts": [
+    {
+      "ref": "SPRINGLab/F5-Hindi-24KHz",
+      "family": "f5-tts",
+      "member": "hindi-24khz",
+      "engine": "speech-hf",
+      "quant": "FP32",
+      "publisher": "SPRINGLab",
+      "attribution": "derivative",
+      "base": "SWivid/F5-TTS",
+      "derivative": false,
+      "cohort": 3,
+      "rung": 0,
+      "disk_mib": 604,
+      "by_class": {
+        "darwin/arm64/apple/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.out": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-17T19:12:06.952Z",
+          "last_at": "2026-11-17T19:12:06.952Z"
+        }
+      }
+    },
     {
       "ref": "depth-anything/Depth-Anything-V2-Base-hf",
       "family": "depth-anything",
@@ -351,12 +386,14 @@
           "effective_ctx_ladder": null,
           "ctx_trained": null,
           "ctx_affordable": null,
-          "caps": {},
+          "caps": {
+            "voice.identify": 1
+          },
           "engine_backends": [],
           "joules_per_token_best": null,
           "energy_tier": null,
           "first_at": "2026-11-17T19:01:24.784Z",
-          "last_at": "2026-11-17T19:01:24.784Z"
+          "last_at": "2026-11-18T06:43:34.182Z"
         }
       }
     },
@@ -496,6 +533,14 @@
       "engines": {
         "speaker-id": 1
       }
+    },
+    {
+      "publisher": "SPRINGLab",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "speech-hf": 1
+      }
     }
   ],
   "note": "Every number is a signed measurement or a count of them. grams is how many distinct nodes contributed: a verified floor, not a complete account. Lineage (publisher, attribution, base, cohort, rung) is from the catalog and is not a measurement.",
@@ -514,7 +559,7 @@
       "linux/amd64/nvidia/64g": 1,
       "linux/amd64/none/32g": 3
     },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m": {
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/256g": 1,
       "linux/amd64/nvidia/64g": 1,
       "windows/amd64/nvidia/16g": 2,
@@ -522,7 +567,9 @@
       "darwin/arm64/apple/16g": 1,
       "linux/amd64/none/32g": 1,
       "windows/amd64/nvidia/8g": 2,
-      "windows/amd64/intel/16g": 1
+      "windows/amd64/intel/16g": 1,
+      "unknown": 1,
+      "darwin/amd64/apple/8g": 1
     },
     "facebook/musicgen-small": {
       "windows/amd64/intel/16g": 2,
@@ -665,6 +712,12 @@
       "linux/amd64/nvidia/64g": 1,
       "darwin/arm64/apple/16g": 1
     },
+    "SPRINGLab/F5-Hindi-24KHz": {
+      "linux/amd64/none/32g": 2,
+      "windows/amd64/intel/16g": 2,
+      "linux/amd64/nvidia/64g": 1,
+      "darwin/arm64/apple/16g": 1
+    },
     "UsefulSensors/moonshine-tiny": {
       "windows/amd64/intel/16g": 1,
       "linux/amd64/nvidia/32g": 1,
@@ -688,11 +741,6 @@
       "linux/amd64/nvidia/64g": 1,
       "linux/amd64/nvidia/32g": 1,
       "darwin/amd64/none/8g": 1
-    },
-    "SPRINGLab/F5-Hindi-24KHz": {
-      "linux/amd64/none/32g": 2,
-      "windows/amd64/intel/16g": 2,
-      "linux/amd64/nvidia/64g": 1
     },
     "UsefulSensors/moonshine-base": {
       "linux/amd64/nvidia/32g": 1,
@@ -1741,24 +1789,22 @@
     "zai-org/CogVideoX-5b": {
       "linux/amd64/nvidia/32g": 1
     },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
-      "unknown": 1,
-      "windows/amd64/nvidia/16g": 2,
-      "windows/amd64/intel/16g": 1,
-      "windows/amd64/nvidia/8g": 2,
-      "darwin/amd64/apple/8g": 1,
-      "linux/amd64/nvidia/32g": 2,
-      "linux/amd64/none/32g": 1,
-      "darwin/arm64/apple/16g": 1,
-      "linux/amd64/nvidia/256g": 1,
-      "linux/amd64/nvidia/64g": 1
-    },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
       "windows/amd64/intel/16g": 2,
       "windows/amd64/nvidia/16g": 1,
       "windows/amd64/nvidia/8g": 1,
       "linux/amd64/nvidia/32g": 1,
       "linux/amd64/none/32g": 1
+    },
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m": {
+      "windows/amd64/intel/16g": 1,
+      "windows/amd64/nvidia/8g": 2,
+      "windows/amd64/nvidia/16g": 1,
+      "linux/amd64/nvidia/32g": 2,
+      "linux/amd64/none/32g": 1,
+      "darwin/arm64/apple/16g": 1,
+      "linux/amd64/nvidia/256g": 1,
+      "linux/amd64/nvidia/64g": 1
     },
     "hf.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF:Q6_K_P": {
       "linux/amd64/nvidia/32g": 1
@@ -1973,7 +2019,7 @@
         "tools_loop_terminated": 3
       }
     },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m": {
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/256g": {
         "code.reason": 1,
         "code.write": 1,
@@ -2036,27 +2082,33 @@
         "vision.count": 1,
         "vision.multi_image": 1,
         "vision.read": 1,
-        "vision.spatial": 1
+        "vision.spatial": 1,
+        "lang.gu": 1,
+        "lang.ml": 1,
+        "lang.pa": 1,
+        "output.long": 1,
+        "research.synthesize": 1,
+        "tools.multi_hop": 1
       },
       "windows/amd64/nvidia/16g": {
-        "code.reason": 1,
-        "code.write": 1,
+        "code.reason": 2,
+        "code.write": 2,
         "faithful_tool_result": 2,
-        "instruct.follow": 1,
-        "lang.bn": 1,
-        "lang.en": 1,
-        "lang.gu": 1,
-        "lang.hi": 1,
-        "lang.kn": 1,
-        "lang.ml": 1,
-        "lang.mr": 1,
-        "lang.pa": 1,
-        "lang.ta": 1,
-        "lang.te": 1,
-        "output.long": 1,
+        "instruct.follow": 2,
+        "lang.bn": 2,
+        "lang.en": 2,
+        "lang.gu": 2,
+        "lang.hi": 2,
+        "lang.kn": 2,
+        "lang.ml": 2,
+        "lang.mr": 2,
+        "lang.pa": 2,
+        "lang.ta": 2,
+        "lang.te": 2,
+        "output.long": 2,
         "output.schema": 2,
         "reason.channel": 2,
-        "research.synthesize": 1,
+        "research.synthesize": 2,
         "structured_output": 2,
         "thinking": 2,
         "tools": 2,
@@ -2066,9 +2118,14 @@
         "tools.multi_hop": 2,
         "tools_loop_terminated": 2,
         "vision": 2,
-        "vision.multi_image": 1,
+        "vision.multi_image": 2,
         "vision.read": 2,
-        "vision.spatial": 1
+        "vision.spatial": 2,
+        "vision.count": 1,
+        "lang.am": 1,
+        "lang.nl": 1,
+        "lang.ru": 1,
+        "lang.sw": 1
       },
       "linux/amd64/nvidia/32g": {
         "code.reason": 3,
@@ -2091,20 +2148,44 @@
         "output.long": 2,
         "output.schema": 3,
         "reason.channel": 3,
-        "research.synthesize": 1,
+        "research.synthesize": 2,
         "structured_output": 3,
         "thinking": 3,
         "tools": 3,
         "tools.call": 3,
         "tools.faithful": 3,
         "tools.loop_ends": 3,
-        "tools.multi_hop": 1,
+        "tools.multi_hop": 2,
         "tools_loop_terminated": 3,
         "vision": 3,
         "vision.count": 3,
         "vision.multi_image": 3,
         "vision.read": 3,
-        "vision.spatial": 3
+        "vision.spatial": 3,
+        "lang.as": 1,
+        "lang.ne": 1,
+        "lang.or": 1,
+        "lang.si": 1,
+        "lang.uk": 1,
+        "lang.de": 1,
+        "lang.es": 1,
+        "lang.fr": 1,
+        "lang.he": 1,
+        "lang.ko": 1,
+        "lang.pt": 1,
+        "lang.ar": 1,
+        "lang.fa": 1,
+        "lang.it": 1,
+        "lang.tr": 1,
+        "lang.ur": 1,
+        "lang.id": 1,
+        "lang.ms": 1,
+        "lang.th": 1,
+        "lang.vi": 1,
+        "lang.zh": 1,
+        "lang.am": 1,
+        "lang.ru": 1,
+        "lang.sw": 1
       },
       "darwin/arm64/apple/16g": {
         "code.reason": 1,
@@ -2205,6 +2286,48 @@
         "vision.spatial": 1
       },
       "windows/amd64/intel/16g": {
+        "faithful_tool_result": 1,
+        "output.schema": 1,
+        "structured_output": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools.multi_hop": 1,
+        "tools_loop_terminated": 1
+      },
+      "unknown": {
+        "code.reason": 1,
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.am": 1,
+        "lang.bn": 1,
+        "lang.en": 1,
+        "lang.hi": 1,
+        "lang.kn": 1,
+        "lang.mr": 1,
+        "lang.nl": 1,
+        "lang.ru": 1,
+        "lang.sw": 1,
+        "lang.ta": 1,
+        "lang.te": 1,
+        "output.schema": 1,
+        "reason.channel": 1,
+        "structured_output": 1,
+        "thinking": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1,
+        "vision": 1,
+        "vision.count": 1,
+        "vision.multi_image": 1,
+        "vision.read": 1,
+        "vision.spatial": 1
+      },
+      "darwin/amd64/apple/8g": {
         "faithful_tool_result": 1,
         "output.schema": 1,
         "structured_output": 1,
@@ -3026,6 +3149,24 @@
         "lang.ur": 1
       }
     },
+    "SPRINGLab/F5-Hindi-24KHz": {
+      "linux/amd64/none/32g": {
+        "audio": 2,
+        "audio.out": 2
+      },
+      "windows/amd64/intel/16g": {
+        "audio": 2,
+        "audio.out": 2
+      },
+      "linux/amd64/nvidia/64g": {
+        "audio": 1,
+        "audio.out": 1
+      },
+      "darwin/arm64/apple/16g": {
+        "audio": 1,
+        "audio.out": 1
+      }
+    },
     "UsefulSensors/moonshine-tiny": {
       "windows/amd64/intel/16g": {
         "audio": 1,
@@ -3156,20 +3297,6 @@
         "output.schema": 1,
         "research.synthesize": 1,
         "structured_output": 1
-      }
-    },
-    "SPRINGLab/F5-Hindi-24KHz": {
-      "linux/amd64/none/32g": {
-        "audio": 2,
-        "audio.out": 2
-      },
-      "windows/amd64/intel/16g": {
-        "audio": 2,
-        "audio.out": 2
-      },
-      "linux/amd64/nvidia/64g": {
-        "audio": 1,
-        "audio.out": 1
       }
     },
     "UsefulSensors/moonshine-base": {
@@ -8694,75 +8821,76 @@
     "zai-org/CogVideoX-5b": {
       "linux/amd64/nvidia/32g": {}
     },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
-      "unknown": {
-        "code.reason": 1,
+    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
+      "windows/amd64/intel/16g": {
+        "code.write": 2,
+        "faithful_tool_result": 2,
+        "instruct.follow": 2,
+        "lang.en": 2,
+        "output.schema": 2,
+        "structured_output": 2,
+        "tools": 2,
+        "tools.call": 2,
+        "tools.faithful": 2,
+        "tools.loop_ends": 2,
+        "tools_loop_terminated": 2,
+        "lang.kn": 1,
+        "output.long": 1,
+        "lang.nl": 1,
+        "lang.ja": 1,
+        "lang.pt": 1,
+        "lang.zh": 2,
+        "lang.ru": 1
+      },
+      "windows/amd64/nvidia/16g": {
         "code.write": 1,
         "faithful_tool_result": 1,
         "instruct.follow": 1,
-        "lang.am": 1,
-        "lang.bn": 1,
         "lang.en": 1,
-        "lang.hi": 1,
-        "lang.kn": 1,
-        "lang.mr": 1,
-        "lang.nl": 1,
-        "lang.ru": 1,
-        "lang.sw": 1,
-        "lang.ta": 1,
-        "lang.te": 1,
+        "output.long": 1,
         "output.schema": 1,
-        "reason.channel": 1,
         "structured_output": 1,
-        "thinking": 1,
         "tools": 1,
         "tools.call": 1,
         "tools.faithful": 1,
         "tools.loop_ends": 1,
         "tools_loop_terminated": 1,
-        "vision": 1,
-        "vision.count": 1,
-        "vision.multi_image": 1,
-        "vision.read": 1,
-        "vision.spatial": 1
-      },
-      "windows/amd64/nvidia/16g": {
-        "code.reason": 2,
-        "code.write": 2,
-        "faithful_tool_result": 2,
-        "instruct.follow": 2,
-        "lang.bn": 2,
-        "lang.en": 2,
-        "lang.gu": 2,
-        "lang.hi": 2,
-        "lang.kn": 2,
-        "lang.ml": 2,
-        "lang.mr": 2,
-        "lang.pa": 2,
-        "lang.ta": 2,
-        "lang.te": 2,
-        "output.long": 2,
-        "output.schema": 2,
-        "reason.channel": 2,
-        "research.synthesize": 2,
-        "structured_output": 2,
-        "thinking": 2,
-        "tools": 2,
-        "tools.call": 2,
-        "tools.faithful": 2,
-        "tools.loop_ends": 2,
-        "tools.multi_hop": 2,
-        "tools_loop_terminated": 2,
-        "vision": 2,
-        "vision.multi_image": 2,
-        "vision.read": 2,
-        "vision.spatial": 2,
-        "vision.count": 1,
-        "lang.am": 1,
         "lang.nl": 1,
-        "lang.ru": 1,
-        "lang.sw": 1
+        "lang.ru": 1
       },
+      "windows/amd64/nvidia/8g": {
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1
+      },
+      "linux/amd64/nvidia/32g": {
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      },
+      "linux/amd64/none/32g": {
+        "code.write": 1,
+        "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.en": 1,
+        "output.schema": 1,
+        "structured_output": 1,
+        "tools": 1,
+        "tools.call": 1,
+        "tools.faithful": 1,
+        "tools.loop_ends": 1,
+        "tools_loop_terminated": 1
+      }
+    },
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m": {
       "windows/amd64/intel/16g": {
         "faithful_tool_result": 1,
         "output.schema": 1,
@@ -8807,16 +8935,37 @@
         "vision.read": 1,
         "vision.spatial": 1
       },
-      "darwin/amd64/apple/8g": {
+      "windows/amd64/nvidia/16g": {
+        "code.reason": 1,
+        "code.write": 1,
         "faithful_tool_result": 1,
+        "instruct.follow": 1,
+        "lang.bn": 1,
+        "lang.en": 1,
+        "lang.gu": 1,
+        "lang.hi": 1,
+        "lang.kn": 1,
+        "lang.ml": 1,
+        "lang.mr": 1,
+        "lang.pa": 1,
+        "lang.ta": 1,
+        "lang.te": 1,
+        "output.long": 1,
         "output.schema": 1,
+        "reason.channel": 1,
+        "research.synthesize": 1,
         "structured_output": 1,
+        "thinking": 1,
         "tools": 1,
         "tools.call": 1,
         "tools.faithful": 1,
         "tools.loop_ends": 1,
         "tools.multi_hop": 1,
-        "tools_loop_terminated": 1
+        "tools_loop_terminated": 1,
+        "vision": 1,
+        "vision.multi_image": 1,
+        "vision.read": 1,
+        "vision.spatial": 1
       },
       "linux/amd64/nvidia/32g": {
         "code.reason": 2,
@@ -8838,45 +8987,21 @@
         "output.long": 2,
         "output.schema": 2,
         "reason.channel": 2,
-        "research.synthesize": 2,
+        "research.synthesize": 1,
         "structured_output": 2,
         "thinking": 2,
         "tools": 2,
         "tools.call": 2,
         "tools.faithful": 2,
         "tools.loop_ends": 2,
-        "tools.multi_hop": 2,
+        "tools.multi_hop": 1,
         "tools_loop_terminated": 2,
         "vision": 2,
         "vision.count": 2,
         "vision.multi_image": 2,
         "vision.read": 2,
         "vision.spatial": 2,
-        "lang.as": 1,
-        "lang.ne": 1,
-        "lang.or": 1,
-        "lang.si": 1,
-        "lang.uk": 1,
-        "lang.de": 1,
-        "lang.es": 1,
-        "lang.fr": 1,
-        "lang.he": 1,
-        "lang.ko": 1,
-        "lang.pt": 1,
-        "lang.ar": 1,
-        "lang.fa": 1,
-        "lang.it": 1,
-        "lang.pl": 1,
-        "lang.tr": 1,
-        "lang.ur": 1,
-        "lang.id": 1,
-        "lang.ms": 1,
-        "lang.th": 1,
-        "lang.vi": 1,
-        "lang.zh": 1,
-        "lang.am": 1,
-        "lang.ru": 1,
-        "lang.sw": 1
+        "lang.pl": 1
       },
       "linux/amd64/none/32g": {
         "code.reason": 1,
@@ -9005,82 +9130,7 @@
         "vision.count": 1,
         "vision.multi_image": 1,
         "vision.read": 1,
-        "vision.spatial": 1,
-        "lang.gu": 1,
-        "lang.ml": 1,
-        "lang.pa": 1,
-        "output.long": 1,
-        "research.synthesize": 1,
-        "tools.multi_hop": 1
-      }
-    },
-    "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
-      "windows/amd64/intel/16g": {
-        "code.write": 2,
-        "faithful_tool_result": 2,
-        "instruct.follow": 2,
-        "lang.en": 2,
-        "output.schema": 2,
-        "structured_output": 2,
-        "tools": 2,
-        "tools.call": 2,
-        "tools.faithful": 2,
-        "tools.loop_ends": 2,
-        "tools_loop_terminated": 2,
-        "lang.kn": 1,
-        "output.long": 1,
-        "lang.nl": 1,
-        "lang.ja": 1,
-        "lang.pt": 1,
-        "lang.zh": 2,
-        "lang.ru": 1
-      },
-      "windows/amd64/nvidia/16g": {
-        "code.write": 1,
-        "faithful_tool_result": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.long": 1,
-        "output.schema": 1,
-        "structured_output": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1,
-        "lang.nl": 1,
-        "lang.ru": 1
-      },
-      "windows/amd64/nvidia/8g": {
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1
-      },
-      "linux/amd64/nvidia/32g": {
-        "code.write": 1,
-        "faithful_tool_result": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
-      },
-      "linux/amd64/none/32g": {
-        "code.write": 1,
-        "faithful_tool_result": 1,
-        "instruct.follow": 1,
-        "lang.en": 1,
-        "output.schema": 1,
-        "structured_output": 1,
-        "tools": 1,
-        "tools.call": 1,
-        "tools.faithful": 1,
-        "tools.loop_ends": 1,
-        "tools_loop_terminated": 1
+        "vision.spatial": 1
       }
     },
     "hf.co/HauhauCS/Qwen3.8-27B-Uncensored-HauhauCS-Aggressive-MTP-GGUF:Q6_K_P": {
@@ -9519,11 +9569,11 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "away_since": null,
-      "last_seen": "2026-11-18T09:52:25.121241255Z",
+      "last_seen": "2026-11-18T10:07:04.498491981Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
-      "awake_seconds": 13352,
+      "awake_seconds": 14231,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -9600,11 +9650,11 @@
       "class": "windows/amd64/intel/16g",
       "state": "online",
       "away_since": null,
-      "last_seen": "2026-11-18T09:52:18.545344337Z",
+      "last_seen": "2026-11-18T10:06:32.188074639Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
-      "awake_seconds": 17958,
+      "awake_seconds": 18788,
       "slept_seconds": null,
       "likely": null,
       "engines": [],
@@ -9721,11 +9771,11 @@
       "class": "darwin/arm64/apple/16g",
       "state": "online",
       "away_since": null,
-      "last_seen": "2026-11-18T09:52:25.614582875Z",
+      "last_seen": "2026-11-18T10:07:11.591117364Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "battery",
-      "awake_seconds": 14335,
+      "awake_seconds": 15221,
       "slept_seconds": 287154,
       "likely": null,
       "engines": [
@@ -9743,8 +9793,8 @@
       ],
       "artifacts": 3768,
       "measured": 3,
-      "failed": 9,
-      "queued": 1360,
+      "failed": 8,
+      "queued": 1359,
       "unreachable": 16,
       "unreachable_by_engine": {
         "speech-host": 4,
@@ -9753,7 +9803,7 @@
       },
       "expected_hours": 7.333333333333333,
       "expected_basis": "own samples",
-      "eta_hours": 32640,
+      "eta_hours": 32616,
       "blocked": "fetch"
     },
     {
@@ -10130,11 +10180,11 @@
       "class": "linux/amd64/none/32g",
       "state": "online",
       "away_since": null,
-      "last_seen": "2026-11-18T09:52:34.042034254Z",
+      "last_seen": "2026-11-18T10:07:03.265129739Z",
       "last_absence": "unclean_stop",
       "last_absence_detail": "the previous session ended without being asked to — power loss, a hard reset or a crash; anything it was mid-write on may be torn",
       "power_source": "unknown",
-      "awake_seconds": 14490,
+      "awake_seconds": 15360,
       "slept_seconds": null,
       "likely": null,
       "engines": [
@@ -10500,11 +10550,11 @@
       "class": "darwin/amd64/apple/8g",
       "state": "online",
       "away_since": null,
-      "last_seen": "2026-11-18T09:52:08.267740794Z",
+      "last_seen": "2026-11-18T10:07:11.06499404Z",
       "last_absence": "restart",
       "last_absence_detail": "a new session started while the last one was still alive — a supervisor bounce, not a power failure",
       "power_source": "ac",
-      "awake_seconds": 17754,
+      "awake_seconds": 18654,
       "slept_seconds": null,
       "likely": null,
       "engines": [],
@@ -10694,7 +10744,7 @@
       "measured": 2,
       "unreachable": 24,
       "capabilities": {
-        "voice.identify": 1
+        "voice.identify": 2
       },
       "classes": 1
     },
@@ -10713,6 +10763,17 @@
       "unreachable": 130,
       "capabilities": {
         "image.generate": 1
+      },
+      "classes": 1
+    },
+    {
+      "engine": "speech-hf",
+      "proved_artifacts": 1,
+      "measured": 1,
+      "unreachable": 435,
+      "capabilities": {
+        "audio": 1,
+        "audio.out": 1
       },
       "classes": 1
     },
@@ -10745,14 +10806,6 @@
       "proved_artifacts": 0,
       "measured": 0,
       "unreachable": 36,
-      "capabilities": {},
-      "classes": 0
-    },
-    {
-      "engine": "speech-hf",
-      "proved_artifacts": 0,
-      "measured": 0,
-      "unreachable": 435,
       "capabilities": {},
       "classes": 0
     },
@@ -10792,96 +10845,6 @@
   "modalities_note": "per engine: how many artifacts this season proved, on how many hardware classes, which capabilities came back, and how many artifact-slots the fleet currently cannot reach at all (no Apple Silicon for MLX, no schedulable card for vLLM, no cluster for the speech pods). An engine with zero proved and a large unreachable count has never been shown to work on this network -- a statement about the network, not about the models.",
   "proving_note": "proving is a LEASE, not a fact: what each gram said it was working on when it last reported. It expires on its own, confers nothing and is never coverage. It is here so the network can be watched working.",
   "refusals": {
-    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-05T09:20:20.521923406Z",
-        "last_at": "2026-11-05T09:20:20.521923406Z"
-      }
-    },
-    "hf.co/unsloth/Muse-Glimmer-30B-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-06T06:58:20.501252058Z",
-        "last_at": "2026-11-06T06:58:20.501252058Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.6-27B-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-06T06:59:26.197618612Z",
-        "last_at": "2026-11-06T06:59:26.197618612Z"
-      }
-    },
-    "hf.co/unsloth/gemma-3-27b-it-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 2,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-06T07:06:52.779300546Z",
-        "last_at": "2026-11-08T00:56:28.849843234Z"
-      }
-    },
-    "hf.co/unsloth/Qwen3.8-27B-GGUF:Q4_K_S": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-08T11:22:29.070169681Z",
-        "last_at": "2026-11-08T11:22:29.070169681Z"
-      }
-    },
-    "hf.co/unsloth/Magistral-Small-2506-GGUF:IQ2_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-08T11:23:36.24091785Z",
-        "last_at": "2026-11-08T11:23:36.24091785Z"
-      }
-    },
-    "hf.co/unsloth/gemma-4-12B-it-qat-GGUF:Q4_K_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-08T12:26:12.397238639Z",
-        "last_at": "2026-11-08T12:26:12.397238639Z"
-      }
-    },
-    "hf.co/unsloth/Devstral-Small-2505-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-08T12:42:59.231869295Z",
-        "last_at": "2026-11-08T12:42:59.231869295Z"
-      }
-    },
-    "hf.co/unsloth/Magistral-Small-2509-GGUF:IQ2_M": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-08T12:49:12.685536656Z",
-        "last_at": "2026-11-08T12:49:12.685536656Z"
-      }
-    },
-    "hf.co/unsloth/Magistral-Small-2509-GGUF:IQ3_XXS": {
-      "linux/amd64/none/32g": {
-        "cause": "unavailable",
-        "grams": 1,
-        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
-        "first_at": "2026-11-09T15:31:13.252382167Z",
-        "last_at": "2026-11-09T15:31:13.252382167Z"
-      }
-    },
     "myshell-ai/OpenVoiceV2": {
       "darwin/arm64/apple/16g": {
         "cause": "unloadable",
@@ -11115,6 +11078,15 @@
         "last_at": "2026-11-07T22:31:04.809703174Z"
       }
     },
+    "hf.co/unsloth/gemma-3-27b-it-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 2,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-06T07:06:52.779300546Z",
+        "last_at": "2026-11-08T00:56:28.849843234Z"
+      }
+    },
     "hf.co/unsloth/gemma-4-31B-it-GGUF:IQ2_M": {
       "linux/amd64/none/32g": {
         "cause": "unavailable",
@@ -11262,6 +11234,87 @@
         "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
         "first_at": "2026-11-18T06:16:21.398297871Z",
         "last_at": "2026-11-18T06:16:21.398297871Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-35B-A3B-MTP-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-05T09:20:20.521923406Z",
+        "last_at": "2026-11-05T09:20:20.521923406Z"
+      }
+    },
+    "hf.co/unsloth/Muse-Glimmer-30B-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-06T06:58:20.501252058Z",
+        "last_at": "2026-11-06T06:58:20.501252058Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.6-27B-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-06T06:59:26.197618612Z",
+        "last_at": "2026-11-06T06:59:26.197618612Z"
+      }
+    },
+    "hf.co/unsloth/Qwen3.8-27B-GGUF:Q4_K_S": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-08T11:22:29.070169681Z",
+        "last_at": "2026-11-08T11:22:29.070169681Z"
+      }
+    },
+    "hf.co/unsloth/Magistral-Small-2506-GGUF:IQ2_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-08T11:23:36.24091785Z",
+        "last_at": "2026-11-08T11:23:36.24091785Z"
+      }
+    },
+    "hf.co/unsloth/gemma-4-12B-it-qat-GGUF:Q4_K_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-08T12:26:12.397238639Z",
+        "last_at": "2026-11-08T12:26:12.397238639Z"
+      }
+    },
+    "hf.co/unsloth/Devstral-Small-2505-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-08T12:42:59.231869295Z",
+        "last_at": "2026-11-08T12:42:59.231869295Z"
+      }
+    },
+    "hf.co/unsloth/Magistral-Small-2509-GGUF:IQ2_M": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-08T12:49:12.685536656Z",
+        "last_at": "2026-11-08T12:49:12.685536656Z"
+      }
+    },
+    "hf.co/unsloth/Magistral-Small-2509-GGUF:IQ3_XXS": {
+      "linux/amd64/none/32g": {
+        "cause": "unavailable",
+        "grams": 1,
+        "version": "02bf2cfc3cdd04ed0e71ec17c404b2f0639830bc",
+        "first_at": "2026-11-09T15:31:13.252382167Z",
+        "last_at": "2026-11-09T15:31:13.252382167Z"
       }
     },
     "bharatgenai/sooktam2": {
@@ -11817,12 +11870,12 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "vision-task": {
           "probe_ms_median": 352437,
           "samples": 1,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "speech-hf": {
           "probe_ms_median": 8565,
@@ -11848,7 +11901,7 @@
       "download_mib_per_sec_median": 14,
       "download_samples": 2,
       "carried_from": null,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "token_prices": {
         "threads": 7,
         "vcpu_second_uusd": 10,
@@ -11865,7 +11918,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "ollama-host": {
           "probe_ms_median": 2804105,
@@ -11886,7 +11939,7 @@
       "download_mib_per_sec_median": 6.6,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "token_prices": {
         "threads": 15,
         "gpu_backed": true,
@@ -11903,7 +11956,7 @@
       "download_mib_per_sec_median": 3.5,
       "download_samples": 1,
       "carried_from": null,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "token_prices": {
         "threads": 3,
         "vcpu_second_uusd": 10,
@@ -11940,12 +11993,12 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         }
       },
       "download_mib_per_sec_median": 590.1,
       "download_samples": 1,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null,
       "token_prices": {
         "threads": 7,
@@ -11968,7 +12021,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "speech-hf": {
           "probe_ms_median": 485399,
@@ -11978,7 +12031,7 @@
       },
       "download_mib_per_sec_median": 7.2,
       "download_samples": 1,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null,
       "token_prices": {
         "threads": 7,
@@ -11993,7 +12046,7 @@
       "engines": {},
       "download_mib_per_sec_median": 7.3,
       "download_samples": 1,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null
     },
     "windows/amd64/none/8g": {
@@ -12056,7 +12109,7 @@
           "bandwidth_grams": 2,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "vllm": {
           "probe_ms_median": 0,
@@ -12066,7 +12119,7 @@
       },
       "download_mib_per_sec_median": 105.9,
       "download_samples": 2,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -12094,12 +12147,12 @@
           "bandwidth_grams": 3,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         }
       },
       "download_mib_per_sec_median": 113.7,
       "download_samples": 2,
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null,
       "token_prices": {
         "threads": 3,
@@ -12120,7 +12173,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/256g": {
@@ -12130,7 +12183,7 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         }
       },
       "token_prices": {
@@ -12141,7 +12194,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null
     },
     "linux/amd64/nvidia/64g": {
@@ -12151,14 +12204,14 @@
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "vllm": {
           "eff_bytes_per_sec": 528851753160,
           "bandwidth_grams": 1,
           "probe_ms_median": 0,
           "samples": 0,
-          "at": "2026-11-18T09:53:39.287Z"
+          "at": "2026-11-18T10:08:17.368Z"
         },
         "speech-pod": {
           "probe_ms_median": 1648,
@@ -12179,7 +12232,7 @@
         "tariff_basis": "bootstrap",
         "grams": 1
       },
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null,
       "download_mib_per_sec_median": 116.8,
       "download_samples": 1
@@ -12194,7 +12247,7 @@
         "tariff_basis": "bootstrap",
         "grams": 3
       },
-      "at": "2026-11-18T09:53:39.287Z",
+      "at": "2026-11-18T10:08:17.368Z",
       "carried_from": null
     }
   },
@@ -12222,7 +12275,7 @@
       "streak": 3
     },
     "linux/amd64/nvidia/32g": {
-      "ref": "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m",
+      "ref": "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M",
       "grams": 3,
       "tps_spread": 1,
       "split": null,
@@ -12260,15 +12313,16 @@
       "linux/amd64/nvidia/64g": 14009,
       "linux/amd64/none/32g": 56379
     },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m": {
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/256g": 25677,
-      "linux/amd64/nvidia/64g": 25889,
+      "linux/amd64/nvidia/64g": 25945,
       "windows/amd64/nvidia/16g": 72337,
-      "linux/amd64/nvidia/32g": 145696,
+      "linux/amd64/nvidia/32g": 317794,
       "darwin/arm64/apple/16g": 7992,
       "linux/amd64/none/32g": 39831,
       "windows/amd64/nvidia/8g": 3904,
-      "windows/amd64/intel/16g": 6488
+      "windows/amd64/intel/16g": 6488,
+      "darwin/amd64/apple/8g": 12096
     },
     "gemma4:e2b": {
       "windows/amd64/nvidia/16g": 1117,
@@ -12307,7 +12361,7 @@
       "unknown": 36390
     },
     "claude-sonnet-5": {
-      "unknown": 111366
+      "unknown": 112264
     },
     "hf.co/unsloth/gemma-3-270m-it-GGUF:Q4_K_M": {
       "linux/amd64/nvidia/64g": 2882,
@@ -12460,7 +12514,7 @@
     "hf.co/unsloth/Llama-3.2-3B-Instruct-GGUF:Q4_K_M": {
       "windows/amd64/nvidia/16g": 189,
       "linux/amd64/nvidia/64g": 3566,
-      "windows/amd64/intel/16g": 1200
+      "windows/amd64/intel/16g": 1336
     },
     "hf.co/unsloth/Phi-4-mini-reasoning-GGUF:Q2_K": {
       "unknown": 1139,
@@ -12971,23 +13025,22 @@
     "qwen2.5:0.5b": {
       "unknown": 358
     },
+    "hf.co/unsloth/gemma-4-E2B-it-GGUF:q4_k_m": {
+      "linux/amd64/nvidia/256g": 25677,
+      "linux/amd64/nvidia/64g": 25889,
+      "windows/amd64/nvidia/16g": 72337,
+      "linux/amd64/nvidia/32g": 145696,
+      "darwin/arm64/apple/16g": 7992,
+      "linux/amd64/none/32g": 39831,
+      "windows/amd64/nvidia/8g": 3904,
+      "windows/amd64/intel/16g": 6488
+    },
     "hf.co/Qwen/Qwen2.5-0.5B-Instruct-GGUF:Q4_K_M": {
       "windows/amd64/nvidia/16g": 15683,
       "linux/amd64/nvidia/32g": 12429,
       "windows/amd64/intel/16g": 227138,
       "linux/amd64/none/32g": 11716,
       "windows/amd64/nvidia/8g": 50
-    },
-    "hf.co/unsloth/gemma-4-E2B-it-GGUF:Q4_K_M": {
-      "linux/amd64/nvidia/256g": 25677,
-      "linux/amd64/nvidia/64g": 25945,
-      "windows/amd64/nvidia/16g": 72337,
-      "linux/amd64/nvidia/32g": 317794,
-      "darwin/arm64/apple/16g": 7992,
-      "linux/amd64/none/32g": 39831,
-      "windows/amd64/nvidia/8g": 3904,
-      "windows/amd64/intel/16g": 6488,
-      "darwin/amd64/apple/8g": 12096
     },
     "hf.co/mradermacher/HY-MT1.5-1.8B-i1-GGUF:Q4_0": {
       "linux/amd64/nvidia/64g": 1577,
