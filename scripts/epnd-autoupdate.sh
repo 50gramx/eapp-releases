@@ -960,7 +960,30 @@ staged_is_stale() {
   [ "$_age" -ge $(( HANDOVER_GRACE_MIN * 60 )) ]
 }
 
-if daemon_ruled_itself_out "$TAG"; then
+# -- A BINARY THIS USER MAY NOT REPLACE (L37, 20 Nov 2026) --------------------
+#
+# The Apple Silicon Mac's LaunchAgent runs /usr/local/bin/epnd, installed once
+# with sudo. Its updater runs as the user, so every swap ended "mv: Permission
+# denied", every fifteen minutes, and the gram stayed on afa811d9. A user's
+# LaunchAgent is the user's own file: move the binary somewhere the user owns
+# (~/.local/bin, where install.sh puts it without sudo) and point the agent
+# there. stop_epnd/start_epnd below boot the agent out and back in, which is
+# when launchd reads the new path.
+RELOCATED=""
+if [ "$os_name" = "Darwin" ] && [ ! -w "$(dirname "$BIN")" ]; then
+  _plist="$HOME/Library/LaunchAgents/com.50gramx.epnd.plist"
+  _own="$HOME/.local/bin/epnd"
+  if [ -f "$_plist" ] && [ -x /usr/libexec/PlistBuddy ] && mkdir -p "$HOME/.local/bin" &&
+     /usr/libexec/PlistBuddy -c "Set :ProgramArguments:0 $_own" "$_plist" 2>/dev/null; then
+    echo "$(dirname "$BIN") is not writable by $(id -un) - moving epnd to $_own and pointing the LaunchAgent there" >&2
+    BIN="$_own"
+    RELOCATED=1
+  fi
+fi
+
+if [ -n "$RELOCATED" ]; then
+  : # a new path: the running daemon cannot hand itself over to it, so swap here
+elif daemon_ruled_itself_out "$TAG"; then
   echo "the daemon says it cannot swap itself onto $TAG - not waiting out the grace, doing it here" >&2
   write_updater_state "handover_refused" true
   rm -f "$(epnd_home)/update-staged.json" 2>/dev/null || true
