@@ -196,6 +196,17 @@ jobs:
       - name: Ensure Linux desktop project structure
         run: flutter create --platforms=linux . --no-overwrite
 
+      # ONE PLUGIN'S HEADER, NOT OUR CODE (22 Nov). Every Linux build since at
+      # least 19 Nov failed compiling flutter_secure_storage_linux's bundled
+      # json.hpp: the runner's newer clang flags `operator "" _json` as
+      # -Wdeprecated-literal-operator, and the generated CMakeLists builds
+      # every target with -Werror. That one warning stays a warning; every
+      # other warning is still an error.
+      - name: Keep the plugin json.hpp warning a warning
+        run: |
+          sed -i 's/-Wall -Werror)/-Wall -Werror -Wno-deprecated-literal-operator)/' linux/CMakeLists.txt
+          grep -q -- '-Wno-deprecated-literal-operator' linux/CMakeLists.txt
+
       # THE GENERATED MESH CODE FOLLOWS THE CONTRACTS (founder, 13 Nov): never
       # pinned by hand; each build takes its newest commit (eapp-live
       # tool/ci/follow_mesh_code.mjs). The engine stays pinned in eapp-live.

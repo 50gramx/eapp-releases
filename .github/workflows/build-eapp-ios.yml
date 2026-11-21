@@ -315,8 +315,26 @@ jobs:
           if [ -n "${ASC_KEY_ID:-}" ] && [ -n "${ASC_ISSUER_ID:-}" ] && [ -n "${ASC_KEY_P8:-}" ]; then
             ONLY=(--config-only)
           fi
-          flutter build ios --release --no-codesign "${ONLY[@]}" --dart-define=BUILD_ID=${{ github.run_number }} "${DEFINES[@]}" \
-            --build-name "$(date -u +%y.%-m.%-d)" --build-number "$((1000 + ${{ github.run_number }}))"
+          # SWIFT PACKAGES RESOLVE AGAIN, ONCE, FROM A CLEAN CACHE (22 Nov).
+          # Run 44942669490 failed in xcodebuild's package resolution: SwiftPM
+          # asked git about a repository it had never finished cloning
+          # (DKImagePickerController, "cannot change to ... No such file or
+          # directory"). The runner's own cache, not the code. Only that error
+          # is retried; any other failure still fails the build.
+          build_ios() {
+            flutter build ios --release --no-codesign "${ONLY[@]}" --dart-define=BUILD_ID=${{ github.run_number }} "${DEFINES[@]}" \
+              --build-name "$(date -u +%y.%-m.%-d)" --build-number "$((1000 + ${{ github.run_number }}))"
+          }
+          LOG="$RUNNER_TEMP/flutter-build-ios.log"
+          if ! build_ios 2>&1 | tee "$LOG"; then
+            if grep -q "Could not resolve package dependencies" "$LOG"; then
+              echo "::warning::Swift package resolution failed; clearing SwiftPM caches and building once more"
+              rm -rf "$HOME/Library/Caches/org.swift.swiftpm" "$HOME/Library/org.swift.swiftpm" "$HOME/Library/Developer/Xcode/DerivedData"
+              build_ios
+            else
+              exit 1
+            fi
+          fi
 
       # SIGNED, TO TESTFLIGHT. Xcode signs with the team's own certificate and
       # profile, created and kept by Apple ("cloud-managed"), authorised by the
