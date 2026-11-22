@@ -831,6 +831,7 @@ function capsFromProbe(extra) {
       // musicgen; the facts beside it say four seconds of it, at 32 kHz, in
       // 1.6 seconds of wall clock, on a 10-core machine with 16 GiB. One of
       // those is a page worth indexing.
+      if (supersededSpeechScore(c)) continue;
       out.push([c.id, c.passed === true, c.facts && typeof c.facts === 'object' ? c.facts : null]);
     }
   }
@@ -843,6 +844,23 @@ function capsFromProbe(extra) {
   }
 
   return out;
+}
+
+/**
+ * A speech language result scored under the first scoring rule (no
+ * `scoring_norm` in its facts) for any language but English. That rule deleted
+ * combining marks, so every non-English score was computed on words with their
+ * vowel signs and nukta removed (epn-daemon ScoringNormVersion, 22 Nov 2026).
+ * It is OMITTED, which the site reads as "not measured", never as "cannot",
+ * until a gram measures it again under the current rule. English was the one
+ * language that rule scored as Latin, so its results stand.
+ */
+export function supersededSpeechScore(c) {
+  const f = c && c.facts;
+  return Boolean(
+    typeof c?.id === 'string' && c.id.startsWith('lang.') && c.id !== 'lang.en' &&
+    f && typeof f === 'object' && typeof f.error_rate === 'number' && !(f.scoring_norm >= 2),
+  );
 }
 
 /**

@@ -30,6 +30,7 @@ import {
   verifyTurnStatement,
   pickBetterMeasurement,
   verifyEpochStatement,
+  supersededSpeechScore,
 } from './aggregate-founders.mjs';
 
 let passed = 0;
@@ -1941,3 +1942,12 @@ test('an alias files a bare engine tag under its family', () => {
   assert.deepEqual(out[0].build_aliases, ['u-q4_k_m-ollama-b069fe63']);
   console.log('ok - one file, one record');
 }
+
+test('speech scores made under the first scoring rule stop counting, except English', () => {
+  const old = { error_rate: 0.03 };
+  assert.equal(supersededSpeechScore({ id: 'lang.hi', facts: old }), true);
+  assert.equal(supersededSpeechScore({ id: 'lang.en', facts: old }), false);
+  assert.equal(supersededSpeechScore({ id: 'lang.hi', facts: { error_rate: 0.05, scoring_norm: 2 } }), false);
+  // A text model's language result carries no error rate and is untouched.
+  assert.equal(supersededSpeechScore({ id: 'lang.hi', facts: null }), false);
+});
