@@ -4,17 +4,155 @@
   "starts_at": "2026-11-23T00:00:00.000Z",
   "ends_at": "2026-11-30T00:00:00.000Z",
   "open": true,
-  "published_at": "2026-11-23T00:10:31.976Z",
+  "published_at": "2026-11-23T03:57:39.880Z",
   "contributors": {
-    "grams": 0,
-    "classes": []
+    "grams": 1,
+    "classes": [
+      "windows/amd64/intel/16g"
+    ]
   },
   "counts": {
-    "artifacts": 0,
-    "publishers": 0,
-    "by_cohort": {}
+    "artifacts": 3,
+    "publishers": 3,
+    "by_cohort": {
+      "0": 1,
+      "2": 2
+    }
   },
-  "artifacts": [],
-  "publishers": [],
+  "artifacts": [
+    {
+      "ref": "facebook/mms-tts-tel",
+      "family": "mms-tts",
+      "member": "te",
+      "engine": "speech-hf",
+      "quant": "FP32",
+      "publisher": "facebook",
+      "attribution": "vendor",
+      "base": "facebook/mms-tts-tel",
+      "derivative": false,
+      "cohort": 2,
+      "rung": 0,
+      "disk_mib": 139,
+      "by_class": {
+        "windows/amd64/intel/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.out": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-23T03:09:25.376Z",
+          "last_at": "2026-11-23T03:09:25.376Z"
+        }
+      }
+    },
+    {
+      "ref": "hf.co/second-state/embeddinggemma-300m-GGUF:Q4_K_M",
+      "family": "embeddinggemma",
+      "member": "300m",
+      "engine": "ollama",
+      "quant": "Q4_K_M",
+      "publisher": "second-state",
+      "attribution": "quantizer",
+      "base": "google/embeddinggemma-300m",
+      "derivative": false,
+      "cohort": 0,
+      "rung": 0,
+      "disk_mib": 225,
+      "by_class": {
+        "windows/amd64/intel/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "embed.vector": 1
+          },
+          "engine_backends": [
+            "pod"
+          ],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-23T03:26:59.599Z",
+          "last_at": "2026-11-23T03:26:59.599Z"
+        }
+      }
+    },
+    {
+      "ref": "openai/whisper-medium",
+      "family": "whisper",
+      "member": "medium",
+      "engine": "speech-hf",
+      "quant": "FP32",
+      "publisher": "openai",
+      "attribution": "vendor",
+      "base": "openai/whisper-medium",
+      "derivative": false,
+      "cohort": 2,
+      "rung": 0,
+      "disk_mib": 2913,
+      "by_class": {
+        "windows/amd64/intel/16g": {
+          "grams": 1,
+          "held_probes": 1,
+          "tokens_per_sec_best": null,
+          "effective_ctx_best": null,
+          "effective_ctx_stop": null,
+          "effective_ctx_ladder": null,
+          "ctx_trained": null,
+          "ctx_affordable": null,
+          "caps": {
+            "audio": 1,
+            "audio.in": 1,
+            "lang.en": 1
+          },
+          "engine_backends": [],
+          "joules_per_token_best": null,
+          "energy_tier": null,
+          "first_at": "2026-11-23T03:40:59.597Z",
+          "last_at": "2026-11-23T03:40:59.597Z"
+        }
+      }
+    }
+  ],
+  "publishers": [
+    {
+      "publisher": "facebook",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "speech-hf": 1
+      }
+    },
+    {
+      "publisher": "openai",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "speech-hf": 1
+      }
+    },
+    {
+      "publisher": "second-state",
+      "held": 1,
+      "grams": 1,
+      "engines": {
+        "ollama": 1
+      }
+    }
+  ],
   "note": "Every number is a signed measurement or a count of them. grams is how many distinct nodes contributed: a verified floor, not a complete account. Lineage (publisher, attribution, base, cohort, rung) is from the catalog and is not a measurement."
 }
