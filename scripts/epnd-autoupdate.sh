@@ -150,8 +150,20 @@ case "$arch" in
 esac
 asset="epnd-${os}-${arch}"
 
-tmp="$(mktemp -d)"
-trap 'rm -rf "$tmp"' EXIT
+# Tolerated, not fatal: on a full disk mktemp fails, and under set -e that
+# ended the run on this line -- before the room-making below could run, so the
+# one process able to fix the disk never got past its third statement (L70).
+tmp="$(mktemp -d 2>/dev/null || true)"
+STOPPED_FOR_ROOM=""
+on_exit() {
+  [ -n "$tmp" ] && rm -rf "$tmp"
+  # A daemon this run stopped to make room for the download comes back on
+  # EVERY exit path, failed download included -- on the build it had.
+  if [ -n "$STOPPED_FOR_ROOM" ] && ! epnd_running; then
+    start_epnd >/dev/null 2>&1 || true
+  fi
+}
+trap on_exit EXIT
 
 # ── REPORTING A NODE THAT NEVER CAME BACK ─────────────────────────────────────
 #
@@ -388,6 +400,76 @@ start_epnd() {
 
   return 1
 }
+
+# -- A FULL DISK ENDED EVERY UPDATE, AND THE UPDATE WAS THE WAY OUT (L70) ----
+#
+# 23 Nov: both www edges sat on 22 Nov builds all day, at 0.1 and 1.1 GiB free.
+# The fixes that free their disk were in the build they could not install. The
+# download needed the binary three times over: the partial in the epn home, a
+# COPY of it into $tmp to check, and the daemon's own recovery fetch staging a
+# third beside the binary every minute. Each write failed for the room the
+# others held, so this run failed, the daemon's fetch failed, and so on, forever.
+#
+# So, in this order, and only when the room is actually short:
+#   1. remove what this updater and the daemon's update paths left behind --
+#      never anything else the gram holds;
+#   2. trim the system journal to 100 MiB (root only) -- an OS that cannot
+#      write its own log is already failing;
+#   3. once an update is known to be needed, stop the daemon for the download.
+#      On a disk this full it writes nothing and serves nothing, and its own
+#      recovery fetch is what takes the room. on_exit brings it back on every
+#      path, on the old build if the download does not finish.
+# The partial is checked in place and moved, never copied (below).
+# What is still short is said in updater-state.json: "no_room", with the free
+# bytes and inodes, so the fleet reads the number instead of "exit-code".
+room_free_mib() { df -Pk "$1" 2>/dev/null | awk 'NR==2 {print int($4/1024)}'; }
+room_free_inodes() { df -Pi "$1" 2>/dev/null | awk 'NR==2 { if ($4 ~ /^[0-9]+$/) print $4; else print 1000000 }'; }
+room_short() { # $1 dir, $2 MiB needed
+  _m="$(room_free_mib "$1")"
+  _i="$(room_free_inodes "$1")"
+  [ -n "$_m" ] || return 1
+  [ "$_m" -lt "$2" ] && return 0
+  [ "${_i:-1000000}" -lt 64 ] && return 0
+  return 1
+}
+room_line() { printf 'free %s MiB and %s inodes at %s, need %s MiB' "$(room_free_mib "$1")" "$(room_free_inodes "$1")" "$1" "$2"; }
+upd_dir="$(epnd_home)/update"
+bin_dir="$(dirname "$BIN")"
+_bin_bytes="$(wc -c < "$BIN" 2>/dev/null || echo 94371840)"
+need_mib=$(( ${_bin_bytes:-94371840} / 1048576 + 32 ))
+room_anywhere_short() {
+  room_short "$bin_dir" "$need_mib" && return 0
+  [ -d "$upd_dir" ] && room_short "$upd_dir" "$need_mib" && return 0
+  [ -n "$tmp" ] && room_short "$tmp" "$need_mib" && return 0
+  return 1
+}
+if room_anywhere_short || [ -z "$tmp" ]; then
+  echo "short of room for an update ($(room_line "$bin_dir" "$need_mib")) - removing the update paths' own leftovers" >&2
+  rm -f "${BIN}.new" "${bin_dir}/${asset}.selfupdate" 2>/dev/null || true
+  for _o in "${BIN}".old*; do
+    if [ -e "$_o" ]; then rm -f "$_o" 2>/dev/null || true; fi
+  done
+  if [ -f "${BIN}.staged" ]; then
+    rm -f "${BIN}.staged" "$(epnd_home)/update-staged.json" 2>/dev/null || true
+  fi
+  for _p in "$upd_dir"/*.partial; do
+    if [ -e "$_p" ] && [ "$_p" != "$upd_dir/${asset}.partial" ]; then
+      rm -f "$_p" "${_p%.partial}.want" 2>/dev/null || true
+    fi
+  done
+  if room_anywhere_short && [ "$(id -u)" = "0" ] && command -v journalctl >/dev/null 2>&1; then
+    journalctl --vacuum-size=100M >/dev/null 2>&1 || true
+  fi
+  if [ -z "$tmp" ]; then
+    tmp="$(mktemp -d 2>/dev/null || true)"
+  fi
+  if [ -z "$tmp" ]; then
+    RESTART_ERR="could not make a temporary directory: $(room_line "$bin_dir" "$need_mib")"
+    write_updater_state "no_room" true
+    echo "$RESTART_ERR" >&2
+    exit 0
+  fi
+fi
 
 # Fetch the latest checksum and compare against installed binary
 curl $CURL_OPTS -fsSL "${BASE}/checksums.txt" -o "$tmp/checksums.txt" 2>/dev/null || { write_updater_state "checksums_unreachable" false; echo "could not fetch checksums.txt" >&2; exit 0; }
@@ -787,6 +869,18 @@ if [ "$have" = "$want" ]; then
 fi
 
 echo "new epnd available (have=${have:-none} want=$want) — updating…" >&2
+# Step 3 of the room-making above: an update IS needed, and the disk still
+# cannot take it beside a running daemon.
+if room_anywhere_short && epnd_running; then
+  echo "still short ($(room_line "$bin_dir" "$need_mib")) - stopping epnd for the download; it comes back on every exit" >&2
+  stop_epnd
+  STOPPED_FOR_ROOM=1
+  # The download must end before the run deadline kills this shell with -9,
+  # which no trap survives: the daemon would stay down until the next run.
+  _dl_max=60
+  if [ "$RUN_DEADLINE" -gt 240 ]; then _dl_max=$((RUN_DEADLINE - 180)); fi
+  CURL_BIG_OPTS="--connect-timeout 15 --max-time $_dl_max --retry 3 --retry-delay 5 --retry-connrefused -C -"
+fi
 write_updater_state "downloading" true
 # -- THE PARTIAL HAS TO OUTLIVE THE RUN, OR RESUME BUYS NOTHING --------------
 #
@@ -814,17 +908,46 @@ if [ -f "$partial" ] && [ "$(cat "$partialFor" 2>/dev/null || true)" != "$want" 
 fi
 printf '%s' "$want" > "$partialFor" 2>/dev/null || true
 
-curl $CURL_BIG_OPTS -fSL "${BASE}/${asset}" -o "$partial" 2>/dev/null || {
+sha_of() {
+  if command -v sha256sum >/dev/null 2>&1; then sha256sum "$1" 2>/dev/null | awk '{print $1}'
+  else shasum -a 256 "$1" 2>/dev/null | awk '{print $1}'; fi
+}
+# A partial that is ALREADY whole is not a failed download. curl -C - asks the
+# server for the bytes past its end, gets 416, and -f turned that into a
+# failure -- every run, until the next release changed what was wanted. A gram
+# whose last run finished the download but had no room to copy it sat exactly
+# there (L70).
+_cerr=""
+if [ -f "$partial" ] && [ "$(sha_of "$partial")" = "$want" ]; then
+  echo "the kept partial is already the whole build" >&2
+else
+_cerr="$(curl $CURL_BIG_OPTS -fSL "${BASE}/${asset}" -o "$partial" 2>&1 >/dev/null)" || {
   # NOT an error worth erasing progress over. Whatever arrived is kept and the
   # next wake continues from it; the only thing that discards a partial is a
   # change in what we are aiming at.
-  write_updater_state "download_failed" true
-  echo "download failed (partial kept for the next run)" >&2
+  # The reason is kept (L70): "download_failed" alone could not tell a full
+  # disk from a dropped link, and those need opposite remedies.
+  RESTART_ERR="$(printf '%s' "$_cerr" | tail -n 1 | cut -c1-200); $(room_line "$upd_dir" "$need_mib")"
+  if room_anywhere_short; then
+    write_updater_state "no_room" true
+  else
+    write_updater_state "download_failed" true
+  fi
+  echo "download failed (partial kept for the next run): $RESTART_ERR" >&2
   exit 1
 }
-cp "$partial" "$tmp/epnd" 2>/dev/null || { write_updater_state "download_failed" true; exit 1; }
-if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$tmp/epnd" | awk '{print $1}')"
-else got="$(shasum -a 256 "$tmp/epnd" | awk '{print $1}')"; fi
+fi
+# CHECKED IN PLACE, THEN MOVED (L70). The copy into $tmp needed the binary's
+# size a second time, which is exactly the room a full gram does not have.
+if command -v sha256sum >/dev/null 2>&1; then got="$(sha256sum "$partial" | awk '{print $1}')"
+else got="$(shasum -a 256 "$partial" | awk '{print $1}')"; fi
+if [ "$got" = "$want" ]; then
+  mv -f "$partial" "$tmp/epnd" 2>/dev/null || cp "$partial" "$tmp/epnd" 2>/dev/null || {
+    RESTART_ERR="could not move the verified download into place: $(room_line "$tmp" "$need_mib")"
+    write_updater_state "no_room" true
+    exit 1
+  }
+fi
 [ "$got" = "$want" ] || {
   # The completed file does not match. Whatever is in the partial is wrong and
   # resuming onto it would reproduce the same wrong answer, so it goes -- this
