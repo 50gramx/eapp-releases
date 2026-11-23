@@ -445,7 +445,9 @@ room_anywhere_short() {
 }
 if room_anywhere_short || [ -z "$tmp" ]; then
   echo "short of room for an update ($(room_line "$bin_dir" "$need_mib")) - removing the update paths' own leftovers" >&2
-  rm -f "${BIN}.new" "${bin_dir}/${asset}.selfupdate" 2>/dev/null || true
+  # The daemon's update reserve (L70) exists for exactly this moment: one
+  # update's worth of disk, given up so this run can fetch.
+  rm -f "${BIN}.new" "${bin_dir}/${asset}.selfupdate" "$upd_dir/reserve" 2>/dev/null || true
   for _o in "${BIN}".old*; do
     if [ -e "$_o" ]; then rm -f "$_o" 2>/dev/null || true; fi
   done
