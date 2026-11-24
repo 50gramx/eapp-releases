@@ -6,7 +6,7 @@
   "peer_count": 8,
   "peers_online": 8,
   "peers_distinct_total": 4449,
-  "uptime_seconds": 12420,
+  "uptime_seconds": 13331,
   "epnd_version": "c3e7929fea2699e8a43b43984321707d9d67094b",
   "addrs": [
     "/ip4/13.206.170.222/tcp/53590/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -38,7 +38,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-11-24T00:39:50Z",
+    "generated_at": "2026-11-24T00:55:01Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -45393,8 +45393,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/unsloth/Phi-4-mini-instruct-GGUF:Q2_K_L",
-                "quant": "Q2_K_L",
+                "ref": "hf.co/unsloth/Phi-4-mini-instruct-GGUF:Q2_K",
+                "quant": "Q2_K",
                 "disk_mib": 1604,
                 "attribution": "quantizer",
                 "by": "unsloth",
@@ -46288,19 +46288,6 @@
             "id": "0.6b",
             "display_name": "Qwen 3 0.6B",
             "params": "0.6B",
-            "artifacts": [
-              {
-                "engine": "ollama",
-                "ref": "hf.co/Qwen/Qwen3-0.6B-GGUF:Q8_0",
-                "quant": "Q8_0",
-                "disk_mib": 609,
-                "attribution": "vendor",
-                "by": "Qwen",
-                "base": "Qwen/Qwen3-0.6B",
-                "cohort": 2,
-                "rung": 1
-              }
-            ],
             "aliases": [
               "qwen3:0.6b"
             ]
@@ -46326,21 +46313,35 @@
             "author": "PrimeIntellect"
           },
           {
-            "id": "1.7b",
-            "display_name": "Qwen 3 1.7B",
+            "id": "0.6b-base~qwen-embedding",
+            "display_name": "Qwen3-Embedding-0.6B-GGUF",
             "artifacts": [
               {
                 "engine": "ollama",
-                "ref": "hf.co/Qwen/Qwen3-1.7B-GGUF:Q8_0",
+                "ref": "hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:Q8_0",
                 "quant": "Q8_0",
-                "disk_mib": 1749,
-                "attribution": "vendor",
+                "disk_mib": 609,
+                "attribution": "derivative",
                 "by": "Qwen",
-                "base": "Qwen/Qwen3-1.7B",
-                "cohort": 2,
+                "base": "Qwen/Qwen3-0.6B-Base",
+                "cohort": 3,
                 "rung": 1
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/Qwen/Qwen3-Embedding-0.6B-GGUF:F16",
+                "quant": "F16",
+                "disk_mib": 1142,
+                "attribution": "derivative",
+                "by": "Qwen",
+                "base": "Qwen/Qwen3-0.6B-Base",
+                "cohort": 3,
+                "rung": 4
               }
-            ]
+            ],
+            "derivative": true,
+            "base": "0.6b-base",
+            "author": "Qwen"
           },
           {
             "id": "14b",
@@ -46668,6 +46669,39 @@
             "display_name": "Qwen 3 ASR-0.6B",
             "artifacts": [
               {
+                "engine": "ollama",
+                "ref": "hf.co/handy-computer/Qwen3-ASR-0.6B-gguf:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 562,
+                "attribution": "quantizer",
+                "by": "handy-computer",
+                "base": "Qwen/Qwen3-ASR-0.6B",
+                "cohort": 2,
+                "rung": 0
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/handy-computer/Qwen3-ASR-0.6B-gguf:Q8_0",
+                "quant": "Q8_0",
+                "disk_mib": 811,
+                "attribution": "quantizer",
+                "by": "handy-computer",
+                "base": "Qwen/Qwen3-ASR-0.6B",
+                "cohort": 2,
+                "rung": 1
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/handy-computer/Qwen3-ASR-0.6B-gguf:Q5_K_M",
+                "quant": "Q5_K_M",
+                "disk_mib": 615,
+                "attribution": "quantizer",
+                "by": "handy-computer",
+                "base": "Qwen/Qwen3-ASR-0.6B",
+                "cohort": 2,
+                "rung": 3
+              },
+              {
                 "engine": "vllm",
                 "ref": "Qwen/Qwen3-ASR-0.6B-hf",
                 "quant": "BF16",
@@ -46677,6 +46711,17 @@
                 "base": "Qwen/Qwen3-ASR-0.6B-hf",
                 "cohort": 2,
                 "rung": 3
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/handy-computer/Qwen3-ASR-0.6B-gguf:BF16",
+                "quant": "BF16",
+                "disk_mib": 1498,
+                "attribution": "quantizer",
+                "by": "handy-computer",
+                "base": "Qwen/Qwen3-ASR-0.6B",
+                "cohort": 2,
+                "rung": 4
               }
             ]
           },
@@ -47655,17 +47700,6 @@
                 "base": "DavidAU/Qwen3.5-9B-The-Defiant-Fable-Uncensored-Heretic-NEO-IMATRIX-MAX-MTP",
                 "cohort": 3,
                 "rung": 3
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/DavidAU/Qwen3.5-9B-The-Defiant-Fable-Uncensored-Heretic-NEO-IMATRIX-MAX-MTP-GGUF:BF16",
-                "quant": "BF16",
-                "disk_mib": 17554,
-                "attribution": "derivative",
-                "by": "DavidAU",
-                "base": "DavidAU/Qwen3.5-9B-The-Defiant-Fable-Uncensored-Heretic-NEO-IMATRIX-MAX-MTP",
-                "cohort": 3,
-                "rung": 4
               },
               {
                 "engine": "ollama",
@@ -54375,5 +54409,5 @@
     "/ip6/::1/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS"
   ],
   "catalog": [],
-  "checked_at": "2026-11-24T00:39:49Z"
+  "checked_at": "2026-11-24T00:55:01Z"
 }
