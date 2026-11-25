@@ -5,8 +5,8 @@
   "online": true,
   "peer_count": 9,
   "peers_online": 9,
-  "peers_distinct_total": 4820,
-  "uptime_seconds": 31167,
+  "peers_distinct_total": 4825,
+  "uptime_seconds": 32087,
   "epnd_version": "60a8f4845287fbe68c775e3df1eab5bdb4d70d7b",
   "addrs": [
     "/ip4/13.206.170.222/tcp/53590/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -22,7 +22,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-11-25T21:37:53Z",
+    "generated_at": "2026-11-25T21:53:13Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -28912,11 +28912,11 @@
               },
               {
                 "engine": "vllm",
-                "ref": "MedGemmaImpact/medgemma-1.5-4b-it-nvfp4",
+                "ref": "ivangalkindeveloper/medgemma-1.5-4b-it-nvfp4",
                 "quant": "W4A4",
                 "disk_mib": 5083,
                 "attribution": "quantizer",
-                "by": "MedGemmaImpact",
+                "by": "ivangalkindeveloper",
                 "base": "google/medgemma-1.5-4b-it",
                 "cohort": 1,
                 "rung": 9
@@ -29525,6 +29525,26 @@
             "author": "unsloth"
           },
           {
+            "id": "4b~vmanvs-decoder-only",
+            "display_name": "medgemma-1.5-decoder-only-4b-it",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "vmanvs/medgemma-1.5-decoder-only-4b-it",
+                "quant": "FP32",
+                "disk_mib": 14802,
+                "attribution": "derivative",
+                "by": "vmanvs",
+                "base": "google/medgemma-1.5-4b-it",
+                "cohort": 3,
+                "rung": 9
+              }
+            ],
+            "derivative": true,
+            "base": "4b",
+            "author": "vmanvs"
+          },
+          {
             "id": "4b~zero0303",
             "display_name": "medgemma-1.5-4b-it",
             "artifacts": [
@@ -29544,26 +29564,6 @@
             "derivative": true,
             "base": "4b",
             "author": "zero0303"
-          },
-          {
-            "id": "v2-1-medgemma~craneailabs-crane",
-            "display_name": "crane-medgemma-1.5-it",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "CraneAILabs/crane-medgemma-1.5-it",
-                "quant": "BF16",
-                "disk_mib": 8201,
-                "attribution": "derivative",
-                "by": "CraneAILabs",
-                "base": "CraneAILabs/v2.1-instruct-medgemma-bf16",
-                "cohort": 3,
-                "rung": 3
-              }
-            ],
-            "derivative": true,
-            "base": "v2-1-medgemma",
-            "author": "CraneAILabs"
           }
         ],
         "schema_version": 9
@@ -29683,23 +29683,23 @@
                 "rung": 0
               },
               {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/MiMo-V2-Flash-GGUF:Q4_K_M",
-                "quant": "Q4_K_M",
-                "disk_mib": 178144,
-                "attribution": "quantizer",
-                "by": "mradermacher",
-                "base": "XiaomiMiMo/MiMo-V2-Flash",
-                "cohort": 0,
-                "rung": 0
-              },
-              {
                 "engine": "llamacpp",
                 "ref": "unsloth/MiMo-V2-Flash-GGUF:Q4_K_M",
                 "quant": "Q4_K_M",
                 "disk_mib": 178144,
                 "attribution": "quantizer",
                 "by": "unsloth",
+                "base": "XiaomiMiMo/MiMo-V2-Flash",
+                "cohort": 0,
+                "rung": 0
+              },
+              {
+                "engine": "ollama",
+                "ref": "hf.co/mradermacher/MiMo-V2-Flash-GGUF:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 178144,
+                "attribution": "quantizer",
+                "by": "mradermacher",
                 "base": "XiaomiMiMo/MiMo-V2-Flash",
                 "cohort": 0,
                 "rung": 0
@@ -30421,25 +30421,6 @@
             "author": "huihui-ai"
           },
           {
-            "id": "bleyzos-coder-fork-pro~mini-bleyz",
-            "display_name": "Bleyzos-Coder_Fork_MiMo-V2.5-Pro",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "Mini-Bleyz/Bleyzos-Coder_Fork_MiMo-V2.5-Pro",
-                "quant": "FP8",
-                "disk_mib": 985517,
-                "attribution": "derivative",
-                "by": "Mini-Bleyz",
-                "cohort": 3,
-                "rung": 0
-              }
-            ],
-            "derivative": true,
-            "base": "bleyzos-coder-fork-pro",
-            "author": "Mini-Bleyz"
-          },
-          {
             "id": "dflash",
             "display_name": "MiMo V2.5 DFLASH",
             "artifacts": [
@@ -30740,6 +30721,25 @@
                 "rung": 0
               }
             ]
+          },
+          {
+            "id": "pro-dflash-pruned-8experts~ckoh04",
+            "display_name": "MiMo-V2.5-Pro-FP4-DFlash-pruned-8experts",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "ckoh04/MiMo-V2.5-Pro-FP4-DFlash-pruned-8experts",
+                "quant": "FP8",
+                "disk_mib": 46638,
+                "attribution": "derivative",
+                "by": "ckoh04",
+                "cohort": 3,
+                "rung": 0
+              }
+            ],
+            "derivative": true,
+            "base": "pro-dflash-pruned-8experts",
+            "author": "ckoh04"
           }
         ],
         "schema_version": 9
@@ -53984,5 +53984,5 @@
   "regions": [],
   "region_peers": [],
   "catalog": [],
-  "checked_at": "2026-11-25T21:37:53Z"
+  "checked_at": "2026-11-25T21:53:13Z"
 }
