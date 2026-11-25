@@ -6,7 +6,7 @@
   "peer_count": 4,
   "peers_online": 4,
   "peers_distinct_total": 4808,
-  "uptime_seconds": 4740,
+  "uptime_seconds": 5640,
   "epnd_version": "60a8f4845287fbe68c775e3df1eab5bdb4d70d7b",
   "addrs": [
     "/ip4/13.206.170.222/tcp/53590/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS",
@@ -38,7 +38,7 @@
   "proof_snapshot": {
     "schema_version": "epn.proof.snapshot.v1",
     "node_did": "did:epn:002408011220c655a8b63b4bab2afc372deb9194329f877983ad637d570a5496ce7f171e0af5",
-    "generated_at": "2026-11-25T14:17:26Z",
+    "generated_at": "2026-11-25T14:32:26Z",
     "metrics": {
       "disputes_resolved": 0,
       "inferences_served": 0,
@@ -6769,25 +6769,6 @@
             "author": "chabasx"
           },
           {
-            "id": "300m~h2oai-embeddinggemma",
-            "display_name": "embeddinggemma-300m",
-            "artifacts": [
-              {
-                "engine": "vllm",
-                "ref": "h2oai/embeddinggemma-300m",
-                "quant": "FP32",
-                "disk_mib": 1173,
-                "attribution": "derivative",
-                "by": "h2oai",
-                "cohort": 3,
-                "rung": 9
-              }
-            ],
-            "derivative": true,
-            "base": "300m",
-            "author": "h2oai"
-          },
-          {
             "id": "300m~h2oai-embeddinggemma-qat-0",
             "display_name": "embeddinggemma-300m-qat-q8_0-unquantized",
             "artifacts": [
@@ -6875,6 +6856,25 @@
             "derivative": true,
             "base": "300m",
             "author": "lm-kit"
+          },
+          {
+            "id": "300m~michaelfeil-embeddinggemma",
+            "display_name": "embeddinggemma-300m",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "michaelfeil/embeddinggemma-300m",
+                "quant": "FP32",
+                "disk_mib": 1173,
+                "attribution": "derivative",
+                "by": "michaelfeil",
+                "cohort": 3,
+                "rung": 9
+              }
+            ],
+            "derivative": true,
+            "base": "300m",
+            "author": "michaelfeil"
           },
           {
             "id": "300m~mlx-community-embeddinggemma",
@@ -7006,6 +7006,25 @@
           "embed.vector"
         ],
         "members": [
+          {
+            "id": "anchored-vi~ngoan",
+            "display_name": "anchored-embeddinggemma-2-vi",
+            "artifacts": [
+              {
+                "engine": "vllm",
+                "ref": "ngoan/anchored-embeddinggemma-2-vi",
+                "quant": "BF16",
+                "disk_mib": 10338,
+                "attribution": "derivative",
+                "by": "ngoan",
+                "cohort": 3,
+                "rung": 3
+              }
+            ],
+            "derivative": true,
+            "base": "anchored-vi",
+            "author": "ngoan"
+          },
           {
             "id": "base",
             "display_name": "EmbeddingGemma 2 BASE",
@@ -7581,8 +7600,8 @@
               },
               {
                 "engine": "ollama",
-                "ref": "hf.co/unsloth/ERNIE-4.5-0.3B-PT-GGUF:Q2_K",
-                "quant": "Q2_K",
+                "ref": "hf.co/unsloth/ERNIE-4.5-0.3B-PT-GGUF:Q2_K_XL",
+                "quant": "Q2_K_XL",
                 "disk_mib": 175,
                 "attribution": "quantizer",
                 "by": "unsloth",
@@ -8062,70 +8081,6 @@
             "author": "mlx-community"
           },
           {
-            "id": "21b-a3b~mradermacher-pt-i1",
-            "display_name": "ERNIE-4.5-21B-A3B-PT-i1-GGUF",
-            "artifacts": [
-              {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/ERNIE-4.5-21B-A3B-PT-i1-GGUF:Q4_K_M",
-                "quant": "Q4_K_M",
-                "disk_mib": 12632,
-                "attribution": "derivative",
-                "by": "mradermacher",
-                "base": "baidu/ERNIE-4.5-21B-A3B-PT",
-                "cohort": 3,
-                "rung": 0
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/ERNIE-4.5-21B-A3B-PT-i1-GGUF:IQ3_XXS",
-                "quant": "IQ3_XXS",
-                "disk_mib": 8064,
-                "attribution": "derivative",
-                "by": "mradermacher",
-                "base": "baidu/ERNIE-4.5-21B-A3B-PT",
-                "cohort": 3,
-                "rung": 2
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/ERNIE-4.5-21B-A3B-PT-i1-GGUF:Q4_0",
-                "quant": "Q4_0",
-                "disk_mib": 11823,
-                "attribution": "derivative",
-                "by": "mradermacher",
-                "base": "baidu/ERNIE-4.5-21B-A3B-PT",
-                "cohort": 3,
-                "rung": 3
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/ERNIE-4.5-21B-A3B-PT-i1-GGUF:IQ1_S",
-                "quant": "IQ1_S",
-                "disk_mib": 4269,
-                "attribution": "derivative",
-                "by": "mradermacher",
-                "base": "baidu/ERNIE-4.5-21B-A3B-PT",
-                "cohort": 3,
-                "rung": 5
-              },
-              {
-                "engine": "ollama",
-                "ref": "hf.co/mradermacher/ERNIE-4.5-21B-A3B-PT-i1-GGUF:IQ2_XXS",
-                "quant": "IQ2_XXS",
-                "disk_mib": 5523,
-                "attribution": "derivative",
-                "by": "mradermacher",
-                "base": "baidu/ERNIE-4.5-21B-A3B-PT",
-                "cohort": 3,
-                "rung": 9
-              }
-            ],
-            "derivative": true,
-            "base": "21b-a3b",
-            "author": "mradermacher"
-          },
-          {
             "id": "300b-a47b",
             "display_name": "ERNIE 4.5 300B-A47B",
             "artifacts": [
@@ -8142,6 +8097,39 @@
                 "rung": 0
               },
               {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:Q4_K_M",
+                "quant": "Q4_K_M",
+                "disk_mib": 171809,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 0
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:Q8_0",
+                "quant": "Q8_0",
+                "disk_mib": 303540,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 1
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:IQ3_XXS",
+                "quant": "IQ3_XXS",
+                "disk_mib": 119354,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 2
+              },
+              {
                 "engine": "vllm",
                 "ref": "baidu/ERNIE-4.5-300B-A47B-2Bits-TP2-Paddle",
                 "quant": "BF16",
@@ -8151,6 +8139,50 @@
                 "base": "baidu/ERNIE-4.5-300B-A47B-2Bits-TP2-Paddle",
                 "cohort": 2,
                 "rung": 3
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:Q4_0",
+                "quant": "Q4_0",
+                "disk_mib": 161335,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 3
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:BF16",
+                "quant": "BF16",
+                "disk_mib": 571275,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 4
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:IQ1_S",
+                "quant": "IQ1_S",
+                "disk_mib": 82477,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 5
+              },
+              {
+                "engine": "llamacpp",
+                "ref": "unsloth/ERNIE-4.5-300B-A47B-PT-GGUF:IQ2_XXS",
+                "quant": "IQ2_XXS",
+                "disk_mib": 96582,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "base": "baidu/ERNIE-4.5-300B-A47B-PT",
+                "cohort": 2,
+                "rung": 9
               }
             ]
           },
@@ -8546,6 +8578,21 @@
             ]
           },
           {
+            "id": "klein-4b-base",
+            "display_name": "klein-4b-base",
+            "artifacts": [
+              {
+                "engine": "diffusers",
+                "ref": "unsloth/FLUX.2-klein-base-4B",
+                "disk_mib": 22616,
+                "attribution": "quantizer",
+                "by": "unsloth",
+                "cohort": 2,
+                "rung": 9
+              }
+            ]
+          },
+          {
             "id": "klein-9b",
             "display_name": "klein-9b",
             "artifacts": [
@@ -8586,21 +8633,6 @@
                 "attribution": "vendor",
                 "by": "black-forest-labs",
                 "cohort": 2,
-                "rung": 9
-              }
-            ]
-          },
-          {
-            "id": "tiny-random-klein",
-            "display_name": "tiny-random-klein",
-            "artifacts": [
-              {
-                "engine": "diffusers",
-                "ref": "optimum-intel-internal-testing/tiny-random-flux.2-klein",
-                "disk_mib": 4,
-                "attribution": "derivative",
-                "by": "optimum-intel-internal-testing",
-                "cohort": 3,
                 "rung": 9
               }
             ]
@@ -8952,18 +8984,18 @@
             "author": "Kenvenx"
           },
           {
-            "id": "270m~littlecosmos1990-simple-tool-calling",
-            "display_name": "functiongemma-270m-it-simple-tool-calling",
+            "id": "270m~littlecosmos1990-simple-tool-calling-3",
+            "display_name": "functiongemma-270m-it-simple-tool-calling-3",
             "artifacts": [
               {
                 "engine": "vllm",
-                "ref": "littlecosmos1990/functiongemma-270m-it-simple-tool-calling",
-                "quant": "BF16",
-                "disk_mib": 511,
+                "ref": "littlecosmos1990/functiongemma-270m-it-simple-tool-calling-3",
+                "quant": "FP32",
+                "disk_mib": 1022,
                 "attribution": "derivative",
                 "by": "littlecosmos1990",
                 "cohort": 3,
-                "rung": 3
+                "rung": 9
               }
             ],
             "derivative": true,
@@ -9215,6 +9247,27 @@
             "derivative": true,
             "base": "270m",
             "author": "MuXodious"
+          },
+          {
+            "id": "270m~qrzysztof-prepaid-cards-v2",
+            "display_name": "functiongemma-270m-it-prepaid-cards-v2",
+            "artifacts": [
+              {
+                "engine": "mlx",
+                "platform": "darwin/arm64",
+                "ref": "Qrzysztof/functiongemma-270m-it-prepaid-cards-v2-mlx",
+                "quant": "8BIT",
+                "disk_mib": 271,
+                "attribution": "derivative",
+                "by": "Qrzysztof",
+                "base": "Qrzysztof/functiongemma-270m-it-prepaid-cards-v2",
+                "cohort": 3,
+                "rung": 1
+              }
+            ],
+            "derivative": true,
+            "base": "270m",
+            "author": "Qrzysztof"
           },
           {
             "id": "270m~rizkysulaeman-healthcare",
@@ -54079,5 +54132,5 @@
     "/ip6/::1/udp/53591/webrtc-direct/certhash/uEiCIplbPq-GeNvA5H2f22AJaghUwMstnsq7u7hT4nNXZpw/p2p/12D3KooWPAaefgr3M5Hh4hN3rw6HkMixiCxxWdUpxMBnKgHNL7PS"
   ],
   "catalog": [],
-  "checked_at": "2026-11-25T14:17:26Z"
+  "checked_at": "2026-11-25T14:32:26Z"
 }
