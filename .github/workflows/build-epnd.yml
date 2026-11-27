@@ -178,6 +178,15 @@ jobs:
       - name: Gate — vet must pass before we publish a public binary
         working-directory: epn-daemon
         run: go vet ./...
+      # THE TESTS GATE THE RELEASE TOO (27 Nov, L84). Only vet ran here, so a
+      # read lock taken twice across a waiting writer shipped and stopped
+      # Evo answering on the Windows gram for hours; the test that replays it
+      # (internal/p2p/route_menu_lock_test.go) would have refused the build.
+      # Evo's own packages first: agent (turns, routing, runs), p2p (the model
+      # matrix, routes, tunnels), site. More join as their suites pass on CI.
+      - name: Gate — Evo's and the network's tests must pass
+        working-directory: epn-daemon
+        run: go test -count=1 -timeout 20m ./internal/agent/... ./internal/p2p/... ./internal/site/...
 
   bin:
     needs: check
